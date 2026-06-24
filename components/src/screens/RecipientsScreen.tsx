@@ -1,0 +1,222 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Pressable, FlatList, StyleSheet, StatusBar, ActivityIndicator, RefreshControl } from "react-native";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { COLORS } from "../../../theme/colors";
+import { getRecentRecipientsFromDB, RecentRecipientFromDB } from "../../../api/sync";
+import { CURRENCY_TO_COUNTRY } from "../../../api/flutterwave";
+
+function getInitials(name: string) {
+  return (name || "U").split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
+}
+
+function RecipientBubble({ item, onPress }: { item: RecentRecipientFromDB; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={s.bubble}>
+      <View style={s.bubbleAvatar}>
+        <AppText style={s.bubbleInitials}>{getInitials(item.accountName)}</AppText>
+      </View>
+      <AppText style={s.bubbleName} numberOfLines={1}>{item.accountName.split(" ")[0]}</AppText>
+      <AppText style={s.bubbleBank} numberOfLines={1}>{item.bankName ? item.bankName.split(" ")[0] : item.destCurrency}</AppText>
+    </Pressable>
+  );
+}
+
+function RecipientRow({ item, onPress }: { item: RecentRecipientFromDB; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={s.row}>
+      <View style={s.rowAvatar}>
+        <AppText style={s.rowInitials}>{getInitials(item.accountName)}</AppText>
+      </View>
+      <View style={{ flex: 1 }}>
+        <AppText style={s.rowName}>{item.accountName}</AppText>
+        <AppText style={s.rowMeta}>{item.bankName}{item.accountNumber ? `, ${item.accountNumber}` : ""}</AppText>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+    </Pressable>
+  );
+}
+
+export default function RecipientsScreen() {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [recipients, setRecipients] = useState<RecentRecipientFromDB[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [phone, setPhone] = useState("");
+
+  const load = useCallback(async (ph?: string) => {
+    const p = ph || phone;
+    if (!p) return;
+    try {
+      const res = await getRecentRecipientsFromDB(p, 50);
+      if (res.success) setRecipients(res.recipients);
+    } catch { }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [phone]);
+
+  useEffect(() => {
+    AsyncStorage.getItem("user_phone").then(p => {
+      if (p) { setPhone(p); load(p); }
+      else setLoading(false);
+    });
+  }, []);
+
+  const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
+
+  const list = useMemo(() => {
+    if (!q.trim()) return recipients;
+    const sq = q.trim().toLowerCase();
+    return recipients.filter(r =>
+      r.accountName.toLowerCase().includes(sq) ||
+      r.accountNumber.toLowerCase().includes(sq) ||
+      (r.bankName || "").toLowerCase().includes(sq) ||
+      r.destCurrency.toLowerCase().includes(sq)
+    );
+  }, [q, recipients]);
+
+  // Recent = last 5 (sorted by lastSentAt)
+  const recent = useMemo(() =>
+    [...recipients].sort((a, b) => (b.lastSentAt || 0) - (a.lastSentAt || 0)).slice(0, 5),
+    [recipients]
+  );
+
+  const navigateToRecipient = useCallback((r: RecentRecipientFromDB) => {
+    const countryCode = (CURRENCY_TO_COUNTRY[r.destCurrency] || "NG").toUpperCase();
+    router.push({
+      pathname: "/recipientconfirm" as any,
+      params: {
+        destCurrency: r.destCurrency,
+        fromCurrency: r.destCurrency, // will be overridden if coming from send flow
+        fromAmount: "",
+        toAmount: "",
+        recipient: JSON.stringify({
+          accountName: r.accountName,
+          accountNumber: r.accountNumber,
+          bankCode: r.bankCode,
+          bankName: r.bankName,
+          currency: r.destCurrency,
+          countryCode,
+          isInterac: r.destCurrency === "CAD",
+        }),
+        mode: "recent",
+      },
+    } as any);
+  }, [router]);
+
+  return (
+    <SafeAreaView style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
+
+      {/* Header */}
+      <View style={s.header}>
+        <BackButton onPress={() => router.back()} />
+        <AppText style={s.headerTitle}>Who are you sending to?</AppText>
+        <View style={s.helpBtn}><AppText style={s.helpText}>?</AppText></View>
+      </View>
+
+      {/* Search */}
+      <View style={s.searchWrap}>
+        <Ionicons name="search-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
+        <AppTextInput value={q} onChangeText={setQ} placeholder="Search for a name or phone number" placeholderTextColor={COLORS.muted} style={s.searchInput} />
+        {q.length > 0 && <Pressable onPress={() => setQ("")}><Ionicons name="close-circle" size={16} color={COLORS.muted} /></Pressable>}
+      </View>
+
+      {/* New recipient */}
+      <Pressable onPress={() => router.push("/recipientnew" as any)} style={s.newRow}>
+        <View style={s.newIcon}><Ionicons name="add" size={20} color={COLORS.primary} /></View>
+        <AppText style={s.newText}>Send to a new recipient</AppText>
+        <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+      </Pressable>
+
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={list}
+          keyExtractor={(r) => r.id || r.accountNumber}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+          ListHeaderComponent={
+            <>
+              {/* Recent bubbles */}
+              {recent.length > 0 && !q && (
+                <View style={s.section}>
+                  <AppText style={s.sectionTitle}>Recent</AppText>
+                  <View style={s.bubblesRow}>
+                    {recent.map((r) => (
+                      <RecipientBubble key={r.id} item={r} onPress={() => navigateToRecipient(r)} />
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Tabs */}
+              <View style={s.tabsRow}>
+                <View style={s.tabActive}><AppText style={s.tabActiveText}>Saved</AppText></View>
+                <Pressable onPress={() => router.push("/exxsendmembers" as any)} style={s.tabInactive}>
+                  <AppText style={s.tabInactiveText}>Exxsend Members</AppText>
+                </Pressable>
+              </View>
+
+              {list.length === 0 && (
+                <View style={{ alignItems: "center", paddingTop: 48 }}>
+                  <Ionicons name="people-outline" size={48} color={COLORS.muted} />
+                  <AppText style={{ fontSize: 15, fontWeight: "700", color: COLORS.text, marginTop: 12 }}>
+                    {q ? "No results found" : "No saved recipients"}
+                  </AppText>
+                  <AppText style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", marginTop: 6 }}>
+                    {q ? "Try a different name or account number" : "Recipients you send to will appear here."}
+                  </AppText>
+                </View>
+              )}
+            </>
+          }
+          renderItem={({ item }) => (
+            <RecipientRow item={item} onPress={() => navigateToRecipient(item)} />
+          )}
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.bg },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, height: 50, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.borderLight },
+  backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "700", color: COLORS.text },
+  helpBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
+  helpText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  searchWrap: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 12, backgroundColor: "#FFFFFF", borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 44 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: "500" },
+  newRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 10, backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.borderLight, paddingHorizontal: 14, paddingVertical: 14 },
+  newIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  newText: { flex: 1, fontSize: 14, fontWeight: "700", color: COLORS.text },
+  section: { marginTop: 14 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: COLORS.text, marginBottom: 10 },
+  bubblesRow: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
+  bubble: { alignItems: "center", width: 64 },
+  bubbleAvatar: { width: 48, height: 48, borderRadius: 16, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center", marginBottom: 5 },
+  bubbleInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
+  bubbleName: { fontSize: 11, fontWeight: "600", color: COLORS.text, textAlign: "center" },
+  bubbleBank: { fontSize: 10, color: COLORS.muted, textAlign: "center" },
+  tabsRow: { flexDirection: "row", marginTop: 16, marginBottom: 10, gap: 8 },
+  tabActive: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.primary },
+  tabActiveText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  tabInactive: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: COLORS.border },
+  tabInactiveText: { fontSize: 13, fontWeight: "600", color: COLORS.textSecondary },
+  row: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.borderLight },
+  rowAvatar: { width: 42, height: 42, borderRadius: 14, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  rowInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
+  rowName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  rowMeta: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
+});

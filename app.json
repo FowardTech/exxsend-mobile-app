@@ -1,0 +1,91 @@
+{
+  "expo": {
+    "name": "Exxsend",
+    "slug": "exxsend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icons/icon.png",
+    "scheme": "exxsend",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ayotunde88.Exxsend",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library so you can upload images to support chat.",
+        "NSCameraUsageDescription": "We need access to your camera to verify your identity, scan QR codes for Scan to Pay, and let you upload photos in support chat.",
+        "NSPhotoLibraryAddUsageDescription": "We need permission to save images when required.",
+        "NSFaceIDUsageDescription": "We use Face ID to let you log in and approve transfers securely without typing your PIN every time.",
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#315CFD",
+        "foregroundImage": "./assets/images/icons/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/icons/android-icon-monochrome.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ayotunde88.Exxsend"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "We need access to your camera to verify your identity, scan QR codes for Scan to Pay, and let you upload photos in support chat.",
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splashscreen.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icons/android-icon-foreground.png",
+          "color": "#315CFD",
+          "sounds": []
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "enableGooglePay": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e3638415-c92c-4825-8613-a84ca89d1123"
+      }
+    },
+    "owner": "fowardtechs-organization"
+  }
+}

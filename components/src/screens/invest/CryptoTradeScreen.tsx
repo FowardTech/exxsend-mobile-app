@@ -17,9 +17,7 @@ import {
   syncSnapTrade,
 } from "@/api/investments";
 
-// COLORS.green in this app's theme is actually the brand blue — using the
-// real green here since Buy/Sell needs to be genuinely color-coded.
-const REAL_GREEN = "#10B981";
+// Crypto pair quick-select chips.
 
 const COMMON_PAIRS = ["BTC-USD", "ETH-USD", "SOL-USD", "DOGE-USD"];
 
@@ -149,7 +147,7 @@ export default function CryptoTradeScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <AppText style={s.headerTitle}>Crypto Trade</AppText>
         <View style={{ width: 34 }} />
       </View>
@@ -193,11 +191,11 @@ export default function CryptoTradeScreen() {
             </View>
 
             <View style={s.actionToggle}>
-              <Pressable onPress={() => setSide("BUY")} style={[s.actionToggleBtn, side === "BUY" && { backgroundColor: REAL_GREEN }]}>
-                <AppText style={[s.actionToggleText, side === "BUY" && s.actionToggleTextActive]}>Buy</AppText>
+              <Pressable onPress={() => setSide("BUY")} style={[s.actionToggleBtn, side === "BUY" && s.actionToggleBtnActiveBuy]}>
+                <AppText style={[s.actionToggleText, side === "BUY" && s.actionToggleTextActiveBuy]}>Buy</AppText>
               </Pressable>
-              <Pressable onPress={() => setSide("SELL")} style={[s.actionToggleBtn, side === "SELL" && { backgroundColor: COLORS.red }]}>
-                <AppText style={[s.actionToggleText, side === "SELL" && s.actionToggleTextActive]}>Sell</AppText>
+              <Pressable onPress={() => setSide("SELL")} style={[s.actionToggleBtn, side === "SELL" && s.actionToggleBtnActiveSell]}>
+                <AppText style={[s.actionToggleText, side === "SELL" && s.actionToggleTextActiveSell]}>Sell</AppText>
               </Pressable>
             </View>
 
@@ -283,7 +281,7 @@ export default function CryptoTradeScreen() {
             <Pressable
               onPress={handlePreview}
               disabled={previewing}
-              style={[s.previewBtn, side === "SELL" && { backgroundColor: COLORS.red }, previewing && { opacity: 0.6 }]}
+              style={[s.previewBtn, previewing && { opacity: 0.6 }]}
             >
               {previewing ? <ActivityIndicator color="#FFFFFF" /> : <AppText style={s.previewBtnText}>Review {side === "BUY" ? "Buy" : "Sell"} Order</AppText>}
             </Pressable>
@@ -360,16 +358,19 @@ const s = StyleSheet.create({
   chipTextActive: { color: "#FFFFFF" },
 
   actionToggle: { flexDirection: "row", backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: 4, marginTop: SPACE.xl, ...GLASS_BORDER },
-  actionToggleBtn: { flex: 1, alignItems: "center", paddingVertical: SPACE.md, borderRadius: RADIUS.sm },
+  actionToggleBtn: { flex: 1, alignItems: "center", paddingVertical: SPACE.md, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: "transparent" },
+  actionToggleBtnActiveBuy: { backgroundColor: "transparent", borderColor: COLORS.primary },
+  actionToggleBtnActiveSell: { backgroundColor: COLORS.borderLight, borderColor: COLORS.border },
   actionToggleText: { fontSize: 14, fontWeight: "700", color: COLORS.muted },
-  actionToggleTextActive: { color: "#FFFFFF" },
+  actionToggleTextActiveBuy: { color: COLORS.primary },
+  actionToggleTextActiveSell: { color: COLORS.text },
 
   postOnlyRow: { flexDirection: "row", alignItems: "center", marginTop: SPACE.lg, gap: 10 },
   checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },
   checkboxOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   postOnlyText: { fontSize: 13, color: COLORS.muted, fontWeight: "500" },
 
-  previewBtn: { backgroundColor: REAL_GREEN, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xxl },
+  previewBtn: { backgroundColor: COLORS.primaryDark, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xxl },
   previewBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },

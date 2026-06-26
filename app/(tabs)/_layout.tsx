@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppText from "../../components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../theme/colors";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -15,7 +15,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 function TabIcon({ name, focused, badge = 0, badgeIcon }: {
   name: IoniconName; focused: boolean; badge?: number; badgeIcon?: string;
 }) {
-  const color = focused ? COLORS.primary : "#A0AEC0";
+  const color = focused ? "#000000" : "rgba(0,0,0,0.35)";
   return (
     <View style={{ position: "relative", alignItems: "center", justifyContent: "center" }}>
       <Ionicons name={name} size={23} color={color} />
@@ -40,7 +40,7 @@ function CenterFabIcon({ focused }: { focused: boolean }) {
   return (
     <View style={ti.fabWrap}>
       <View style={[ti.fab, focused && ti.fabFocused]}>
-        <Ionicons name="home" size={26} color="#FFFFFF" />
+        <MaterialCommunityIcons name="home-variant" size={26} color="#FFFFFF" />
       </View>
     </View>
   );
@@ -115,8 +115,8 @@ export default function TabsLayout() {
         // the bar instead of getting clipped at its top edge.
         overflow: "visible",
       },
-      tabBarActiveTintColor: COLORS.primary,
-      tabBarInactiveTintColor: "#A0AEC0",
+      tabBarActiveTintColor: "#000000",
+      tabBarInactiveTintColor: "rgba(0,0,0,0.35)",
       tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginTop: 0 },
     }}>
       <Tabs.Screen name="transactions" options={{ title: "Transactions", tabBarIcon: ({ focused }) => <TabIcon name={focused ? "swap-horizontal" : "swap-horizontal-outline"} focused={focused} /> }} />

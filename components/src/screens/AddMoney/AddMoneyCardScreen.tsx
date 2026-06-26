@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { fundWithCard } from "../../../../api/paysafe";
+import { userScopedKey } from "../../../../utils/cacheKeys";
 import ScreenHeader from "../../../../components/ScreenHeader";
 import { COLORS } from "@/theme/colors";
 
@@ -88,8 +89,10 @@ export default function AddMoneyCardScreen() {
       const [p, u] = await Promise.all([AsyncStorage.getItem("user_phone"), AsyncStorage.getItem("user_info")]);
       if (p) setPhone(p);
       if (u) { try { const info = JSON.parse(u); setEmail(info.email || ""); const n = [info.firstName || info.first_name, info.lastName || info.last_name].filter(Boolean).join(" ").trim(); if (n) setName(n); } catch {} }
-      const raw = await AsyncStorage.getItem(SAVED_KEY).catch(() => null);
-      if (raw) setSavedCards(JSON.parse(raw));
+      if (p) {
+        const raw = await AsyncStorage.getItem(userScopedKey(SAVED_KEY, p)).catch(() => null);
+        if (raw) setSavedCards(JSON.parse(raw));
+      }
     })();
   }, []);
 
@@ -124,7 +127,7 @@ export default function AddMoneyCardScreen() {
         if (save && !selectedId) {
           const card: SavedCard = { id: Date.now().toString(), last4: rawNum.slice(-4), brand, cardholderName: name.trim(), expiryMonth: month, expiryYear: year };
           const updated = [...savedCards, card];
-          await AsyncStorage.setItem(SAVED_KEY, JSON.stringify(updated));
+          await AsyncStorage.setItem(userScopedKey(SAVED_KEY, phone), JSON.stringify(updated));
           setSavedCards(updated);
         }
         Alert.alert("Success 🎉", `${ccy} ${amount} has been added to your wallet.`, [{ text: "Done", onPress: () => router.back() }]);

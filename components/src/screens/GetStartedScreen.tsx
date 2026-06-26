@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from "react";
-import { View, Pressable, Alert, ActivityIndicator, Modal, ScrollView, Platform, StyleSheet } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Pressable, Alert, ActivityIndicator, Modal, ScrollView, Platform, StyleSheet, Linking } from "react-native";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -8,7 +8,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import CountryDropdown from "../../../components/CountryDropdown";
-import { api, checkPhoneExists } from "../../../api/config";
+import { api, checkPhoneExists, validateReferralCode } from "../../../api/config";
 import { COLORS } from "../../../theme/colors";
 
 const API_BASE_URL = Platform.OS === "android"
@@ -28,6 +28,76 @@ export default function GetStartedScreen() {
   const [legalSections, setLegalSections] = useState<LegalSection[]>([]);
   const [legalMeta, setLegalMeta] = useState<any>({});
   const [legalLoading, setLegalLoading] = useState(false);
+
+  // Referral code — auto-populated from a referral link when present
+  // (handled below), otherwise typed in manually. Validated as-you-type;
+  // actually attached to the signup session later, right after the phone
+  // step succeeds (see VerifyNumberScreen.tsx), not here.
+  const [referralCode, setReferralCode] = useState("");
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+  const [referrerName, setReferrerName] = useState("");
+  const [validatingReferral, setValidatingReferral] = useState(false);
+  const [referralFromLink, setReferralFromLink] = useState(false);
+  const referralDebounceRef = useRef<any>(null);
+
+  /** Pulls a referral code out of a URL using whatever shape it shows up
+   * in — a query param (?ref=, ?referral=, ?referralCode=, ?code=) or a
+   * path segment (/ref/<code>, /referral/<code>) — since the exact format
+   * of the shareable referral_link isn't pinned down to one convention. */
+  const extractReferralCode = (url: string | null): string | null => {
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      const qp = parsed.searchParams.get("ref") || parsed.searchParams.get("referral") || parsed.searchParams.get("referralCode") || parsed.searchParams.get("code");
+      if (qp) return qp;
+      const pathMatch = parsed.pathname.match(/\/(?:ref|referral)\/([A-Za-z0-9_-]+)/i);
+      if (pathMatch) return pathMatch[1];
+    } catch {}
+    return null;
+  };
+
+  const applyExtractedCode = useCallback((url: string | null) => {
+    const code = extractReferralCode(url);
+    if (code) {
+      setReferralCode(code.toUpperCase());
+      setReferralFromLink(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Cold start — app was opened directly via the link.
+    Linking.getInitialURL().then(applyExtractedCode).catch(() => {});
+    // Warm start — app was already running/backgrounded when the link
+    // was opened.
+    const sub = Linking.addEventListener("url", (e) => applyExtractedCode(e.url));
+    return () => sub.remove();
+  }, [applyExtractedCode]);
+
+  useEffect(() => {
+    if (referralDebounceRef.current) clearTimeout(referralDebounceRef.current);
+    const code = referralCode.trim();
+    if (code.length < 3) {
+      setReferralValid(null);
+      setReferrerName("");
+      return;
+    }
+    referralDebounceRef.current = setTimeout(async () => {
+      setValidatingReferral(true);
+      try {
+        const res = await validateReferralCode(code);
+        if (res.success) {
+          setReferralValid(!!res.valid);
+          setReferrerName(res.valid ? res.referrerName || "" : "");
+        } else {
+          setReferralValid(null);
+          setReferrerName("");
+        }
+      } finally {
+        setValidatingReferral(false);
+      }
+    }, 500);
+    return () => { if (referralDebounceRef.current) clearTimeout(referralDebounceRef.current); };
+  }, [referralCode]);
 
   const digitsOnly = useMemo(() => phone.replace(/\D/g, ""), [phone]);
   const fullPhone = useMemo(() => !country ? "" : `${country.dialCode}${digitsOnly}`, [country, digitsOnly]);
@@ -65,6 +135,9 @@ export default function GetStartedScreen() {
         await AsyncStorage.setItem("user_country_name", country!.name);
         await AsyncStorage.setItem("user_country_flag", country!.flag ?? "");
         await AsyncStorage.setItem("signup_stage", "phone_submitted");
+        if (referralCode.trim()) {
+          await AsyncStorage.setItem("pending_referral_code", referralCode.trim().toUpperCase());
+        }
         router.push({ pathname: "/verifynumber", params: { phone: fullPhone, requestId: result.request_id || result.requestId || "" } });
       } else { Alert.alert("Error", result?.message || "Failed to send OTP"); }
     } catch { Alert.alert("Error", "Network error. Please try again."); }
@@ -99,7 +172,7 @@ export default function GetStartedScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
         {/* Brand bar */}
         <View style={s.brandBar}>
-          <AppText style={s.brandBarText}>ExxSend</AppText>
+          <AppText style={s.brandBarText}>Exxsend</AppText>
         </View>
         {/* Header */}
         <View style={s.plainSignupHeader}>
@@ -119,7 +192,6 @@ export default function GetStartedScreen() {
         <View style={s.form}>
           <AppText style={s.formHeading}>Create your account</AppText>
           <AppText style={s.formSub}>Enter your phone number to get started</AppText>
-
           <View style={[s.phoneRow, { marginTop: 22 }]}>
             <CountryDropdown value={country} onChange={setCountry} />
             <View style={s.phoneBox}>
@@ -134,6 +206,31 @@ export default function GetStartedScreen() {
               />
             </View>
           </View>
+          <AppText style={s.referralLabel}>Referral code (optional)</AppText>
+          <View style={[s.referralBox, referralValid === true && s.referralBoxValid, referralValid === false && s.referralBoxInvalid]}>
+            <Ionicons name="gift-outline" size={18} color={referralValid === true ? "#059669" : COLORS.muted} style={{ marginRight: 10 }} />
+            <AppTextInput
+              value={referralCode}
+              onChangeText={(t) => { setReferralCode(t.toUpperCase()); setReferralFromLink(false); }}
+              placeholder="e.g. ABC123"
+              placeholderTextColor={COLORS.muted}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!referralFromLink}
+              style={s.referralInput}
+            />
+            {validatingReferral && <ActivityIndicator size="small" color={COLORS.muted} />}
+            {!validatingReferral && referralValid === true && <Ionicons name="checkmark-circle" size={18} color="#059669" />}
+            {!validatingReferral && referralValid === false && <Ionicons name="close-circle" size={18} color={COLORS.red} />}
+          </View>
+          {referralValid === true && !!referrerName && (
+            <AppText style={s.referralHintValid}>
+              {referralFromLink ? "Applied from your invite link — " : ""}You were referred by {referrerName}
+            </AppText>
+          )}
+          {referralValid === false && (
+            <AppText style={s.referralHintInvalid}>That code doesn't look right — check it and try again, or leave it blank.</AppText>
+          )}
 
           {/* Terms */}
           <Pressable onPress={() => setTermsAccepted(p => !p)} style={s.termsRow}>
@@ -183,9 +280,16 @@ const s = StyleSheet.create({
   plainHeroSub:   { fontSize: 14, color: COLORS.muted, fontWeight: "500" },
   form: { padding: 24, paddingTop: 28 },
   formHeading: { fontSize: 22, fontWeight: "700", color: COLORS.text },
-  brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center" },
-  brandBarText: { color: COLORS.primary, fontSize: 20, fontWeight: "700" },
+  brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center", marginTop: 15 },
+  brandBarText: { color: COLORS.text, fontSize: 20, fontWeight: "600" },
   formSub: { fontSize: 14, color: COLORS.muted, fontWeight: "500", marginTop: 4 },
+  referralLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 22, marginBottom: 8 },
+  referralBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
+  referralBoxValid: { borderColor: "#059669" },
+  referralBoxInvalid: { borderColor: COLORS.red },
+  referralInput: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
+  referralHintValid: { fontSize: 12, color: "#059669", fontWeight: "600", marginTop: 6 },
+  referralHintInvalid: { fontSize: 12, color: COLORS.red, fontWeight: "600", marginTop: 6 },
   phoneRow: { flexDirection: "row", gap: 10 },
   phoneBox: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
   dialCode: { fontWeight: "700", color: COLORS.text, marginRight: 8 },

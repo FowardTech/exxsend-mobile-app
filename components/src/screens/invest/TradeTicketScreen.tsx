@@ -203,7 +203,7 @@ export default function TradeTicketScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={goBack} />
+        <BackButton onPress={goBack} showLabel={false} />
         <AppText style={s.headerTitle}>{step === "search" ? "Trade" : sym?.symbol || "Trade"}</AppText>
         <View style={{ width: 34 }} />
       </View>

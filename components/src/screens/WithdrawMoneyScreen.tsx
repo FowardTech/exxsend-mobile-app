@@ -988,7 +988,7 @@ export default function SendMoneyScreen() {
     return (
       <ScreenShell>
         <View style={styles.simpleHeader}>
-          <BackButton onPress={() => router.back()} />
+          <BackButton onPress={() => router.back()} showLabel={false} />
           <View style={{ flex: 1 }} />
         </View>
 

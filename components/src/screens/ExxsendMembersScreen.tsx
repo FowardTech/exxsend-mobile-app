@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../../../theme/colors";
 import ScreenHeader from "../../../components/ScreenHeader";
 import PinVerificationModal from "../../../components/PinVerificationModal";
-import { lookupExxsendMember, sendToExxsendMember, getUserWallets } from "../../../api/config";
+import { lookupExxsendMember, lookupMemberByUsername, sendToExxsendMember, getUserWallets } from "../../../api/config";
 import { saveRecipientToDB, getSavedRecipients, recordRecentRecipient } from "../../../api/sync";
 import { fulfillMoneyRequest } from "../../../api/moneyRequests";
 import { fetchMyFeeWaivers } from "../../../api/feeWaivers";
@@ -77,6 +77,20 @@ export default function ExxsendMembersScreen() {
       const res = await lookupExxsendMember(u, userPhone || undefined);
       if (res?.success && res.member) {
         setMember(res.member);
+
+        // Best-effort backfill — the primary lookup above hits an older
+        // endpoint that was never explicitly confirmed to return a
+        // current profile photo; this one was. If the primary result
+        // already has a photo, this is skipped entirely; if not, this
+        // fills it in without blocking the member card from showing
+        // immediately.
+        if (!res.member.avatar) {
+          lookupMemberByUsername(u).then((fresh) => {
+            if (fresh.success && fresh.member?.profilePhotoUrl) {
+              setMember((prev) => (prev ? { ...prev, avatar: fresh.member!.profilePhotoUrl! } : prev));
+            }
+          }).catch(() => {});
+        }
         // Best-effort — if this check fails for any reason, the toggle
         // just defaults back to showing (the safer of the two outcomes:
         // worst case is offering to re-save someone already saved, which
@@ -186,6 +200,8 @@ export default function ExxsendMembersScreen() {
           destCurrency: currencyCode,
           countryCode: "XX",
           payoutMethod: "exxsend",
+          isExxsendMember: true,
+          username: member.username,
           avatarUrl: member.avatar,
           lastAmount: parseFloat(amount) || 0,
         }).catch(() => {});

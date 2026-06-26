@@ -495,8 +495,13 @@ export interface RecentRecipientFromDB {
   payoutMethod?: string;
   /** Only ever set for Exxsend-member recipients (payoutMethod==="exxsend")
    * who've uploaded a profile photo — RecipientAvatar shows this instead
-   * of initials/the "@" glyph when present. */
+   * of initials/the "@" glyph when present. Maps from the backend's
+   * profilePhotoUrl field — confirmed field name, not a guess. */
   avatarUrl?: string;
+  /** Confirmed backend field — the authoritative signal for whether this
+   * is an Exxsend member, rather than inferring it from bankCode/payoutMethod. */
+  isExxsendMember?: boolean;
+  username?: string | null;
   networkCode?: string;
   networkName?: string;
   nameVerified?: boolean;
@@ -569,11 +574,17 @@ export async function getRecentRecipientsFromDB(
       : null;
 
     if (data?.success !== false && Array.isArray(rawList)) {
+      const normalized = rawList.map((r: any) => ({
+        ...r,
+        avatarUrl: normalizeMediaUrl(r.profilePhotoUrl ?? r.avatarUrl ?? r.avatar_url ?? r.avatar),
+        isExxsendMember: r.isExxsendMember ?? (r.payoutType === "exxsend" || r.bankCode === "EXXSEND"),
+        username: r.username ?? null,
+      }));
       return {
         filter: data.filter ?? null,
         success: true,
-        recipients: rawList,
-        total: data.total || rawList.length,
+        recipients: normalized,
+        total: data.total || normalized.length,
       };
     }
 
@@ -615,7 +626,9 @@ function normalizeSavedRecipient(r: any): RecentRecipientFromDB {
     destCurrency: r.destCurrency || r.currency || "",
     countryCode: r.countryCode || r.country_code,
     payoutMethod: r.payoutMethod || r.payout_type,
-    avatarUrl: normalizeMediaUrl(r.avatarUrl || r.avatar_url || r.avatar),
+    avatarUrl: normalizeMediaUrl(r.profilePhotoUrl ?? r.avatarUrl ?? r.avatar_url ?? r.avatar),
+    isExxsendMember: r.isExxsendMember ?? ((r.payoutMethod || r.payout_type) === "exxsend" || (r.bankCode || r.bank_code) === "EXXSEND"),
+    username: r.username ?? (String(r.accountNumber || r.account_number || "").startsWith("@") ? String(r.accountNumber || r.account_number).slice(1) : null),
     networkCode: r.networkCode || r.network_code,
     networkName: r.networkName || r.network_name,
     nameVerified: !!(r.nameVerified ?? r.name_verified),

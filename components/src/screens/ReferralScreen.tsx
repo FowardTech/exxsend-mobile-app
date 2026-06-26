@@ -4,7 +4,7 @@ import AppText from "../../AppText";
 import BackButton from "../../BackButton";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getMyReferralCode, getReferralConfig } from "../../../api/config";
+import { getMyReferralCode, getReferralPublicConfig } from "../../../api/config";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -35,11 +35,12 @@ export default function ReferralScreen() {
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  // Admin-configured reward percentage — this used to be hardcoded as "3%"
-  // everywhere on this screen, which silently went stale the moment an
-  // admin changed it. Falls back to null (rendered as a generic line with
-  // no percentage) rather than guessing a number if the fetch fails.
-  const [rewardPct, setRewardPct] = useState<number | null>(null);
+  // Admin-configured reward — this used to be hardcoded as "3%" everywhere
+  // on this screen (and before that, fetched from the wrong endpoint
+  // entirely with no flat-bonus handling), which is why it never actually
+  // showed up. rewardText is pre-formatted per the documented rendering
+  // rule: "3%" for a percentage bonus, "5 CAD" for a flat one.
+  const [rewardText, setRewardText] = useState<string | null>(null);
 
   const fetchReferralData = useCallback(async () => {
     try {
@@ -48,14 +49,14 @@ export default function ReferralScreen() {
       if (!token || !phone) { setLoading(false); return; }
       const [codeResult, configResult] = await Promise.all([
         getMyReferralCode(token, phone),
-        getReferralConfig(token),
+        getReferralPublicConfig(),
       ]);
       if (codeResult.success) {
         setReferralCode(codeResult.referral_code || "");
         setReferralLink(codeResult.referral_link || "");
       }
-      if (configResult.success && configResult.percentage !== undefined) {
-        setRewardPct(configResult.percentage);
+      if (configResult.success && configResult.rewardText) {
+        setRewardText(configResult.rewardText);
       }
     } catch (e) {
       console.error("Failed to fetch referral data:", e);
@@ -120,6 +121,8 @@ export default function ReferralScreen() {
     borderRadius: 999, backgroundColor: colors.accentLight,
   },
   rewardPillText: { fontSize: 13, fontWeight: "700", color: colors.accentDark },
+  leaderboardLink: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: "rgba(255,255,255,0.4)" },
+  leaderboardLinkText: { fontSize: 12.5, fontWeight: "700", color: "#FFFFFF" },
 
   // Sections
   section: {
@@ -208,8 +211,8 @@ export default function ReferralScreen() {
           </View>
           <AppText style={s.heroTitle}>Invite & Earn</AppText>
           <AppText style={s.heroSub}>
-            {rewardPct !== null
-              ? `Share Exxsend and earn ${rewardPct}% on your friend's first transfer`
+            {rewardText
+              ? `Share Exxsend and earn ${rewardText} on your friend's first transfer`
               : "Share Exxsend and earn a cash bonus on your friend's first transfer"}
           </AppText>
 
@@ -217,9 +220,15 @@ export default function ReferralScreen() {
           <View style={s.rewardPill}>
             <Ionicons name="star" size={14} color={colors.accentDark} />
             <AppText style={s.rewardPillText}>
-              {rewardPct !== null ? `${rewardPct}% Cash Bonus per referral` : "Cash Bonus per referral"}
+              {rewardText ? `${rewardText} Cash Bonus per referral` : "Cash Bonus per referral"}
             </AppText>
           </View>
+
+          <Pressable onPress={() => router.push("/referralleaderboard" as any)} style={s.leaderboardLink}>
+            <Ionicons name="trophy-outline" size={14} color="#FFFFFF" />
+            <AppText style={s.leaderboardLinkText}>See the leaderboard</AppText>
+            <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
+          </Pressable>
         </LinearGradient>
 
         {/* ── How it works ── */}
@@ -231,8 +240,8 @@ export default function ReferralScreen() {
           <View style={s.stepDivider} />
           <StepRow
             num="3"
-            title={rewardPct !== null ? `You earn ${rewardPct}%` : "You earn a bonus"}
-            subtitle={rewardPct !== null ? `Get ${rewardPct}% of their first transfer credited to your wallet` : "Get a percentage of their first transfer credited to your wallet"}
+            title={rewardText ? `You earn ${rewardText}` : "You earn a bonus"}
+            subtitle={rewardText ? `Get ${rewardText} of their first transfer credited to your wallet` : "Get a bonus credited to your wallet from their first transfer"}
           />
         </View>
 

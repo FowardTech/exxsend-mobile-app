@@ -11,7 +11,8 @@ import NetInfo from "@react-native-community/netinfo";
 import {
   checkEmailVerified, getExchangeRates,
   getTotalBalance, getUserAccounts, getUserProfile, sendEmailOtp,
-  getReferralConfig, getActivePromotionalBanners, PromotionalBanner,
+  getReferralPublicConfig, getActivePromotionalBanners, PromotionalBanner,
+  getSumsubVerificationStatus, SumsubVerificationStatus,
 } from "@/api/config";
 import { getUserTransactions, WalletTransaction } from "@/api/transactions";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
@@ -183,6 +184,11 @@ export default function HomeScreen() {
   const [userPhone,     setUserPhone]     = useState("");
   const [emailVerified, setEmailVerified] = useState(true);
   const [kycStatus,     setKycStatus]     = useState("");
+  // Drives the verify-identity banner's visibility and behavior — richer
+  // than kycStatus alone, since it also says what tapping the banner
+  // should actually do (action) and carries the specific rejection reason
+  // when there is one.
+  const [verificationStatus, setVerificationStatus] = useState<SumsubVerificationStatus | null>(null);
   // Small "turn on biometric login" banner, shown above the balance hero
   // card once identity verification is approved — only relevant once the
   // device actually has biometric hardware enrolled, isn't already
@@ -198,7 +204,7 @@ export default function HomeScreen() {
   // dashboard banner can't drift out of sync with whatever ReferralScreen
   // shows (previously this banner had a hardcoded dollar figure that had
   // no relationship to the actual, configurable reward at all).
-  const [referralPct,   setReferralPct]   = useState<number | null>(null);
+  const [referralReward, setReferralReward] = useState<string | null>(null);
 
   // Recent activity preview (5 most recent) shown under the wallet cards,
   // with a "View all" link to the full Transactions tab.
@@ -239,11 +245,9 @@ export default function HomeScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await AsyncStorage.getItem("auth_token");
-        if (!token) return;
-        const res = await getReferralConfig(token);
-        if (mounted.current && res.success && res.percentage !== undefined) {
-          setReferralPct(res.percentage);
+        const res = await getReferralPublicConfig();
+        if (mounted.current && res.success && res.rewardText) {
+          setReferralReward(res.rewardText);
         }
       } catch {}
     })();
@@ -361,16 +365,25 @@ export default function HomeScreen() {
         `[HomeScreen] loadRecipients: backend success=${backendRes.success} count=${backendList.length}` +
         `, local count=${localList.length}`
       );
-      // Local entries take priority for the same recipient (matched by
-      // account identity) since they're recorded the instant a transfer
-      // actually succeeds — the freshest possible signal — rather than
-      // waiting on whatever the backend's own computation/timing is.
+      // Local entries take priority for identity/recency (they're recorded
+      // the instant a transfer actually succeeds, the freshest possible
+      // signal for "this is recent") — but a local entry can go stale on
+      // fields like avatarUrl specifically, e.g. if the recipient adds or
+      // changes their profile photo *after* the cached transaction. Rather
+      // than let a stale local entry silently shadow a fresher backend
+      // one, merge field-by-field: keep local's identity/recency, but
+      // backfill avatarUrl from the backend whenever the backend has one
+      // and the local entry doesn't.
       const merged = [...localList];
       for (const r of backendList) {
-        const isDup = merged.some(
+        const matchIndex = merged.findIndex(
           (m) => m.accountNumber === r.accountNumber && m.bankCode === r.bankCode && m.destCurrency === r.destCurrency
         );
-        if (!isDup) merged.push(r);
+        if (matchIndex === -1) {
+          merged.push(r);
+        } else if (!merged[matchIndex].avatarUrl && r.avatarUrl) {
+          merged[matchIndex] = { ...merged[matchIndex], avatarUrl: r.avatarUrl };
+        }
       }
       const sorted = merged.sort((a, b) => (b.lastSentAt || 0) - (a.lastSentAt || 0)).slice(0, 6);
       console.log(`[HomeScreen] loadRecipients: final merged count=${sorted.length}`, JSON.stringify(sorted.map(r => r.accountName)));
@@ -391,6 +404,17 @@ export default function HomeScreen() {
       if (!mounted.current) return;
       if (res.success) {
         setPendingRequestCount(res.requests.filter((r) => r.status === "pending").length);
+      }
+    } catch {}
+  }, [userPhone]);
+
+  const loadVerificationStatus = useCallback(async () => {
+    const phone = userPhone || (await AsyncStorage.getItem("user_phone")) || "";
+    if (!phone) return;
+    try {
+      const res = await getSumsubVerificationStatus({ phone });
+      if (mounted.current && res.success) {
+        setVerificationStatus(res);
       }
     } catch {}
   }, [userPhone]);
@@ -437,21 +461,21 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    fetchData(false); loadRecipients(); refreshSettlements(); loadPendingRequests();
+    fetchData(false); loadRecipients(); refreshSettlements(); loadPendingRequests(); loadVerificationStatus();
     AsyncStorage.getItem("user_phone").then(p => { if (p) checkEmailVerified(p).then(r => { if (mounted.current) setEmailVerified(!!r?.emailVerified); }); });
-  }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests]);
+  }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests, loadVerificationStatus]);
 
   useFocusEffect(useCallback(() => {
     focusCount.current += 1; if (focusCount.current <= 1) return;
-    fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests();
+    fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests(); loadVerificationStatus();
     // Re-check rather than relying solely on kycStatus changing — covers
     // returning from Settings right after toggling biometric on/off,
     // where kycStatus itself never changes but the prompt should
     // disappear immediately.
     checkBiometricPrompt(kycStatus);
-  }, [fetchData, loadRecipients, refreshSettlements, checkBiometricPrompt, kycStatus, loadPendingRequests]));
+  }, [fetchData, loadRecipients, refreshSettlements, checkBiometricPrompt, kycStatus, loadPendingRequests, loadVerificationStatus]));
 
-  const onRefresh = useCallback(() => { setRefreshing(true); fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests(); }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests]);
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests(); loadVerificationStatus(); }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests, loadVerificationStatus]);
   const toggleHide = useCallback(() => { setHideBalance(p => { const n = !p; AsyncStorage.setItem(HIDE_KEY, String(n)).catch(() => {}); return n; }); }, []);
 
   useEffect(() => {
@@ -475,8 +499,17 @@ export default function HomeScreen() {
   }, [email, router]);
 
   const handleVerifyIdentity = useCallback(() => {
+    if (verificationStatus?.action === "contact_support") {
+      router.push("/support" as any);
+      return;
+    }
+    if (verificationStatus?.action === "wait" || verificationStatus?.action === "none") {
+      // Shouldn't be reachable — the card disables/hides itself for these
+      // — but guarded here too in case state is ever stale for a moment.
+      return;
+    }
     router.push("/sumsub-verification" as any);
-  }, [router]);
+  }, [router, verificationStatus]);
 
   const s = useMemo(() => StyleSheet.create({
 
@@ -508,7 +541,7 @@ export default function HomeScreen() {
   // since the gradient runs genuinely dark at the primaryDark end.
   balanceCard: {
     marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg,
-    borderRadius: RADIUS.xl, padding: SPACE.xxl,
+    borderRadius: RADIUS.xl, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.md,
     shadowColor: colors.primaryDark,
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.45,
@@ -646,7 +679,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={[s.root, { alignItems: "center", justifyContent: "center" }]} edges={["top", "left", "right"]}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
-        <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.primary, marginBottom: 20 }}>ExxSend</AppText>
+        {/* <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.primary, marginBottom: 20 }}>ExxSend</AppText> */}
         <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
@@ -671,14 +704,19 @@ export default function HomeScreen() {
               <AppText style={s.greetSub}>{homeCcy} Wallet</AppText>
             </View>
           </Pressable>
-          <Pressable onPress={() => router.push("/notification")} style={s.bellBtn}>
-            <Ionicons name="notifications-outline" size={20} color={colors.text} />
-            {unreadCount > 0 && (
-              <View style={s.bellBadge}>
-                <AppText style={s.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</AppText>
-              </View>
-            )}
-          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Pressable onPress={() => isKyc ? router.push("/requestmoney" as any) : blocked()} style={s.bellBtn}>
+              <Ionicons name="arrow-down-outline" size={20} color={colors.text} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/notification")} style={s.bellBtn}>
+              <Ionicons name="notifications-outline" size={20} color={colors.text} />
+              {unreadCount > 0 && (
+                <View style={s.bellBadge}>
+                  <AppText style={s.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</AppText>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {showBiometricPrompt && (
@@ -723,13 +761,7 @@ export default function HomeScreen() {
               </View>
               <AppText style={s.balanceActionLabel}>Send</AppText>
             </Pressable>
-            <Pressable onPress={() => isKyc ? router.push("/requestmoney" as any) : blocked()} style={{ alignItems: "center", gap: 6 }}>
-              <View style={s.balanceActionIcon}>
-                <Ionicons name="arrow-down-outline" size={20} color="#FFFFFF" />
-              </View>
-              <AppText style={s.balanceActionLabel}>Request</AppText>
-            </Pressable>
-            <Pressable onPress={() => router.push("/exchangerates")} style={{ alignItems: "center", gap: 6 }}>
+            <Pressable onPress={() => isKyc ? router.push("/exchangerates") : blocked()} style={{ alignItems: "center", gap: 6 }}>
               <View style={s.balanceActionIcon}>
                 <Ionicons name="repeat-outline" size={20} color="#FFFFFF" />
               </View>
@@ -743,6 +775,62 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </LinearGradient>
+
+        {/* ── Verify banners ── */}
+        {!emailVerified && <VerifyEmailCard email={email} onPress={handleVerifyEmail} />}
+        {emailVerified && !!verificationStatus?.needsVerification && verificationStatus.action !== "none" && (() => {
+          const vs = verificationStatus;
+          switch (vs.action) {
+            case "resume":
+              return (
+                <VerifyIdentityCardScreen
+                  userPhone={userPhone}
+                  onPress={handleVerifyIdentity}
+                  title="Finish verifying your identity"
+                  subtitle="You're partway through — pick up right where you left off"
+                  buttonText="Resume"
+                  tone="warning"
+                />
+              );
+            case "retry":
+              return (
+                <VerifyIdentityCardScreen
+                  userPhone={userPhone}
+                  onPress={handleVerifyIdentity}
+                  title="Let's try that again"
+                  subtitle={vs.moderationComment || "Something needs another attempt — usually a clearer photo or document scan"}
+                  buttonText="Retry"
+                  tone="warning"
+                />
+              );
+            case "wait":
+              return (
+                <VerifyIdentityCardScreen
+                  userPhone={userPhone}
+                  onPress={handleVerifyIdentity}
+                  title="Verification in review"
+                  subtitle="We're checking your information — this usually doesn't take long"
+                  buttonText="Under review"
+                  tone="info"
+                  disabled
+                />
+              );
+            case "contact_support":
+              return (
+                <VerifyIdentityCardScreen
+                  userPhone={userPhone}
+                  onPress={handleVerifyIdentity}
+                  title="We couldn't verify your identity"
+                  subtitle={vs.moderationComment || "Please contact support for help with next steps"}
+                  buttonText="Contact support"
+                  tone="danger"
+                />
+              );
+            case "start":
+            default:
+              return <VerifyIdentityCardScreen userPhone={userPhone} onPress={handleVerifyIdentity} />;
+          }
+        })()}
 
         {!!feeWaivers && (
           <View style={{ marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md }}>
@@ -785,7 +873,7 @@ export default function HomeScreen() {
                     name={r.accountName}
                     currencyCode={r.destCurrency}
                     countryCode={(r as any).countryCode}
-                    isExxsend={(r as any).payoutType === "exxsend" || r.bankCode === "EXXSEND"}
+                    isExxsend={(r as any).isExxsendMember ?? ((r as any).payoutType === "exxsend" || r.bankCode === "EXXSEND")}
                     photoUrl={(r as any).avatarUrl}
                     size={50}
                   />
@@ -859,7 +947,7 @@ export default function HomeScreen() {
               })}
 
               {/* Add wallet tile */}
-              <Pressable onPress={() => router.push("/addaccount")} style={s.walletAddCard}>
+              <Pressable onPress={() => isKyc ? router.push("/addaccount") : blocked()} style={s.walletAddCard}>
                 <View style={s.walletAddIcon}>
                   <Ionicons name="add" size={22} color={colors.primary} />
                 </View>
@@ -942,11 +1030,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── Verify banners ── */}
-        {!emailVerified && <VerifyEmailCard email={email} onPress={handleVerifyEmail} />}
-        {emailVerified && (kycStatus === "pending" || kycStatus === "retry" || kycStatus === "unverified") && <VerifyIdentityCardScreen userPhone={userPhone} onPress={handleVerifyIdentity} />}
-
-        
 
         {/* ── Recommendations ── */}
         <View style={[s.sectionRow, {marginTop: 15}]}>
@@ -960,8 +1043,8 @@ export default function HomeScreen() {
             <View style={{ flex: 1 }}>
               <AppText style={s.refBannerTitle} numberOfLines={1}>Earn Rewards by Referring Friends!</AppText>
               <AppText style={s.refBannerSub} numberOfLines={2}>
-                {referralPct !== null
-                  ? `Invite your friends and earn ${referralPct}% on their first transfer`
+                {referralReward
+                  ? `Invite your friends and earn ${referralReward} on their first transfer`
                   : "Invite your friends and earn a cash bonus when they sign up"}
               </AppText>
             </View>

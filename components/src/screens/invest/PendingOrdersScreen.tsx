@@ -188,7 +188,7 @@ export default function PendingOrdersScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        {router.canGoBack() && <BackButton onPress={() => router.back()} />}
+        {router.canGoBack() && <BackButton onPress={() => router.back()} showLabel={false} />}
         <AppText style={s.headerTitle}>Orders</AppText>
         <View style={{ width: 34 }} />
       </View>
@@ -231,10 +231,19 @@ export default function PendingOrdersScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         >
           {orders.map((o, i) => (
-            <View key={o.brokerage_order_id || i} style={s.orderCard}>
+            <Pressable
+              key={o.brokerage_order_id || i}
+              onPress={() => router.push({
+                pathname: "/orderdetail" as any,
+                params: { order: JSON.stringify(o), accountId: selectedAccount?.id || "", phone } as any,
+              })}
+              style={s.orderCard}
+            >
               <View style={s.orderTop}>
                 <View style={s.orderTopLeft}>
-                  <AppText style={s.orderSymbol} numberOfLines={1}>{o.action} {o.symbol}</AppText>
+                  <AppText style={[s.orderSymbol, { color: (o.action || "").toUpperCase() === "BUY" ? REAL_GREEN : COLORS.red }]} numberOfLines={1}>
+                    {(o.action || "").toUpperCase() === "BUY" ? "Buy" : "Sell"} {o.symbol}
+                  </AppText>
                   <AppText style={s.orderMeta} numberOfLines={1}>
                     {o.quantity} shares{o.price ? ` @ $${Number(o.price).toFixed(2)}` : ""} · {o.time_in_force}
                   </AppText>
@@ -270,7 +279,7 @@ export default function PendingOrdersScreen() {
                   </Pressable>
                 </View>
               )}
-            </View>
+            </Pressable>
           ))}
         </ScrollView>
       )}

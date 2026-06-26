@@ -116,8 +116,9 @@ export default function ConvertScreen() {
 
   const cv = useMemo(() => StyleSheet.create({
 
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", ...TYPE.subtitle, color: colors.text },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54, position: "relative" },
+  headerSide: { minWidth: 34 },
+  headerTitle: { position: "absolute", left: 0, right: 0, textAlign: "center", ...TYPE.subtitle, color: colors.text },
   body: { padding: SCREEN_PADDING, paddingBottom: SPACE.xxxl },
   card: { backgroundColor: colors.card, borderRadius: RADIUS.lg, padding: SPACE.xl, marginBottom: SPACE.md, ...GLASS_BORDER, ...CARD_SHADOW },
   cardLabel: { ...TYPE.eyebrow, color: colors.muted, marginBottom: SPACE.md },
@@ -343,13 +344,35 @@ export default function ConvertScreen() {
       );
 
       if (response.success) {
-        setToAmount(Number(response.quote.buyAmount || 0).toFixed(2));
-        setRate(Number(response.quote.rate || 0));
+        const grossBuyAmount = Number(response.quote.buyAmount || 0);
+        const rateNum = Number(response.quote.rate || 0);
+        const feeAmt = response.quote.feeAmount !== undefined ? Number(response.quote.feeAmount || 0) : 0;
+        const feeCcy = response.quote.feeCurrency || fromWallet.currencyCode;
+
+        // CurrencyCloud's own quote computes buyAmount from the full sell
+        // amount — it has no knowledge of Exxsend's separate platform fee.
+        // Without this adjustment, "Total you get" (net of fee) and
+        // "You'll receive" (still the gross figure) contradict each other:
+        // the fee would visibly reduce one number but not the other, even
+        // though it's the same conversion.
+        let netBuyAmount = grossBuyAmount;
+        if (feeAmt > 0 && rateNum > 0) {
+          if (feeCcy === fromWallet.currencyCode) {
+            // Fee comes out of the sell amount before conversion.
+            netBuyAmount = (parseFloat(fromAmount) - feeAmt) * rateNum;
+          } else if (feeCcy === toWallet.currencyCode) {
+            // Fee comes out of the buy amount after conversion.
+            netBuyAmount = grossBuyAmount - feeAmt;
+          }
+        }
+
+        setToAmount(netBuyAmount.toFixed(2));
+        setRate(rateNum);
 
         if (response.quote.feeAmount !== undefined) {
           setFeeInfo({
-            feeAmount: Number(response.quote.feeAmount || 0),
-            feeCurrency: response.quote.feeCurrency || fromWallet.currencyCode,
+            feeAmount: feeAmt,
+            feeCurrency: feeCcy,
             feeType: response.quote.feeConfig?.fee_type,
             feePercentage: response.quote.feeConfig?.percentage_fee,
             flatFee: response.quote.feeConfig?.flat_fee,
@@ -847,9 +870,11 @@ export default function ConvertScreen() {
 
           {/* ── Header ── */}
           <View style={cv.header}>
-            <BackButton onPress={() => router.back()} />
-            <AppText style={cv.headerTitle}>Convert</AppText>
-            <View style={{ width: 34 }} />
+            <View style={cv.headerSide}>
+              <BackButton onPress={() => router.back()} />
+            </View>
+            <AppText style={cv.headerTitle} pointerEvents="none">Convert</AppText>
+            <View style={cv.headerSide} />
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={cv.body} keyboardShouldPersistTaps="handled">

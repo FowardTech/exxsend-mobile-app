@@ -149,7 +149,7 @@ export default function RequestMoneyScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <AppText style={s.headerTitle}>Request Money</AppText>
         <View style={{ width: 34 }} />
       </View>

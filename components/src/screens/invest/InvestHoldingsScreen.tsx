@@ -12,6 +12,11 @@ import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "@/them
 import { getCurrencySymbol } from "@/api/flutterwave";
 import { getSnapTradeHoldings, Holding } from "@/api/investments";
 
+// COLORS.green in this app's theme is actually the brand blue — gain/loss
+// needs a genuinely green/red color pair, same pattern used elsewhere in
+// the stock screens (TradeTicketScreen, PendingOrdersScreen).
+const REAL_GREEN = "#10B981";
+
 export default function InvestHoldingsScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -49,7 +54,7 @@ export default function InvestHoldingsScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)" as any)} />
+        <BackButton onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)" as any)} showLabel={false} />
         <AppText style={s.headerTitle}>Holdings</AppText>
         <View style={{ width: 34 }} />
       </View>
@@ -84,6 +89,10 @@ export default function InvestHoldingsScreen() {
           renderItem={({ item }) => {
             const isForeign = item.currency !== baseCurrency;
             const nativeSym = getCurrencySymbol(item.currency);
+            const hasCostBasis = item.avgCostInUsd != null && item.avgCostInUsd > 0;
+            const gainLossUsd = hasCostBasis ? item.marketValueInUsd - item.avgCostInUsd! * item.quantity : null;
+            const gainLossPct = hasCostBasis ? ((item.marketPriceInUsd - item.avgCostInUsd!) / item.avgCostInUsd!) * 100 : null;
+            const isUp = (gainLossUsd ?? 0) >= 0;
             return (
               <View style={s.row}>
                 <View style={{ flex: 1 }}>
@@ -95,7 +104,16 @@ export default function InvestHoldingsScreen() {
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
                   <AppText style={s.valueBase}>{baseSym}{item.marketValueInBase.toFixed(2)}</AppText>
-                  <AppText style={s.valueUsd}>${item.marketValueInUsd.toFixed(2)} USD</AppText>
+                  {hasCostBasis ? (
+                    <View style={s.gainLossRow}>
+                      <Ionicons name={isUp ? "caret-up" : "caret-down"} size={10} color={isUp ? REAL_GREEN : COLORS.red} />
+                      <AppText style={[s.gainLossText, { color: isUp ? REAL_GREEN : COLORS.red }]}>
+                        ${Math.abs(gainLossUsd!).toFixed(2)} ({Math.abs(gainLossPct!).toFixed(2)}%)
+                      </AppText>
+                    </View>
+                  ) : (
+                    <AppText style={s.valueUsd}>${item.marketValueInUsd.toFixed(2)} USD</AppText>
+                  )}
                   {isForeign && (
                     <AppText style={s.valueNative}>
                       {nativeSym}{item.marketValue.toFixed(2)} {item.currency}
@@ -125,6 +143,8 @@ const s = StyleSheet.create({
   description: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
   qty: { fontSize: 11, color: COLORS.muted, fontWeight: "600", marginTop: SPACE.xs + 2 },
   valueBase: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+  gainLossRow: { flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 },
+  gainLossText: { fontSize: 11, fontWeight: "700" },
   valueUsd: { fontSize: 11, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
   valueNative: { fontSize: 10, color: COLORS.muted, fontWeight: "500", marginTop: 1 },
 });

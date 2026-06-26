@@ -15,7 +15,7 @@ import AppText from "../../../AppText";
 import BackButton from "../../../BackButton";
 import AppTextInput from "../../../AppTextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -598,6 +598,15 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
     }
   }, [phone]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!phone) return;
+      getSavedStripeCards(phone).then((res) => {
+        if (res.success) setSavedCards(res.cards);
+      });
+    }, [phone])
+  );
+
   const parsedAmount = parseFloat(amount);
   const amountValid = !!amount && Number.isFinite(parsedAmount) && parsedAmount > 0;
   const canPay = amountValid && !loading && !confirming && (selectedCardId ? true : !!cardDetails?.complete);
@@ -975,7 +984,7 @@ export default function AddMoneyLocalScreen() {
     <SafeAreaView style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <View style={s.headerCenter}>
           <CountryFlag currencyCode={currency} size="sm" />
           <AppText style={s.headerTitle}>{title}</AppText>

@@ -21,7 +21,8 @@
         "UIBackgroundModes": ["remote-notification"]
       },
       "entitlements": {
-        "aps-environment": "production"
+        "aps-environment": "production",
+        "associatedDomains": ["applinks:exxsend.app"]
       }
     },
     "android": {
@@ -33,7 +34,18 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.ayotunde88.Exxsend"
+      "package": "com.ayotunde88.Exxsend",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "exxsend.app", "pathPrefix": "/ref" },
+            { "scheme": "https", "host": "exxsend.app", "pathPrefix": "/r" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",

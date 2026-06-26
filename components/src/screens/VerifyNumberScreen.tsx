@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { api } from "../../../api/config";
+import { api, applyReferralCode } from "../../../api/config";
 import { COLORS } from "../../../theme/colors";
 
 const OTP_LEN = 6;
@@ -99,6 +99,15 @@ export default function VerifyNumberScreen() {
       const result = await api.verifyOtp(currentRequestId, code);
       if (result.success) {
         await AsyncStorage.setItem("signup_stage", "phone_verified");
+
+        // Attach the referral code right after the phone step, before
+        // password — per the documented flow. Best-effort: a failure here
+        // shouldn't block signup from continuing.
+        const pendingReferral = await AsyncStorage.getItem("pending_referral_code");
+        if (pendingReferral) {
+          applyReferralCode(phone, pendingReferral).catch(() => {});
+        }
+
         router.replace({ pathname: "/pin", params: { phone, verified: "true" } });
       } else {
         Alert.alert("Invalid Code", result.message || "Please check and try again.");

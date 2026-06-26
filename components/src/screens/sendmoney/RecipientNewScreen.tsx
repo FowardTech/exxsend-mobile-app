@@ -573,7 +573,7 @@ export default function RecipientNewScreen() {
       <SafeAreaView style={s.root}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
         <View style={s.header}>
-          <BackButton onPress={() => router.back()} />
+          <BackButton onPress={() => router.back()} showLabel={false} />
           <AppText style={[s.headerTitle, { flex: 1, textAlign: "center" }]}>New Recipient</AppText>
           <View style={{ width: 34 }} />
         </View>
@@ -592,7 +592,7 @@ export default function RecipientNewScreen() {
     <SafeAreaView style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <View style={s.headerCenter}>
           <CountryFlag currencyCode={destCurrency} size="sm" />
           <AppText style={s.headerTitle}>{corridor.countryName}</AppText>

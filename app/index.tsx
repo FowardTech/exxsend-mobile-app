@@ -72,11 +72,23 @@ export default function Index() {
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg }}>
-      <Image
-        source={require("../assets/images/icons/icon.png")}
-        style={{ width: 96, height: 96, marginBottom: 24 }}
-        resizeMode="contain"
-      />
+      <View style={{
+        borderRadius: 15,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 10,
+        marginBottom: 24,
+      }}>
+        <Image
+          source={require("../assets/images/icons/icon.png")}
+          style={{
+            width: 96, height: 96, borderRadius: 15,
+          }}
+          resizeMode="contain"
+        />
+      </View>
       <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );

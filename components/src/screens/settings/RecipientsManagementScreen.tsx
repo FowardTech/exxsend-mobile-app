@@ -9,6 +9,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ScreenHeader from "../../../../components/ScreenHeader";
 import { getSavedRecipients, deleteRecipientFromDB } from "../../../../api/sync";
+import { lookupMemberByUsername } from "../../../../api/config";
 import { updateSavedRecipient } from "../../../../api/config";
 import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "../../../../api/flutterwave";
 import RecipientAvatar from "../../../../components/RecipientAvatar";
@@ -32,7 +33,7 @@ function RecipientCard({ item, onSend, onEdit, onDelete }: {
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const exxsend = item.bankCode === "EXXSEND" || (item as any).payoutType === "exxsend";
+  const exxsend = (item as any).isExxsendMember ?? (item.bankCode === "EXXSEND" || (item as any).payoutType === "exxsend");
   const initials = item.accountName.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
   return (
     <View style={s.card}>
@@ -78,7 +79,24 @@ export default function RecipientsManagementScreen() {
       setPhone(ph);
       if (!ph) return;
       const res = await getSavedRecipients(ph, undefined, 100);
-      setRecipients(res.success ? res.recipients as unknown as Recipient[] : []);
+      const list = res.success ? (res.recipients as unknown as Recipient[]) : [];
+      setRecipients(list);
+      // Best-effort, non-blocking — show the list immediately with
+      // whatever photo was stored at save time, then upgrade in place as
+      // fresher photos come back.
+      const exxsendOnes = (res.success ? res.recipients : []).filter((r) => r.isExxsendMember && r.username);
+      if (exxsendOnes.length > 0) {
+        Promise.all(
+          exxsendOnes.map((r) => lookupMemberByUsername(r.username!).then((lookup) => ({ id: r.id, lookup })))
+        ).then((results) => {
+          const photoById = new Map(
+            results.filter((x) => x.lookup.success && x.lookup.member?.profilePhotoUrl).map((x) => [x.id, x.lookup.member!.profilePhotoUrl])
+          );
+          if (photoById.size > 0) {
+            setRecipients((prev) => prev.map((r) => (r.id && photoById.has(r.id) ? ({ ...r, avatarUrl: photoById.get(r.id) } as any) : r)));
+          }
+        }).catch(() => {});
+      }
     } catch { setRecipients([]); }
     finally { setLoading(false); }
   }, []);

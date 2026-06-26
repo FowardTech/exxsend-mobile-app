@@ -7,7 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppText from "../../AppText";
 import { COLORS } from "../../../theme/colors";
 import { SPACE, RADIUS, SCREEN_PADDING } from "../../../theme/designSystem";
-import { getSumsubAccessToken, getSumsubStatus, SumsubKycStatus } from "@/api/config";
+import { getSumsubAccessToken, getSumsubVerificationStatus, SumsubVerificationStatus } from "@/api/config";
 
 // @sumsub/react-native-mobilesdk-module is a native module — it must be
 // installed (`npx expo install @sumsub/react-native-mobilesdk-module`) and
@@ -29,6 +29,7 @@ export default function SumsubVerificationScreen() {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [moderationComment, setModerationComment] = useState("");
   const pollCount = useRef(0);
   const pollTimer = useRef<any>(null);
   const applicantIdRef = useRef<string>("");
@@ -40,25 +41,32 @@ export default function SumsubVerificationScreen() {
     }
   }, []);
 
-  const applyStatus = useCallback(async (status: SumsubKycStatus | undefined) => {
-    if (!status) return false;
+  const applyStatus = useCallback(async (status: SumsubVerificationStatus) => {
+    if (!status.kycStatus && !status.action) return false;
     // Cache locally so the rest of the app (Home's verify-identity prompt,
     // feature gates, etc.) reflects this without waiting on a separate
     // profile refetch — but this is still ultimately downstream of the
     // backend's own webhook-driven value, not a locally-invented status.
     try {
       const userInfoStr = await AsyncStorage.getItem("user_info");
-      if (userInfoStr) {
+      if (userInfoStr && status.kycStatus) {
         const userInfo = JSON.parse(userInfoStr);
-        userInfo.kycStatus = status;
+        userInfo.kycStatus = status.kycStatus;
         await AsyncStorage.setItem("user_info", JSON.stringify(userInfo));
       }
-      await AsyncStorage.setItem("user_kyc_status", status);
+      if (status.kycStatus) await AsyncStorage.setItem("user_kyc_status", status.kycStatus);
     } catch {}
 
-    if (status === "verified") { setStage("verified"); return true; }
-    if (status === "rejected") { setStage("rejected"); return true; }
-    if (status === "retry") { setStage("retry"); return true; }
+    if (status.moderationComment) setModerationComment(status.moderationComment);
+
+    // action is more precise than kycStatus alone for deciding what to do
+    // next — e.g. "wait" means still under review (keep polling), distinct
+    // from "contact_support" which is a final rejection.
+    if (status.action === "wait") return false;
+    if (status.kycStatus === "verified") { setStage("verified"); return true; }
+    if (status.action === "contact_support") { setStage("rejected"); return true; }
+    if (status.action === "retry" || status.kycStatus === "retry") { setStage("retry"); return true; }
+    if (status.kycStatus === "rejected") { setStage("rejected"); return true; }
     return false; // still pending — keep polling
   }, []);
 
@@ -67,8 +75,8 @@ export default function SumsubVerificationScreen() {
     pollTimer.current = setTimeout(async () => {
       pollCount.current += 1;
       try {
-        const res = await getSumsubStatus(applicantIdRef.current);
-        const settled = res.success ? await applyStatus(res.kyc_status) : false;
+        const res = await getSumsubVerificationStatus({ userId: applicantIdRef.current });
+        const settled = res.success ? await applyStatus(res) : false;
         if (settled) return;
       } catch {}
       if (pollCount.current < MAX_POLLS) {
@@ -212,7 +220,7 @@ export default function SumsubVerificationScreen() {
               <Ionicons name="refresh-circle-outline" size={32} color="#D97706" />
             </View>
             <AppText style={s.title}>Let's try again</AppText>
-            <AppText style={s.body}>Something about your last submission needs another attempt — usually a clearer photo or document scan.</AppText>
+            <AppText style={s.body}>{moderationComment || "Something about your last submission needs another attempt — usually a clearer photo or document scan."}</AppText>
             <Pressable onPress={handleRetry} style={s.primaryBtn}>
               <AppText style={s.primaryBtnText}>Try again</AppText>
             </Pressable>

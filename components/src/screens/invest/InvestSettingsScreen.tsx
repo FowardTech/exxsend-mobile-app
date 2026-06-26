@@ -106,7 +106,7 @@ export default function InvestSettingsScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <AppText style={s.headerTitle}>Stock Settings</AppText>
         <View style={{ width: 34 }} />
       </View>

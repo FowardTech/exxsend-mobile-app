@@ -146,7 +146,7 @@ export default function OptionsTradeScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <AppText style={s.headerTitle}>Options Order</AppText>
         <View style={{ width: 34 }} />
       </View>

@@ -15,6 +15,7 @@ import {
   cancelMoneyRequest,
   MoneyRequest,
 } from "@/api/moneyRequests";
+import { getUserProfile } from "@/api/config";
 
 type Tab = "incoming" | "outgoing";
 
@@ -63,11 +64,24 @@ export default function MoneyRequestsScreen() {
     load(phone);
   };
 
-  const handlePay = (req: MoneyRequest) => {
-    // No username is included in the request shape — only phone/name — so
-    // this routes to the normal Exxsend lookup flow rather than a
-    // prefilled one; the requester's name/amount/note are shown for
-    // context, but the payer still confirms the exact username themselves.
+  const [resolvingPayId, setResolvingPayId] = useState<number | null>(null);
+
+  const handlePay = async (req: MoneyRequest) => {
+    // The documented request shape only has requesterPhone/requesterName,
+    // no username — but /transfers/internal needs a username, not a
+    // phone. getUserProfile is phone-keyed the same way as every other
+    // endpoint in this app, so it's a reasonable best-effort way to
+    // resolve the requester's username (and photo) before handing off to
+    // the Exxsend send screen — if it doesn't resolve, falls back to the
+    // normal manual-lookup flow rather than blocking the payment.
+    setResolvingPayId(req.id);
+    let prefillUsername: string | undefined;
+    try {
+      const profile = await getUserProfile(req.requesterPhone);
+      prefillUsername = profile.success ? profile.user?.username || undefined : undefined;
+    } catch {}
+    setResolvingPayId(null);
+
     router.push({
       pathname: "/exxsendmembers" as any,
       params: {
@@ -75,6 +89,7 @@ export default function MoneyRequestsScreen() {
         fromCurrency: req.currency,
         requestId: String(req.id),
         requestNote: req.note ? encodeURIComponent(req.note) : undefined,
+        ...(prefillUsername ? { prefillUsername } : {}),
       } as any,
     });
   };
@@ -130,7 +145,7 @@ export default function MoneyRequestsScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        {router.canGoBack() && <BackButton onPress={() => router.back()} />}
+        {router.canGoBack() && <BackButton onPress={() => router.back()} showLabel={false} />}
         <AppText style={s.headerTitle}>Money Requests</AppText>
         <Pressable onPress={() => router.push("/requestmoney" as any)} style={s.newBtn}>
           <Ionicons name="add" size={20} color={COLORS.primary} />
@@ -191,10 +206,10 @@ export default function MoneyRequestsScreen() {
                   </Pressable>
                   <Pressable
                     onPress={() => handlePay(req)}
-                    disabled={actingOnId === req.id}
+                    disabled={actingOnId === req.id || resolvingPayId === req.id}
                     style={s.payBtn}
                   >
-                    <AppText style={s.payBtnText}>Pay</AppText>
+                    {resolvingPayId === req.id ? <ActivityIndicator size="small" color="#FFFFFF" /> : <AppText style={s.payBtnText}>Pay</AppText>}
                   </Pressable>
                 </View>
               )}

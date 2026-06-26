@@ -55,10 +55,9 @@ interface RecipientData {
   routingNumber?: string;
   sortCode?: string;
   bsbCode?: string;
-  // Optional network fields used in recent-recipient recording and other flows
+  // Optional fields used elsewhere in the screen/recording recent recipients
   networkCode?: string;
   networkName?: string;
-  // Whether the recipient's name has been verified by the backend
   nameVerified?: boolean;
 }
 

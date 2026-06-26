@@ -263,7 +263,19 @@ export default function InvestOverviewScreen() {
           </Pressable>
         </View>
 
-        <AppText style={s.totalLabel}>Total Portfolio Value</AppText>
+        <View style={s.totalLabelRow}>
+          <AppText style={s.totalLabel}>Total Portfolio Value</AppText>
+          <Pressable onPress={handleConnectAnother} disabled={connecting} style={s.connectBtnCompact}>
+            {connecting ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <>
+                <Ionicons name="add-circle-outline" size={14} color={COLORS.primary} />
+                <AppText style={s.connectBtnCompactText}>Connect broker</AppText>
+              </>
+            )}
+          </Pressable>
+        </View>
         <AppText style={s.totalAmount}>{sym}{totalValueInBase.toFixed(2)}</AppText>
         {baseCurrency !== "USD" && (
           <AppText style={s.totalUsd}>${totalValueInUsd.toFixed(2)} USD</AppText>
@@ -394,17 +406,6 @@ export default function InvestOverviewScreen() {
           ))
         )}
 
-        <Pressable onPress={handleConnectAnother} disabled={connecting} style={s.connectBtn}>
-          {connecting ? (
-            <ActivityIndicator color={COLORS.primary} />
-          ) : (
-            <>
-              <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
-              <AppText style={s.connectBtnText}>Connect another broker</AppText>
-            </>
-          )}
-        </Pressable>
-
         <Pressable onPress={handleConnectForTrading} disabled={connecting} style={s.tradeConnectBtn}>
           <Ionicons name="swap-vertical" size={16} color={COLORS.muted} />
           <AppText style={s.tradeConnectBtnText}>Enable trading on a connected account</AppText>
@@ -468,7 +469,10 @@ const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACE.lg },
   headerTitle: { fontSize: 22, fontWeight: "700", color: COLORS.text },
   settingsBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center", ...GLASS_BORDER, ...CARD_SHADOW },
-  totalLabel: { fontSize: 13, fontWeight: "600", color: COLORS.muted, marginTop: SPACE.xs },
+  totalLabelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SPACE.xs },
+  totalLabel: { fontSize: 13, fontWeight: "600", color: COLORS.muted },
+  connectBtnCompact: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACE.sm + 2, paddingVertical: 5 },
+  connectBtnCompactText: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
   totalAmount: { fontSize: 38, fontWeight: "700", color: COLORS.text, marginTop: 4, letterSpacing: -1 },
   totalUsd: { fontSize: 13, fontWeight: "600", color: COLORS.muted, marginTop: 2 },
   quickActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.xxl },
@@ -506,8 +510,6 @@ const s = StyleSheet.create({
   balanceBig: { fontSize: 20, fontWeight: "700", color: COLORS.text },
   balanceNative: { fontSize: 11, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
   lastSync: { fontSize: 11, color: COLORS.muted, fontWeight: "500" },
-  connectBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, marginTop: SPACE.md },
-  connectBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
   tradeConnectBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xs, paddingVertical: SPACE.lg },
   tradeConnectBtnText: { fontSize: 12, fontWeight: "600", color: COLORS.muted },
   tradeSheetOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },

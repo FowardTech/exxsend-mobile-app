@@ -216,7 +216,7 @@ export default function LoginScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
         {/* Brand bar */}
         <View style={s.brandBar}>
-          <AppText style={s.brandBarText}>ExxSend</AppText>
+          <AppText style={s.brandBarText}>Exxsend</AppText>
         </View>
 
         {/* Title */}
@@ -311,8 +311,8 @@ const s = StyleSheet.create({
   modalTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
   suspendedOverlay: { flex: 1, backgroundColor: "rgba(12,26,46,0.50)", justifyContent: "center", alignItems: "center", padding: 32 },
   suspendedCard: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 28, alignItems: "center", width: "100%" },
-  brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center" },
-  brandBarText: { color: COLORS.primary, fontSize: 20, fontWeight: "700" },
+  brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center", marginTop: 15 },
+  brandBarText: { color: COLORS.text, fontSize: 20, fontWeight: "600" },
   bioScreen: { flex: 1, paddingHorizontal: 24, paddingTop: 36 },
   welcomeTitle: { fontSize: 24, fontWeight: "700", color: COLORS.text, lineHeight: 32, marginBottom: 32 },
   bioCard: { backgroundColor: COLORS.bgTertiary, borderRadius: 18, paddingVertical: 36, alignItems: "center", marginBottom: 28 },

@@ -314,6 +314,66 @@ export async function getSumsubStatus(userId: string): Promise<SumsubStatusResul
   }
 }
 
+export type SumsubAction = "start" | "resume" | "retry" | "wait" | "contact_support" | "none";
+export type SumsubStage = "init" | "pending" | "queued" | "prechecked" | "onHold" | "completed";
+export type SumsubRejectType = "RETRY" | "FINAL" | null;
+
+export interface SumsubVerificationStatus {
+  success: boolean;
+  kycStatus?: SumsubKycStatus;
+  provider?: string;
+  applicantId?: string;
+  needsVerification?: boolean;
+  action?: SumsubAction;
+  stage?: SumsubStage;
+  canResume?: boolean;
+  rejectType?: SumsubRejectType;
+  rejectLabels?: string[];
+  moderationComment?: string;
+  levelName?: string;
+  message?: string;
+}
+
+/**
+ * GET /sumsub/verification-status — the actionable status check that
+ * drives Home's verify-identity banner: whether to show it at all
+ * (needsVerification), and what tapping it should actually do (action).
+ * Phone-keyed like the rest of this app, with userId as the documented
+ * alternative param for places that already have the applicant ID handy.
+ */
+export async function getSumsubVerificationStatus(params: { phone?: string; userId?: string }): Promise<SumsubVerificationStatus> {
+  try {
+    const qs = new URLSearchParams();
+    if (params.phone) qs.set("phone", params.phone);
+    if (params.userId) qs.set("userId", params.userId);
+    const response = await fetch(`${API_BASE_URL}/sumsub/verification-status?${qs.toString()}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data?.message || `HTTP ${response.status}` };
+    }
+    return {
+      success: true,
+      kycStatus: data.kycStatus,
+      provider: data.provider,
+      applicantId: data.applicantId,
+      needsVerification: !!data.needsVerification,
+      action: data.action,
+      stage: data.stage,
+      canResume: !!data.canResume,
+      rejectType: data.rejectType ?? null,
+      rejectLabels: Array.isArray(data.rejectLabels) ? data.rejectLabels : [],
+      moderationComment: data.moderationComment,
+      levelName: data.levelName,
+    };
+  } catch (error: any) {
+    console.error("Failed to get Sumsub verification status:", error);
+    return { success: false, message: error?.message || "Could not check verification status" };
+  }
+}
+
 export async function checkPinExists(phone: string) {
   const res = await fetch(`${API_BASE_URL}/users/pin/check`, {
     method: "POST",
@@ -389,28 +449,125 @@ export async function getMyReferralCode(token: string, phone: string): Promise<{
 // The reward percentage used to be hardcoded as "3%" in the UI. It's
 // actually set by an admin and can change, so it has to be fetched live
 // rather than baked into the app.
+export interface ReferralPublicConfig {
+  success: boolean;
+  bonusType?: "percentage" | "flat";
+  percentage?: number;
+  flatAmount?: number;
+  enabled?: boolean;
+  minDepositAmount?: number;
+  maxBonusAmount?: number | null;
+  bonusCurrency?: string;
+  /** Pre-formatted per the documented rendering rule: "3%" or "5 CAD". */
+  rewardText?: string;
+  message?: string;
+}
+
+/**
+ * GET /referrals/public-config — genuinely public, no auth/token needed.
+ * The previous version of this function hit a completely different
+ * endpoint (/referrals/config, behind a Bearer token) and only ever
+ * looked for a percentage field — which is exactly why the referral
+ * reward never showed up anywhere in the app: wrong URL, and no handling
+ * at all for a flat-amount bonus type.
+ */
+export async function getReferralPublicConfig(): Promise<ReferralPublicConfig> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/referrals/public-config`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      return { success: false, message: data?.message || `HTTP ${res.status}` };
+    }
+    const bonusType: "percentage" | "flat" = data.bonusType === "flat" ? "flat" : "percentage";
+    const rewardText = bonusType === "flat"
+      ? `${data.flatAmount} ${data.bonusCurrency || ""}`.trim()
+      : `${data.percentage}%`;
+    return {
+      success: true,
+      bonusType,
+      percentage: data.percentage,
+      flatAmount: data.flatAmount,
+      enabled: data.enabled,
+      minDepositAmount: data.minDepositAmount,
+      maxBonusAmount: data.maxBonusAmount,
+      bonusCurrency: data.bonusCurrency,
+      rewardText,
+    };
+  } catch (error: any) {
+    console.error("Failed to fetch referral public config:", error);
+    return { success: false, message: error?.message || "Failed to fetch referral config" };
+  }
+}
+
+/** @deprecated kept only so nothing breaks if referenced elsewhere — use
+ * getReferralPublicConfig instead, which hits the correct endpoint. */
 export async function getReferralConfig(token: string): Promise<{
   success: boolean;
   percentage?: number;
   message?: string;
 }> {
+  const res = await getReferralPublicConfig();
+  return { success: res.success, percentage: res.percentage, message: res.message };
+}
+
+export interface ReferralLeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  firstName: string;
+  username: string;
+  profilePhoto: string | null;
+  referrals: number;
+  isMe: boolean;
+}
+
+export interface ReferralLeaderboardMe {
+  userId: string;
+  name: string;
+  firstName: string;
+  username: string;
+  profilePhoto: string | null;
+  referrals: number;
+  /** null when the caller has 0 qualifying referrals. */
+  rank: number | null;
+}
+
+export async function getReferralLeaderboard(params: {
+  period?: "all" | "month" | "week";
+  limit?: number;
+  phone?: string;
+}): Promise<{
+  success: boolean;
+  period?: string;
+  leaders: ReferralLeaderboardEntry[];
+  me: ReferralLeaderboardMe | null;
+  message?: string;
+}> {
   try {
-    const res = await fetch(`${API_BASE_URL}/referrals/config`, {
+    const qs = new URLSearchParams();
+    qs.set("period", params.period || "all");
+    qs.set("limit", String(params.limit || 20));
+    if (params.phone) qs.set("phone", params.phone);
+
+    const res = await fetch(`${API_BASE_URL}/referrals/leaderboard?${qs.toString()}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
     });
     const data = await res.json().catch(() => ({}));
-    // Be flexible about the exact field name the backend uses for the
-    // percentage rather than assuming one and breaking if it differs.
-    const rawPct = data.percentage ?? data.rewardPercentage ?? data.reward_percentage ?? data.percent;
-    const percentage = typeof rawPct === "number" ? rawPct : typeof rawPct === "string" && !isNaN(Number(rawPct)) ? Number(rawPct) : undefined;
-    return { success: res.ok, percentage, message: data.message };
-  } catch (error) {
-    console.error("Failed to fetch referral config:", error);
-    return { success: false, message: "Failed to fetch referral config" };
+    if (!res.ok || !data?.success) {
+      return { success: false, leaders: [], me: null, message: data?.message || `HTTP ${res.status}` };
+    }
+    return {
+      success: true,
+      period: data.period,
+      leaders: Array.isArray(data.leaders) ? data.leaders.map((l: any) => ({ ...l, profilePhoto: normalizeMediaUrl(l.profilePhoto) })) : [],
+      me: data.me ? { ...data.me, profilePhoto: normalizeMediaUrl(data.me.profilePhoto) } : null,
+    };
+  } catch (error: any) {
+    return { success: false, leaders: [], me: null, message: error?.message || "Could not load leaderboard" };
   }
 }
 
@@ -451,11 +608,43 @@ export async function getActivePromotionalBanners(params?: {
     return { success: false, banners: [], message: error?.message || "Failed to load banners" };
   }
 }
-export async function applyReferralCode(phone: string, referral_code: string) {
+/**
+ * GET /referrals/validate-code — used for as-you-type validation in the
+ * signup referral field, showing the referrer's name before the code is
+ * actually submitted.
+ */
+export async function validateReferralCode(code: string): Promise<{
+  success: boolean;
+  valid?: boolean;
+  referrerName?: string;
+  message?: string;
+}> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/referrals/validate-code?code=${encodeURIComponent(code.trim())}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { success: false, message: data?.message || `HTTP ${res.status}` };
+    }
+    return { success: true, valid: !!data.valid, referrerName: data.referrerName };
+  } catch (e: any) {
+    return { success: false, message: e?.message || "Could not validate referral code" };
+  }
+}
+
+/**
+ * POST /users/referral — attaches a referral code to the in-progress
+ * signup. Body key is camelCase referralCode (confirmed spec) — this was
+ * previously sending referral_code (snake_case) and had no call sites
+ * anywhere, so the mismatch had never actually been exercised.
+ */
+export async function applyReferralCode(phone: string, referralCode: string) {
   const res = await fetch(`${API_BASE_URL}/users/referral`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, referral_code }),
+    body: JSON.stringify({ phone, referralCode }),
   });
   return res.json();
 }
@@ -1540,6 +1729,36 @@ export async function calculateSendFee(params: {
 // specified by the backend:
 //   GET  /api/users/lookup?username=...&phone=...
 //   POST /api/transfers/internal  { phone, to_username, currency, amount, pin, note }
+
+/**
+ * Direct lookup by username — given specifically for refreshing a saved
+ * Exxsend recipient's current photo (the saved-recipients list endpoint
+ * doesn't get the same profilePhotoUrl enrichment /recipients/recent now
+ * does), but usable anywhere a username needs resolving to a member.
+ */
+export async function lookupMemberByUsername(username: string): Promise<{
+  success: boolean;
+  member?: { id: string; username: string; firstName: string; lastName: string; profilePhotoUrl?: string | null };
+  message?: string;
+}> {
+  const cleanUsername = username.trim().replace(/^@/, "");
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/lookup/by-username/${encodeURIComponent(cleanUsername)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.success) {
+      return { success: false, message: data?.message || `HTTP ${res.status}` };
+    }
+    if (data.member) {
+      data.member.profilePhotoUrl = normalizeMediaUrl(data.member.profilePhotoUrl);
+    }
+    return data;
+  } catch (e: any) {
+    return { success: false, message: e?.message || "Lookup failed" };
+  }
+}
 
 export async function lookupExxsendMember(username: string, phone?: string): Promise<{
   success: boolean;

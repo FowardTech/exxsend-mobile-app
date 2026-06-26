@@ -71,7 +71,7 @@ export default function AppLockScreen({ onUnlock }: AppLockScreenProps) {
   return (
     <View style={s.root}>
       <View style={s.brandBar}>
-        <AppText style={s.brandBarText}>ExxSend</AppText>
+        <AppText style={s.brandBarText}>Exxsend</AppText>
       </View>
 
       <View style={s.body}>
@@ -112,11 +112,11 @@ export default function AppLockScreen({ onUnlock }: AppLockScreenProps) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
-  brandBar: { paddingTop: 56, paddingBottom: SPACE.lg, alignItems: "center" },
-  brandBarText: { color: COLORS.primary, fontSize: 20, fontWeight: "700" },
+  brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center", marginTop: 25 },
+  brandBarText: { color: COLORS.text, fontSize: 20, fontWeight: "600" },
   body: { flex: 1, paddingHorizontal: SPACE.xxl, paddingTop: SPACE.xxxl },
-  welcomeTitle: { fontSize: 24, fontWeight: "700", color: COLORS.text, lineHeight: 32 },
-  welcomeSub: { fontSize: 14, color: COLORS.muted, marginTop: SPACE.sm, marginBottom: SPACE.xxxl },
+  welcomeTitle: { fontSize: 24, fontWeight: "600", color: COLORS.text, lineHeight: 32 },
+  welcomeSub: { fontSize: 14, color: COLORS.muted, marginTop: SPACE.sm, marginBottom: SPACE.xxxl, },
   bioCard: { flexDirection: "row", alignItems: "center", gap: SPACE.lg, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, padding: SPACE.lg, marginBottom: SPACE.md, ...GLASS_BORDER },
   bioIconCircle: { width: 64, height: 64, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center" },
   passwordCard: { flexDirection: "row", alignItems: "center", gap: SPACE.lg, backgroundColor: COLORS.card, borderRadius: RADIUS.lg, padding: SPACE.lg, ...GLASS_BORDER },

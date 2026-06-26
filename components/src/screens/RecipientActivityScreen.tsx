@@ -95,7 +95,7 @@ export default function RecipientActivityScreen() {
     return (
       <SafeAreaView style={s.root}>
         <View style={s.header}>
-          {router.canGoBack() && <BackButton onPress={() => router.back()} />}
+          {router.canGoBack() && <BackButton onPress={() => router.back()} showLabel={false} />}
         </View>
         <View style={s.centered}>
           <AppText style={{ color: COLORS.muted }}>Recipient not found.</AppText>
@@ -107,7 +107,7 @@ export default function RecipientActivityScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        {router.canGoBack() && <BackButton onPress={() => router.back()} />}
+        {router.canGoBack() && <BackButton onPress={() => router.back()} showLabel={false} />}
         <AppText style={s.headerTitle}>Recipient</AppText>
         <View style={{ width: 34 }} />
       </View>

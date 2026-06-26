@@ -284,6 +284,8 @@ function RootLayoutContent() {
       <Stack.Screen name="moneyrequests"      options={{ headerShown: false }} />
       <Stack.Screen name="cryptotrade"        options={{ headerShown: false }} />
       <Stack.Screen name="optionstrade"       options={{ headerShown: false }} />
+      <Stack.Screen name="orderdetail"        options={{ headerShown: false }} />
+      <Stack.Screen name="referralleaderboard" options={{ headerShown: false }} />
       <Stack.Screen name="addaccount"        options={{ headerShown: false }} />
       <Stack.Screen name="bank-details"      options={{ headerShown: false }} />
       <Stack.Screen name="wallet"            options={{ headerShown: false }} />

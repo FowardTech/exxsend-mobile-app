@@ -399,7 +399,7 @@ export default function SendMoneyScreen() {
       <ScreenShell>
         <View style={{ flex: 1, padding: 20 }}>
           <View style={styles.headerRow}>
-            <BackButton onPress={() => router.back()} />
+            <BackButton onPress={() => router.back()} showLabel={false} />
             <View style={{ flex: 1 }}>
               <AppText style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>Send Money</AppText>
               <AppText style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }}>Send to another wallet</AppText>
@@ -428,7 +428,7 @@ export default function SendMoneyScreen() {
 
           {/* ── Header ── */}
           <View style={sm.header}>
-            <BackButton onPress={() => router.back()} />
+            <BackButton onPress={() => router.back()} showLabel={false} />
             <AppText style={sm.headerTitle}>Send Money</AppText>
             <View style={{ width: 34 }} />
           </View>

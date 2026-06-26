@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../../../theme/colors";
 import { getSavedRecipients, RecentRecipientFromDB } from "../../../api/sync";
+import { lookupMemberByUsername } from "../../../api/config";
 import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "../../../api/flutterwave";
 import RecipientAvatar from "../../../components/RecipientAvatar";
 
@@ -82,7 +83,25 @@ export default function RecipientsScreen() {
     if (!p) return;
     try {
       const res = await getSavedRecipients(p, undefined, 50);
-      if (res.success) setRecipients(res.recipients);
+      if (res.success) {
+        setRecipients(res.recipients);
+        // Best-effort, non-blocking — show the list immediately with
+        // whatever photo was stored at save time, then upgrade in place
+        // as fresher photos come back.
+        const exxsendOnes = res.recipients.filter((r) => r.isExxsendMember && r.username);
+        if (exxsendOnes.length > 0) {
+          Promise.all(
+            exxsendOnes.map((r) => lookupMemberByUsername(r.username!).then((lookup) => ({ id: r.id, lookup })))
+          ).then((results) => {
+            const photoById = new Map(
+              results.filter((x) => x.lookup.success && x.lookup.member?.profilePhotoUrl).map((x) => [x.id, x.lookup.member!.profilePhotoUrl])
+            );
+            if (photoById.size > 0) {
+              setRecipients((prev) => prev.map((r) => (photoById.has(r.id) ? { ...r, avatarUrl: photoById.get(r.id) as string } : r)));
+            }
+          }).catch(() => {});
+        }
+      }
     } catch { }
     finally { setLoading(false); setRefreshing(false); }
   }, [phone]);
@@ -149,7 +168,7 @@ export default function RecipientsScreen() {
 
       {/* Header */}
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <AppText style={s.headerTitle}>Who are you sending to?</AppText>
         <View style={s.helpBtn}><AppText style={s.helpText}>?</AppText></View>
       </View>

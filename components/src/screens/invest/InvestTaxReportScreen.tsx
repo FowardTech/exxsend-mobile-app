@@ -60,7 +60,7 @@ export default function InvestTaxReportScreen() {
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        <BackButton onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)" as any)} />
+        <BackButton onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)" as any)} showLabel={false} />
         <AppText style={s.headerTitle}>Tax Report</AppText>
         <View style={{ width: 34 }} />
       </View>

@@ -15,16 +15,50 @@ const OTP_LEN = 6;
 
 export default function VerifyNumberScreen() {
   const router = useRouter();
-  const { phone, requestId } = useLocalSearchParams<{ phone: string; requestId: string }>();
+  const params = useLocalSearchParams<{ phone: string; requestId: string }>();
+  const [phone, setPhone] = useState(params.phone || "");
   const inputRef = useRef<RNTextInput | null>(null);
 
   const [code, setCode] = useState("");
   const [focused, setFocused] = useState(false);
   const [seconds, setSeconds] = useState(60);
   const [loading, setLoading] = useState(false);
-  const [currentRequestId, setCurrentRequestId] = useState(requestId);
+  const [currentRequestId, setCurrentRequestId] = useState(params.requestId);
 
-  const canContinue = code.length === OTP_LEN && !loading;
+  const canContinue = code.length === OTP_LEN && !loading && !!currentRequestId;
+
+  // Reached with no requestId — most likely resumed from app/index.tsx
+  // after the app was closed while still mid-OTP-entry. Whatever code was
+  // sent before has almost certainly expired by now, so send a fresh one
+  // automatically rather than showing an input for a code that can't
+  // possibly still be valid.
+  useEffect(() => {
+    if (currentRequestId) return;
+    (async () => {
+      const savedPhone = phone || (await AsyncStorage.getItem("user_phone")) || "";
+      if (!savedPhone) { router.replace("/getstarted" as any); return; }
+      if (!phone) setPhone(savedPhone);
+      setLoading(true);
+      try {
+        const result = await api.sendOtp(savedPhone);
+        if (result.success) {
+          setCurrentRequestId(result.request_id);
+          setSeconds(60);
+        } else {
+          Alert.alert("Couldn't send code", result.message || "Please try again.", [
+            { text: "OK", onPress: () => router.replace("/getstarted" as any) },
+          ]);
+        }
+      } catch {
+        Alert.alert("Network error", "Please try again.", [
+          { text: "OK", onPress: () => router.replace("/getstarted" as any) },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (seconds <= 0) return;

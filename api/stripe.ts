@@ -101,6 +101,12 @@ export async function createStripePaymentIntent(params: {
   phone: string;
   amount: number;
   currency: string;
+  /** When true, asks the backend to set setup_future_usage so Stripe
+   * attaches this payment method to the customer once confirmed —
+   * enabling it to be charged again later without re-entering card
+   * details. Assumed backend contract; not confirmed against a real spec
+   * the way several other integrations in this app have been. */
+  savePaymentMethod?: boolean;
 }): Promise<CreatePaymentIntentResponse> {
   try {
     const res = await fetch(`${API_BASE_URL}/stripe/create-payment-intent`, {
@@ -110,6 +116,7 @@ export async function createStripePaymentIntent(params: {
         phone: params.phone,
         amount: params.amount,
         currency: params.currency,
+        savePaymentMethod: params.savePaymentMethod,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -153,5 +160,71 @@ export async function confirmStripePayment(paymentIntentId: string): Promise<Con
     return { success: true, status: data.status, message: data.message };
   } catch (e: any) {
     return { success: false, message: e?.message || "Network error while confirming payment." };
+  }
+}
+
+// ── Saved cards ──────────────────────────────────────────────────────────────
+// Reasonable, standard-Stripe-pattern assumption about the backend contract
+// (not a confirmed spec) — a saved card is a Stripe PaymentMethod already
+// attached to this user's Stripe Customer object. Charging one doesn't
+// involve the client SDK at all: the backend creates and confirms the
+// PaymentIntent server-side using the existing payment_method + customer,
+// since there's no new card data that needs to securely reach Stripe.
+
+export interface SavedStripeCard {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+}
+
+export async function getSavedStripeCards(phone: string): Promise<{
+  success: boolean;
+  cards: SavedStripeCard[];
+  message?: string;
+}> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/stripe/payment-methods?phone=${encodeURIComponent(phone)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      return { success: false, cards: [], message: data?.message || `HTTP ${res.status}` };
+    }
+    const raw = Array.isArray(data?.paymentMethods) ? data.paymentMethods : Array.isArray(data?.cards) ? data.cards : [];
+    const cards: SavedStripeCard[] = raw.map((c: any) => ({
+      id: c.id || c.paymentMethodId,
+      brand: c.brand || c.card?.brand || "Card",
+      last4: c.last4 || c.card?.last4 || "",
+      expMonth: c.expMonth ?? c.card?.exp_month ?? 0,
+      expYear: c.expYear ?? c.card?.exp_year ?? 0,
+    }));
+    return { success: true, cards };
+  } catch (e: any) {
+    return { success: false, cards: [], message: e?.message || "Could not load saved cards." };
+  }
+}
+
+export async function chargeWithSavedStripeCard(params: {
+  phone: string;
+  amount: number;
+  currency: string;
+  paymentMethodId: string;
+}): Promise<ConfirmStripePaymentResponse & { reference?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/stripe/charge-saved-card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.success) {
+      return { success: false, message: data?.message || `Could not charge card (HTTP ${res.status}).` };
+    }
+    return { success: true, status: data.status, message: data.message, reference: data.reference || data.paymentIntentId };
+  } catch (e: any) {
+    return { success: false, message: e?.message || "Network error while charging saved card." };
   }
 }

@@ -1,24 +1,27 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Pressable, Modal, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppText from "./AppText";
 import AppTextInput from "./AppTextInput";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../theme/colors";
-import { listBeneficiaries, Beneficiary } from "../api/currencycloud";
+import { getSavedRecipients } from "../api/sync";
+import RecipientAvatar from "./RecipientAvatar";
+import { RecentRecipientFromDB } from "../api/sync";
 
 interface Props {
   visible: boolean;
   currency: string;
-  selected?: Beneficiary | null;
+  selected?: RecentRecipientFromDB | null;
   onClose: () => void;
-  onSelect: (beneficiary: Beneficiary) => void;
+  onSelect: (beneficiary: RecentRecipientFromDB) => void;
   onAddNew: () => void;
 }
 
 export default function BeneficiaryPickerModal({ visible, currency, selected, onClose, onSelect, onAddNew }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<RecentRecipientFromDB[]>([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -26,21 +29,20 @@ export default function BeneficiaryPickerModal({ visible, currency, selected, on
     let mounted = true;
     setLoading(true);
     setError("");
-    listBeneficiaries(currency)
-      .then((res) => {
-        if (!mounted) return;
-        if (res.success) {
-          setBeneficiaries(res.beneficiaries || []);
-        } else {
-          setError(res.message || "Could not load saved beneficiaries");
-        }
-      })
-      .catch(() => {
-        if (mounted) setError("Could not load saved beneficiaries");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+    (async () => {
+      const phone = (await AsyncStorage.getItem("user_phone")) || "";
+      const res = await getSavedRecipients(phone, currency);
+      if (!mounted) return;
+      if (res.success) {
+        const bankOnly = (res.recipients || []).filter(
+          (r) => r.payoutMethod !== "exxsend" && r.bankCode !== "EXXSEND"
+        );
+        setBeneficiaries(bankOnly);
+      } else {
+        setError(res.message || "Could not load saved beneficiaries");
+      }
+      setLoading(false);
+    })();
     return () => {
       mounted = false;
     };
@@ -51,8 +53,8 @@ export default function BeneficiaryPickerModal({ visible, currency, selected, on
     if (!q) return beneficiaries;
     return beneficiaries.filter(
       (b) =>
-        (b.name || b.bank_account_holder_name || "").toLowerCase().includes(q) ||
-        (b.bank_name || "").toLowerCase().includes(q)
+        (b.accountName || "").toLowerCase().includes(q) ||
+        (b.bankName || "").toLowerCase().includes(q)
     );
   }, [beneficiaries, search]);
 
@@ -101,26 +103,28 @@ export default function BeneficiaryPickerModal({ visible, currency, selected, on
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => {
                 const isSelected = selected?.id === item.id;
-                const displayName = item.name || item.bank_account_holder_name;
-                const accountTail = item.account_number
-                  ? `•••• ${item.account_number.slice(-4)}`
-                  : item.iban
-                  ? `•••• ${item.iban.slice(-4)}`
+                const displayName = item.accountName;
+                const accountTail = item.accountNumber
+                  ? `•••• ${item.accountNumber.slice(-4)}`
                   : "";
                 return (
                   <Pressable
                     onPress={() => onSelect(item)}
                     style={[s.item, isSelected && s.itemSelected]}
                   >
-                    <View style={s.avatar}>
-                      <AppText style={s.avatarText}>
-                        {(displayName || "?").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")}
-                      </AppText>
-                    </View>
+                    <RecipientAvatar
+                      name={displayName || "?"}
+                      currencyCode={currency}
+                      countryCode={item.countryCode}
+                      photoUrl={item.avatarUrl}
+                      size={40}
+                      backgroundColor={COLORS.primaryLight}
+                      textColor={COLORS.primary}
+                    />
                     <View style={s.itemInfo}>
                       <AppText style={s.itemName}>{displayName}</AppText>
                       <AppText style={s.itemMeta}>
-                        {item.bank_name || "Bank"}{accountTail ? ` · ${accountTail}` : ""}
+                        {item.bankName || "Bank"}{accountTail ? ` · ${accountTail}` : ""}
                       </AppText>
                     </View>
                     {isSelected ? <AppText style={s.checkmark}>✓</AppText> : null}

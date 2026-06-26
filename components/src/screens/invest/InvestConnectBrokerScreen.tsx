@@ -33,10 +33,10 @@ export default function InvestConnectBrokerScreen() {
       if (res.success) {
         router.replace("/investoverview" as any);
       } else if (res.subscriptionRequired) {
-        Alert.alert("Subscription required", "Please complete your Invest subscription first.");
+        Alert.alert("Subscription required", "Please complete your Stock subscription first.");
         router.replace("/investpaywall" as any);
       } else {
-        Alert.alert("Sync failed", res.message || "Could not sync your brokerage accounts. You can retry from the Invest tab.");
+        Alert.alert("Sync failed", res.message || "Could not sync your brokerage accounts. You can retry from the Stock tab.");
         router.replace("/investoverview" as any);
       }
     } catch {

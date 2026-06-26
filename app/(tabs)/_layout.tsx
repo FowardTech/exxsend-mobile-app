@@ -129,7 +129,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <CenterFabIcon focused={focused} />,
         }}
       />
-      <Tabs.Screen name="invest"       options={{ title: "Invest",       tabBarIcon: ({ focused }) => <TabIcon name={focused ? "trending-up" : "trending-up-outline"} focused={focused} /> }} listeners={{ tabPress: guardTabPress }} />
+      <Tabs.Screen name="invest"       options={{ title: "Stock",        tabBarIcon: ({ focused }) => <TabIcon name={focused ? "trending-up" : "trending-up-outline"} focused={focused} /> }} listeners={{ tabPress: guardTabPress }} />
+      <Tabs.Screen name="offers"       options={{ title: "Offers",       tabBarIcon: ({ focused }) => <TabIcon name={focused ? "pricetag" : "pricetag-outline"} focused={focused} /> }} />
       <Tabs.Screen name="supporttab"   options={{ title: "Support",      tabBarIcon: ({ focused }) => <TabIcon name={focused ? "headset" : "headset-outline"} focused={focused} /> }} />
       {/* notification.tsx still backs the standalone /notification route
           (pushed to from the bell icon at the top of the Home screen) — like

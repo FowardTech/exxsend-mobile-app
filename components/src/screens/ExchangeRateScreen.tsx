@@ -397,8 +397,8 @@ export default function ExchangeRatesScreen() {
                   >
                     <View style={styles.fxLeft}>
                       <View style={styles.fxFlags}>
-                        <CountryFlag currencyCode={x.from} size="ms" />
-                        <CountryFlag currencyCode={x.to} size="ms" style={{ marginLeft: -8, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: 999 }} />
+                        <CountryFlag currencyCode={x.from} size="md" />
+                        <CountryFlag currencyCode={x.to} size="md" style={{ marginLeft: -8, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: 999 }} />
                       </View>
 
                       <View>

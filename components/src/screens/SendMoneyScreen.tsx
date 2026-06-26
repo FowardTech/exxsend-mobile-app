@@ -254,9 +254,18 @@ export default function SendMoneyScreen() {
             feeAmountInBaseCurrency: feeResponse.feeAmountInBaseCurrency,
             baseCurrency: feeResponse.baseCurrency,
             baseCurrencySymbol: feeResponse.baseCurrencySymbol,
+            originalFeeAmount: feeResponse.originalFeeAmount,
+            waiver: feeResponse.waiver,
           });
         } else {
-          setFeeInfo(null);
+          // The fee lookup failed (see calculateSendFee's own logging for
+          // why) — still show a minimal summary rather than nothing at
+          // all. The total is already known for a same-currency transfer
+          // regardless of whether the fee calculation succeeded; hiding
+          // it too just because the fee specifically failed to load was
+          // the actual bug here.
+          console.warn("[SendMoneyScreen] fee lookup failed for same-currency send, showing total without fee:", feeResponse.message);
+          setFeeInfo({ feeAmount: 0, feeCurrency: fromCurrency });
         }
 
         return;

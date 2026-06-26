@@ -15,6 +15,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "We need access to your photo library so you can upload images to support chat.",
         "NSCameraUsageDescription": "We need access to your camera to verify your identity, scan QR codes for Scan to Pay, and let you upload photos in support chat.",
+        "NSMicrophoneUsageDescription": "We need microphone access during identity verification's liveness check.",
         "NSPhotoLibraryAddUsageDescription": "We need permission to save images when required.",
         "NSFaceIDUsageDescription": "We use Face ID to let you log in and approve transfers securely without typing your PIN every time.",
         "UIBackgroundModes": ["remote-notification"]
@@ -40,6 +41,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withSumsubNativeDeps.js",
       [
         "expo-camera",
         {

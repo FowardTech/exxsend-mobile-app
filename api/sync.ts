@@ -14,6 +14,7 @@
  */
 
 import { Platform } from 'react-native';
+import { normalizeMediaUrl } from './config';
 
 export const API_BASE_URL =
   Platform.OS === 'android'
@@ -136,6 +137,9 @@ export interface SaveRecipientRequest {
   networkName?: string;
   /** True when account name was verified by the backend */
   nameVerified?: boolean;
+  /** Only meaningful for payoutType:"exxsend" — the member's profile photo
+   * URL, if they have one, captured at save time. */
+  avatarUrl?: string;
 }
 // ============ FETCH HELPER ============
 
@@ -489,6 +493,10 @@ export interface RecentRecipientFromDB {
   destCurrency: string;
   countryCode?: string;
   payoutMethod?: string;
+  /** Only ever set for Exxsend-member recipients (payoutMethod==="exxsend")
+   * who've uploaded a profile photo — RecipientAvatar shows this instead
+   * of initials/the "@" glyph when present. */
+  avatarUrl?: string;
   networkCode?: string;
   networkName?: string;
   nameVerified?: boolean;
@@ -544,16 +552,31 @@ export async function getRecentRecipientsFromDB(
     }
 
     const data = await response.json();
-    
-    if (data.success && Array.isArray(data.recipients)) {
+    // Diagnostic only — if "recent recipients" goes missing again despite a
+    // real recent send, this is the line to check in device logs: it shows
+    // exactly what the backend actually returned, which is what's needed to
+    // tell a shape mismatch apart from the backend genuinely not tracking
+    // that send as "recent" yet.
+    console.log('[SyncAPI] getRecentRecipientsFromDB raw response:', JSON.stringify(data).slice(0, 500));
+    const rawList = Array.isArray(data?.recipients)
+      ? data.recipients
+      : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.result?.recipients)
+      ? data.result.recipients
+      : Array.isArray(data)
+      ? data
+      : null;
+
+    if (data?.success !== false && Array.isArray(rawList)) {
       return {
         filter: data.filter ?? null,
         success: true,
-        recipients: data.recipients,
-        total: data.total || data.recipients.length,
+        recipients: rawList,
+        total: data.total || rawList.length,
       };
     }
-    
+
     return {
       filter: null,
       success: false,
@@ -563,6 +586,108 @@ export async function getRecentRecipientsFromDB(
     };
   } catch (error: any) {
     console.error('[SyncAPI] getRecentRecipientsFromDB error:', error.message);
+    return {
+      filter: null,
+      success: false,
+      recipients: [],
+      total: 0,
+      message: error.message || 'Network error',
+    };
+  }
+}
+
+/**
+ * Normalizes a raw /users/recipients/saved row into RecentRecipientFromDB
+ * shape, since the field this app already saves under is "currency" (see
+ * SaveRecipientRequest) but the rest of the recipient-rendering UI
+ * (RecipientBubble, BeneficiaryPickerModal, etc.) was all built around
+ * RecentRecipientFromDB's "destCurrency" field. Normalizing here means
+ * every screen that already knows how to render a RecentRecipientFromDB
+ * can render a saved recipient too, with no separate parallel type needed.
+ */
+function normalizeSavedRecipient(r: any): RecentRecipientFromDB {
+  return {
+    id: String(r.id ?? r._id ?? ""),
+    accountName: r.accountName || r.account_name || "",
+    accountNumber: r.accountNumber || r.account_number || "",
+    bankCode: r.bankCode || r.bank_code || "",
+    bankName: r.bankName || r.bank_name || "",
+    destCurrency: r.destCurrency || r.currency || "",
+    countryCode: r.countryCode || r.country_code,
+    payoutMethod: r.payoutMethod || r.payout_type,
+    avatarUrl: normalizeMediaUrl(r.avatarUrl || r.avatar_url || r.avatar),
+    networkCode: r.networkCode || r.network_code,
+    networkName: r.networkName || r.network_name,
+    nameVerified: !!(r.nameVerified ?? r.name_verified),
+    lastSentAt: Number(r.lastSentAt ?? r.last_sent_at ?? r.updatedAt ?? 0) || 0,
+    lastAmount: r.lastAmount ?? r.last_amount ?? null,
+    createdAt: Number(r.createdAt ?? r.created_at ?? 0) || 0,
+  };
+}
+
+/**
+ * GET /users/recipients/saved — the general, cross-corridor saved-recipients
+ * list (Interac/Flutterwave/CurrencyCloud all save here via
+ * saveRecipientToDB). This is what "Choose a saved beneficiary" should read
+ * from, rather than CurrencyCloud's own /currencycloud/beneficiaries
+ * endpoint — that one only ever reflects CurrencyCloud's side and can fail
+ * independently of whether the recipient is actually saved in this app.
+ */
+export async function getSavedRecipients(
+  phone: string,
+  currency?: string,
+  limit: number = 50
+): Promise<RecentRecipientsResponse> {
+  try {
+    if (!phone) {
+      return { filter: null, success: true, recipients: [], total: 0 };
+    }
+
+    const qs = new URLSearchParams({ phone, limit: String(limit) });
+    if (currency) qs.set("currency", currency.toUpperCase());
+
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/users/recipients/saved?${qs.toString()}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      },
+      10000
+    );
+
+    if (!response.ok) {
+      console.log('[SyncAPI] getSavedRecipients failed:', response.status);
+      return {
+        filter: null,
+        success: false,
+        recipients: [],
+        total: 0,
+        message: `HTTP ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const rawList = Array.isArray(data?.recipients) ? data.recipients : Array.isArray(data) ? data : null;
+
+    if (data.success !== false && Array.isArray(rawList)) {
+      const recipients = rawList.map(normalizeSavedRecipient);
+      return {
+        filter: data.filter ?? null,
+        success: true,
+        recipients,
+        total: data.total || recipients.length,
+      };
+    }
+
+    return {
+      filter: null,
+      success: false,
+      recipients: [],
+      total: 0,
+      message: data.message || 'Invalid response',
+    };
+  } catch (error: any) {
+    console.error('[SyncAPI] getSavedRecipients error:', error.message);
     return {
       filter: null,
       success: false,
@@ -616,5 +741,70 @@ export async function deleteRecipientFromDB(phone: string, recipientId: string):
   } catch (e: any) {
     console.error("[SyncAPI] deleteRecipientFromDB error:", e?.message);
     return { success: false, message: e?.message || "Delete failed" };
+  }
+}
+
+// ── Local recent-recipient tracking (client-side safety net) ───────────────
+// getRecentRecipientsFromDB above is the intended source of truth, but a
+// recipient just sent to has repeatedly failed to show up there right after
+// sending — whether that's backend computation lag, a transaction type
+// (e.g. Exxsend-member transfers) not yet being included, or something else
+// isn't diagnosable from the client. Rather than keep chasing that blind,
+// this records the recipient locally the instant a transfer actually
+// succeeds, and Home merges it with whatever the backend returns — so the
+// person you just sent to shows up immediately regardless of what the
+// backend is or isn't doing yet.
+const LOCAL_RECENT_KEY_PREFIX = "local_recent_recipients:";
+const LOCAL_RECENT_MAX = 6;
+
+function localRecentKey(phone: string): string {
+  return `${LOCAL_RECENT_KEY_PREFIX}${phone.replace(/[^a-zA-Z0-9]/g, "")}`;
+}
+
+export async function recordRecentRecipient(phone: string, recipient: Partial<RecentRecipientFromDB>): Promise<void> {
+  if (!phone) return;
+  try {
+    const key = localRecentKey(phone);
+    const raw = await AsyncStorage.getItem(key);
+    const existing: RecentRecipientFromDB[] = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    const entry: RecentRecipientFromDB = {
+      id: recipient.id ? String(recipient.id) : `local_${now}`,
+      accountName: recipient.accountName || "",
+      accountNumber: recipient.accountNumber || "",
+      bankCode: recipient.bankCode || "",
+      bankName: recipient.bankName || "",
+      destCurrency: recipient.destCurrency || "",
+      countryCode: recipient.countryCode,
+      payoutMethod: recipient.payoutMethod,
+      avatarUrl: recipient.avatarUrl,
+      networkCode: recipient.networkCode,
+      networkName: recipient.networkName,
+      nameVerified: recipient.nameVerified,
+      lastSentAt: now,
+      lastAmount: recipient.lastAmount ?? null,
+      createdAt: now,
+    };
+    // Same recipient sent to again — replace the old entry rather than
+    // showing them twice, and bump them back to the top.
+    const filtered = existing.filter(
+      (r) => !(r.accountNumber === entry.accountNumber && r.bankCode === entry.bankCode && r.destCurrency === entry.destCurrency)
+    );
+    const updated = [entry, ...filtered].slice(0, LOCAL_RECENT_MAX);
+    await AsyncStorage.setItem(key, JSON.stringify(updated));
+    console.log(`[SyncAPI] recordRecentRecipient: saved "${entry.accountName}" locally, list now has ${updated.length} entries`);
+  } catch (e: any) {
+    console.log("[SyncAPI] recordRecentRecipient: threw, nothing recorded:", e?.message);
+  }
+}
+
+export async function getLocalRecentRecipients(phone: string): Promise<RecentRecipientFromDB[]> {
+  if (!phone) return [];
+  try {
+    const raw = await AsyncStorage.getItem(localRecentKey(phone));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }

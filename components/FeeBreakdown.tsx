@@ -16,6 +16,14 @@ export interface FeeInfo {
   feeAmountInBaseCurrency?: number;
   baseCurrency?: string;
   baseCurrencySymbol?: string;
+  /** The fee that would apply with no waiver — only meaningful when waiver
+   * is present. */
+  originalFeeAmount?: number;
+  waiver?: {
+    waived: boolean;
+    promoName?: string;
+    waivedComponents?: string[];
+  };
 }
 
 interface FeeBreakdownProps {
@@ -63,7 +71,8 @@ export default function FeeBreakdown({
     })}`;
   };
 
-  const hasFee = !!fee && toNumber(fee.feeAmount) > 0;
+  const hasFee = !!fee && (toNumber(fee.feeAmount) > 0 || !!fee.waiver?.waived);
+  const isWaived = !!fee?.waiver?.waived;
 
   // Fee deducted from sell amount (your logic)
   const totalYouGet = useMemo(() => {
@@ -108,10 +117,14 @@ export default function FeeBreakdown({
         {hasFee && (
           <View style={styles.compactRow}>
             <AppText style={styles.compactLabel}>Fee</AppText>
-            <View style={{ alignItems: "flex-end" }}>
-              <AppText style={styles.compactValue}>{primaryFeeDisplay}</AppText>
-              {!!secondaryFeeDisplay && <AppText style={styles.feeConversion}>{secondaryFeeDisplay}</AppText>}
-            </View>
+            {isWaived ? (
+              <AppText style={styles.feeWaivedText}>FREE</AppText>
+            ) : (
+              <View style={{ alignItems: "flex-end" }}>
+                <AppText style={styles.compactValue}>{primaryFeeDisplay}</AppText>
+                {!!secondaryFeeDisplay && <AppText style={styles.feeConversion}>{secondaryFeeDisplay}</AppText>}
+              </View>
+            )}
           </View>
         )}
         <View style={styles.compactRow}>
@@ -134,8 +147,8 @@ export default function FeeBreakdown({
       {hasFee && (
         <View style={styles.row}>
           <View style={styles.labelWithBadge}>
-            <AppText style={styles.label}>Platform fee</AppText>
-            {fee?.feeType === "percentage" && fee?.feePercentage != null && (
+            <AppText style={styles.label}>Transaction fee</AppText>
+            {!isWaived && fee?.feeType === "percentage" && fee?.feePercentage != null && (
               <View style={styles.badge}>
                 <AppText style={styles.badgeText}>{toNumber(fee.feePercentage)}%</AppText>
               </View>
@@ -143,8 +156,14 @@ export default function FeeBreakdown({
           </View>
 
           <View style={{ alignItems: "flex-end", flexShrink: 1, maxWidth: "55%" }}>
-            <AppText style={styles.feeValue}>{primaryFeeDisplay}</AppText>
-            {!!secondaryFeeDisplay && <AppText style={styles.feeConversion}>{secondaryFeeDisplay}</AppText>}
+            {isWaived ? (
+              <AppText style={styles.feeWaivedText}>FREE</AppText>
+            ) : (
+              <>
+                <AppText style={styles.feeValue}>{primaryFeeDisplay}</AppText>
+                {!!secondaryFeeDisplay && <AppText style={styles.feeConversion}>{secondaryFeeDisplay}</AppText>}
+              </>
+            )}
           </View>
         </View>
       )}
@@ -257,6 +276,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#DC2626",
+  },
+  feeWaivedText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
   },
   feeConversion: {
     fontSize: 12,

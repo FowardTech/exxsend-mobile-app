@@ -240,7 +240,7 @@ ${tx.feeAmount && tx.feeAmount > 0 ? `
                 <span class="row-value">${formatAmount(Math.abs(tx.amount), tx.currency)}</span>
               </div>
               <div class="row">
-                <span class="row-label">Platform Fee</span>
+                <span class="row-label">Transaction Fee</span>
                  <span class="row-value red">-${tx.feeAmountInBaseCurrency && tx.baseCurrency && tx.baseCurrency !== (tx.feeCurrency || tx.currency) ? `${tx.baseCurrencySymbol || ''}${tx.feeAmountInBaseCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="color:#6B7280;font-size:12px;">(≈ ${formatAmount(tx.feeAmount, tx.feeCurrency || tx.currency)})</span>` : formatAmount(tx.feeAmount, tx.feeCurrency || tx.currency)}</span>
               </div>
               <div class="row">
@@ -515,7 +515,7 @@ ${tx.feeAmount && tx.feeAmount > 0 ? `
                 </AppText>
               </View>
               <View style={styles.detailRow}>
-                <AppText style={styles.detailLabel}>Platform Fee</AppText>
+                <AppText style={styles.detailLabel}>Transaction Fee</AppText>
                 <View style={{ alignItems: 'flex-end' }}>
                   {transaction.feeAmountInBaseCurrency && transaction.baseCurrency && 
                    transaction.baseCurrency !== (transaction.feeCurrency || transaction.currency) ? (

@@ -27,6 +27,35 @@ if (!ENV_API_BASE_URL) {
 
 export const API_BASE_URL = ENV_API_BASE_URL || FALLBACK_API_BASE_URL;
 
+/**
+ * Rewrites a media URL to use this app's actual configured API host if the
+ * URL the backend returned points at a loopback address (127.0.0.1,
+ * localhost, 0.0.0.0) — which only happens during local backend
+ * development, but causes a very specific, easy-to-misdiagnose symptom:
+ * the image works fine on an iOS Simulator (which shares the dev Mac's
+ * network stack, so 127.0.0.1 actually does resolve to it) but silently
+ * fails to load on any real device, Android or iOS, where 127.0.0.1 always
+ * means "this device," never the dev machine — regardless of cleartext/
+ * HTTPS settings, there's simply nothing listening on that port on the
+ * phone itself. A real production https://... URL passes through
+ * completely unchanged.
+ */
+export function normalizeMediaUrl<T extends string | null | undefined>(url: T): T {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    const isLoopback = parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost" || parsed.hostname === "0.0.0.0";
+    if (!isLoopback) return url;
+    const base = new URL(API_BASE_URL);
+    parsed.protocol = base.protocol;
+    parsed.hostname = base.hostname;
+    parsed.port = base.port;
+    return parsed.toString() as T;
+  } catch {
+    return url;
+  }
+}
+
 // ============ FETCH WITH TIMEOUT HELPER ============
 const DEFAULT_TIMEOUT_MS = 15000; // 15 seconds
 const CACHED_TOTAL_BALANCE_KEY = "cached_total_balance_v1";
@@ -182,134 +211,107 @@ export const api = {
   },
 };
 
-// ============ PERSONA IDENTITY VERIFICATION ============
+// ============ SUMSUB IDENTITY VERIFICATION ============
+// Replaced Persona (and the Plaid naming layer before that) as the identity
+// verification provider. Unlike Persona's hosted-WebView flow, Sumsub uses a
+// native SDK (@sumsub/react-native-mobilesdk-module) — see
+// SumsubVerificationScreen.tsx for the actual launch/handlers.
 
-/**
- * Create Persona Inquiry session for identity verification
- * Backend fetches user data by phone/email and creates the inquiry
- */
-export async function createPersonaInquiry(params: {
-  phone?: string;
-  email?: string;
-}): Promise<{
+export type SumsubKycStatus = "unverified" | "pending" | "verified" | "rejected" | "retry";
+
+export interface SumsubAccessTokenResult {
   success: boolean;
-  inquiry_id?: string;
-  session_token?: string;
-  resume_url?: string;
-  status?: string;
-  user_id?: string;
+  /** Short-lived (~10 min) SDK token. */
+  token?: string;
+  /** The applicant's external ID — cache this; it's what GET
+   * /sumsub/status/<user_id> is keyed on. */
+  userId?: string;
+  levelName?: string;
+  expiresAt?: number;
   message?: string;
-}> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/persona/create-inquiry`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to create Persona inquiry:', error);
-    return { success: false, message: 'Failed to start identity verification' };
-  }
 }
 
 /**
- * Get Persona Inquiry status
+ * Mints a Sumsub SDK token. Call this right before launching the SDK, and
+ * again from the SDK's onTokenExpiration callback when the token (still
+ * mid-flow) expires — same endpoint both times.
+ *
+ * NOTE: despite the originally-documented contract saying the user is
+ * derived purely from the JWT with an empty body, a direct curl test
+ * against the real backend proved it actually requires `phone` in the
+ * body (and works with no Authorization header at all). Sending phone is
+ * what was missing — that's what was actually producing the 404, an empty
+ * body meant the backend had no way to identify which user this was for.
  */
-export async function getPersonaInquiryStatus(inquiryId: string): Promise<{
+export async function getSumsubAccessToken(phone: string): Promise<SumsubAccessTokenResult> {
+  try {
+    const authToken = await AsyncStorage.getItem("auth_token");
+    const response = await fetch(`${API_BASE_URL}/sumsub/access-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data?.message || `HTTP ${response.status}` };
+    }
+    // The real response shape (confirmed directly against the backend) is
+    // { applicantId, token, userId } — applicantId and userId may end up
+    // being the same value, or userId may be absent; fall back across both
+    // since /sumsub/status/<user_id> needs whichever one actually
+    // identifies the applicant.
+    return {
+      success: true,
+      token: data.token,
+      userId: data.userId || data.applicantId,
+      levelName: data.levelName,
+      expiresAt: data.expiresAt,
+    };
+  } catch (error: any) {
+    console.error("Failed to get Sumsub access token:", error);
+    return { success: false, message: error?.message || "Could not start identity verification" };
+  }
+}
+
+export interface SumsubStatusResult {
   success: boolean;
-  status?: string;
-  reference_id?: string;
-  created_at?: string;
+  kyc_status?: SumsubKycStatus;
+  sumsub_review_status?: string;
+  applicant_id?: string;
   completed_at?: string;
   message?: string;
-}> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/persona/inquiry-status?inquiry_id=${encodeURIComponent(inquiryId)}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to get Persona inquiry status:', error);
-    return { success: false, message: 'Failed to get verification status' };
-  }
 }
 
 /**
- * Resume an existing Persona Inquiry session
+ * The actual source of truth for verification outcome — Sumsub's webhook
+ * to the backend is what updates this, not the SDK's local "submitted"
+ * callback. Poll this after the SDK closes (and/or on relevant screen
+ * focus) rather than trusting the SDK result alone.
  */
-export async function resumePersonaInquiry(params: {
-  phone?: string;
-  email?: string;
-}): Promise<{
-  success: boolean;
-  inquiry_id?: string;
-  resume_url?: string;
-  status?: string;
-  message?: string;
-}> {
+export async function getSumsubStatus(userId: string): Promise<SumsubStatusResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}/persona/resume`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+    const response = await fetch(`${API_BASE_URL}/sumsub/status/${encodeURIComponent(userId)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
     });
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to resume Persona inquiry:', error);
-    return { success: false, message: 'Failed to resume verification' };
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data?.message || `HTTP ${response.status}` };
+    }
+    return {
+      success: true,
+      kyc_status: data.kyc_status,
+      sumsub_review_status: data.sumsub_review_status,
+      applicant_id: data.applicant_id,
+      completed_at: data.completed_at,
+    };
+  } catch (error: any) {
+    console.error("Failed to get Sumsub status:", error);
+    return { success: false, message: error?.message || "Could not check verification status" };
   }
-}
-
-
-// ============ PLAID IDENTITY VERIFICATION ============
-
-/**
- * Create Plaid Identity Verification session
- * Backend fetches user data by phone/email and creates the IDV session
- */
-// Legacy Plaid functions (kept for compatibility)
-export async function createPlaidIdvSession(params: {
-  phone?: string;
-  email?: string;
-}): Promise<{
-  success: boolean;
-  link_token?: string;
-  idv_session_id?: string;
-  shareable_url?: string;
-  user_id?: string;
-  message?: string;
-  error_code?: string;
-}> {
-  // Redirect to Persona
-  const result = await createPersonaInquiry(params);
-  return {
-    success: result.success,
-    link_token: result.session_token,
-    idv_session_id: result.inquiry_id,
-    shareable_url: result.resume_url,
-    user_id: result.user_id,
-    message: result.message,
-  };
-}
-
-export async function getPlaidIdvStatus(idvSessionId: string): Promise<{
-  success: boolean;
-  status?: string;
-  steps?: any;
-  user?: any;
-  completed_at?: string;
-  message?: string;
-}> {
-  // Redirect to Persona
-  const result = await getPersonaInquiryStatus(idvSessionId);
-  return {
-    success: result.success,
-    status: result.status,
-    completed_at: result.completed_at,
-    message: result.message,
-  };
 }
 
 export async function checkPinExists(phone: string) {
@@ -622,6 +624,26 @@ export async function getRegionsByCountryName(countryName: string): Promise<Regi
   }));
 }
 
+/**
+ * Requests a password-reset email — the screen that calls this
+ * (ResetPasswordScreen.tsx) treats any non-throwing resolution as success
+ * and any thrown error as a failure to show, so this throws on failure
+ * rather than following the no-throw "just return res.json()" pattern
+ * used by sendEmailOtp/resendEmailOtp above. Endpoint follows this app's
+ * existing /users/password (set password) convention.
+ */
+export async function resetPassword(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/users/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data?.success === false) {
+    throw new Error(data?.message || "Could not send reset email. Please try again.");
+  }
+}
+
 export const sendEmailOtp = async (email: string) => {
   const res = await fetch(`${API_BASE_URL}/otp/email/send`, {
     method: 'POST',
@@ -685,6 +707,14 @@ export async function getUserProfile(phone: string): Promise<{
     kycStatus: string;
     status: string;
     onboardingStep: string;
+    /** Set via PATCH /users/username — undefined/null until the user has
+     * actually claimed one through the "Choose your @username" flow. */
+    username?: string | null;
+    /** Set via uploadProfilePhoto()/removeProfilePhoto() below — comes
+     * back as profilePhotoUrl on the user object from any user fetch
+     * (login, this profile fetch, etc.) per the backend's actual
+     * contract; undefined/null until the user has uploaded a photo. */
+    profilePhotoUrl?: string | null;
     // Address fields
     dateOfBirth?: string;
     dob?: string;
@@ -712,6 +742,10 @@ export async function getUserProfile(phone: string): Promise<{
       context: "Fetch user profile",
       validateSuccess: false,
     });
+
+    if (data?.user?.profilePhotoUrl) {
+      data.user.profilePhotoUrl = normalizeMediaUrl(data.user.profilePhotoUrl);
+    }
 
     return data;
   } catch (err) {
@@ -1450,6 +1484,9 @@ export async function calculateSendFee(params: {
 }): Promise<{
   success: boolean;
   feeAmount?: number;
+  /** The fee that would apply with no waiver — present whenever a waiver
+   * was checked, regardless of whether one actually applied. */
+  originalFeeAmount?: number;
   feeCurrency?: string;
   feeConfig?: {
     fee_type: string;
@@ -1460,6 +1497,14 @@ export async function calculateSendFee(params: {
   feeAmountInBaseCurrency?: number;
   baseCurrency?: string;
   baseCurrencySymbol?: string;
+  /** Present and waived:true when a fee-waiver promo/credit covered this
+   * transaction's fee — feeAmount is already 0 in that case, no separate
+   * calculation needed on the client side. */
+  waiver?: {
+    waived: boolean;
+    promoName?: string;
+    waivedComponents?: string[];
+  };
   message?: string;
 }> {
   try {
@@ -1475,7 +1520,12 @@ export async function calculateSendFee(params: {
         toCurrency: params.toCurrency,
       }),
     });
-    return response.json();
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error(`calculateSendFee failed: HTTP ${response.status}`, data);
+      return { success: false, message: data?.message || `HTTP ${response.status}` };
+    }
+    return data;
   } catch (error) {
     console.error('Failed to calculate send fee:', error);
     return { success: false, message: 'Failed to calculate fee' };
@@ -1508,9 +1558,120 @@ export async function lookupExxsendMember(username: string, phone?: string): Pro
       headers: { "Content-Type": "application/json" },
     });
     const data = await res.json().catch(() => ({}));
+    if (data?.member) {
+      data.member.avatar = normalizeMediaUrl(data.member.avatar || data.member.profilePhotoUrl || data.member.avatarUrl);
+    }
     return data;
   } catch (e: any) {
     return { success: false, message: e?.message || "Lookup failed" };
+  }
+}
+
+/**
+ * Claims a real, backend-recorded @username via PATCH /users/username.
+ *
+ * This was the missing piece behind every "lookup couldn't find them"
+ * report: the app showed a client-derived @handle on Profile/QR screens
+ * (see utils/handle.ts) purely for display, but nothing ever actually
+ * submitted it here — so no user has ever had a real username on file,
+ * and lookups for it could never succeed regardless of KYC status or
+ * spelling.
+ */
+export async function setUsername(phone: string, username: string): Promise<{
+  success: boolean;
+  username?: string;
+  message?: string;
+}> {
+  const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/username`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, username: cleanUsername }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok && !!data?.success, username: data?.username || cleanUsername, message: data?.message };
+  } catch (e: any) {
+    return { success: false, message: e?.message || "Could not set username" };
+  }
+}
+
+/**
+ * Uploads a profile photo and returns its hosted URL. This is also the
+ * photo other users will see for this person — once an Exxsend-member
+ * recipient has a saved avatarUrl, RecipientAvatar renders it directly
+ * instead of falling back to initials.
+ *
+ * Backend contract assumed (not explicitly specified): PATCH
+ * /users/avatar, multipart/form-data with fields "phone" and "avatar" (the
+ * image file), returning { success, avatarUrl }. If the real endpoint
+ * differs, this is the one function to adjust.
+ */
+/**
+ * POST /api/users/<userId>/profile-photo — uploads or replaces the user's
+ * profile photo. Multipart form field must be named "file" (not "avatar"
+ * or "photo"), and the endpoint is keyed by userId in the URL path, not
+ * phone — that's different from almost every other call in this file, so
+ * don't reuse this as a template for other uploads without checking.
+ */
+export async function uploadProfilePhoto(userId: string, imageUri: string): Promise<{
+  success: boolean;
+  profilePhotoUrl?: string;
+  message?: string;
+}> {
+  try {
+    const token = await AsyncStorage.getItem("auth_token");
+    const filename = imageUri.split("/").pop() || "photo.jpg";
+    const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
+    const mimeType =
+      ext === "png" ? "image/png" :
+      ext === "webp" ? "image/webp" :
+      ext === "heic" ? "image/heic" :
+      "image/jpeg";
+
+    const formData = new FormData();
+    formData.append("file", { uri: imageUri, name: filename, type: mimeType } as any);
+
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/profile-photo`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "multipart/form-data",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData as any,
+    });
+    const data = await res.json().catch(() => ({}));
+    // 201 on success per spec, but checking res.ok covers 200 too in case
+    // that ever changes without this needing an update.
+    return {
+      success: res.ok && !!data?.success,
+      profilePhotoUrl: normalizeMediaUrl(data?.profilePhotoUrl || data?.url || data?.user?.profilePhotoUrl),
+      message: data?.message,
+    };
+  } catch (e: any) {
+    return { success: false, message: e?.message || "Could not upload photo" };
+  }
+}
+
+/** DELETE /api/users/<userId>/profile-photo — removes the user's current
+ * profile photo, reverting them back to initials wherever it was shown. */
+export async function removeProfilePhoto(userId: string): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  try {
+    const token = await AsyncStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/profile-photo`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok && !!data?.success, message: data?.message };
+  } catch (e: any) {
+    return { success: false, message: e?.message || "Could not remove photo" };
   }
 }
 

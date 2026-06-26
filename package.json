@@ -11,6 +11,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@sumsub/react-native-mobilesdk-module": "^1.32.0",
     "@expo-google-fonts/manrope": "^0.4.2",
     "@stripe/stripe-react-native": "0.66.0",
     "@expo/vector-icons": "^15.0.3",

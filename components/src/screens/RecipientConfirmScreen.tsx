@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
  * (Your original UI + otherstyles layout is preserved.)
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, Alert, ActivityIndicator, ScrollView, Platform } from "react-native";
+import { View, Pressable, Alert, ActivityIndicator, ScrollView, Platform, Switch } from "react-native";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import BackButton from "../../BackButton";
@@ -25,10 +25,12 @@ import {
   getCurrencySymbol,
   COUNTRY_NAMES,
   CURRENCY_TO_COUNTRY,
+  isFlutterwaveCurrency,
 } from "../../../api/flutterwave";
-import { saveRecipientToDB } from "../../../api/sync";
-import { classify403, createPlaidIdvSession, executeCurrencyCloudWithdrawal } from "../../../api/config";
+import { saveRecipientToDB, recordRecentRecipient } from "../../../api/sync";
+import { classify403, executeCurrencyCloudWithdrawal } from "../../../api/config";
 import { toPayoutType } from "../../../api/corridors";
+import { fetchMyFeeWaivers } from "../../../api/feeWaivers";
 
 import { sendInteracPayout } from "../../../api/paysafe";
 import { useAppTheme } from "@/theme/ThemeProvider";
@@ -53,6 +55,11 @@ interface RecipientData {
   routingNumber?: string;
   sortCode?: string;
   bsbCode?: string;
+  // Optional network fields used in recent-recipient recording and other flows
+  networkCode?: string;
+  networkName?: string;
+  // Whether the recipient's name has been verified by the backend
+  nameVerified?: boolean;
 }
 
 export default function RecipientConfirmScreen() {
@@ -74,6 +81,10 @@ export default function RecipientConfirmScreen() {
   const [userPhone, setUserPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  // Only meaningful for a genuinely new recipient (no beneficiaryId — one
+  // picked from "saved beneficiary" is already saved, so there's nothing
+  // to ask about). Defaults on since saving is the common case.
+  const [saveRecipientToggle, setSaveRecipientToggle] = useState(true);
 
   // ✅ Interac security Q&A state (NEW)
   const [securityQuestion, setSecurityQuestion] = useState("");
@@ -95,13 +106,30 @@ export default function RecipientConfirmScreen() {
     return false;
   }, [recipient]);
 
-  // Detect the new CurrencyCloud corridor (USD/GBP/AUD/EUR/... per api/corridors.ts)
-  const isCurrencyCloud = useMemo(() => {
-    if (!recipient) return false;
-    return recipient.payoutMethod === "currencycloud";
-  }, [recipient]);
-
   const destCurrency = (recipient?.currency || params.destCurrency || "NGN").toUpperCase();
+
+  // Detect the CurrencyCloud corridor (USD/GBP/AUD/EUR/... per api/corridors.ts).
+  // recipient.payoutMethod is the primary signal, but several different
+  // recipient-construction paths (manual entry, saved beneficiary,
+  // prefilled-from-Home, saved-recipient tap) all have to set it correctly
+  // for this to work, and more than one of them has been found getting it
+  // wrong over time — each time, the symptom was a CurrencyCloud-only
+  // currency (most recently GBP) silently falling through to the
+  // Flutterwave branch below and failing with "currency not supported for
+  // Flutterwave payouts", since Flutterwave only covers a specific, fixed
+  // list of currencies. Rather than trust payoutMethod alone, fall back to
+  // deriving it from the currency itself: if it's not Interac and not a
+  // currency Flutterwave actually supports, it has to be CurrencyCloud by
+  // elimination — there's no fourth destination in this app's routing.
+  const isCurrencyCloud = useMemo(() => {
+    if (!recipient || isInterac) return false;
+    if (recipient.payoutMethod === "currencycloud") return true;
+    // An explicit, different non-CC method (e.g. "momo") should still be
+    // trusted — only fall back when payoutMethod is missing/ambiguous.
+    if (recipient.payoutMethod && recipient.payoutMethod !== "bank") return false;
+    return !isFlutterwaveCurrency(destCurrency);
+  }, [recipient, isInterac, destCurrency]);
+
   const countryCode = recipient?.countryCode || CURRENCY_TO_COUNTRY[destCurrency] || "NG";
   const countryName = isInterac ? "Canada" : COUNTRY_NAMES[countryCode] || countryCode;
 
@@ -200,24 +228,11 @@ export default function RecipientConfirmScreen() {
     setShowPinModal(true);
   };
 
-  // Starts a fresh Persona identity-verification session and navigates to the
-  // hosted verification screen. Mirrors HomeScreen's handleVerifyIdentity —
-  // a session must be created here too since the route needs a live url/inquiryId,
-  // not just a bare navigation.
-  const handleVerifyIdentity = async () => {
-    try {
-      const res = await createPlaidIdvSession({ phone: userPhone });
-      if (!res?.success || !res?.shareable_url) {
-        Alert.alert("Error", res?.message || "Could not start identity verification");
-        return;
-      }
-      router.push({
-        pathname: "/persona-verification",
-        params: { url: res.shareable_url, inquiryId: res.idv_session_id || "" },
-      });
-    } catch {
-      Alert.alert("Error", "Could not start identity verification");
-    }
+  // Navigates straight to the Sumsub verification screen — unlike the old
+  // Persona flow, no session needs to be pre-created here; the screen
+  // fetches its own SDK token on mount.
+  const handleVerifyIdentity = () => {
+    router.push("/sumsub-verification" as any);
   };
 
   const handleConfirmSend = async () => {
@@ -243,7 +258,12 @@ export default function RecipientConfirmScreen() {
           const saveRes = await saveRecipientToDB({
             phone: userPhone,
             accountName: recipient.accountName,
-            accountNumber: recipient.accountNumber,
+            // IBAN-based corridors (EUR/CHF) keep the account identifier in
+            // recipient.iban, not recipient.accountNumber — the saved-recipient
+            // schema only has one generic account-number field, so without
+            // this fallback those recipients were being saved with an empty
+            // account number, silently losing the IBAN entirely.
+            accountNumber: recipient.accountNumber || recipient.iban || "",
             bankCode: recipient.bankCode || (isInterac ? "INTERAC" : ""),
             bankName: recipient.bankName || (isInterac ? "Interac e-Transfer" : ""),
             currency: destCurrency,
@@ -256,14 +276,18 @@ export default function RecipientConfirmScreen() {
             // the backend doesn't recognize at all).
             payoutType: isInterac ? "interac" : (recipient.payoutType || toPayoutType((recipient.payoutMethod as any) || "bank")),
           });
-          return saveRes?.id;
+          return saveRes?.recipient?.id;
         } catch (saveErr) {
           console.warn("[RecipientConfirmScreen] Save recipient failed:", saveErr);
           return undefined;
         }
       };
 
-      let savedRecipientId = await persistRecipient();
+      // Already-saved beneficiaries persist regardless (idempotent — there's
+      // nothing new to decide); a brand new recipient only gets saved if the
+      // user left the "Save this recipient" toggle on.
+      const shouldPersist = !!recipient.beneficiaryId || saveRecipientToggle;
+      let savedRecipientId = shouldPersist ? await persistRecipient() : undefined;
 
       let response;
 
@@ -318,9 +342,33 @@ export default function RecipientConfirmScreen() {
       }
 
       if (response.success) {
-        if (!savedRecipientId) {
+        if (!savedRecipientId && shouldPersist) {
           savedRecipientId = await persistRecipient();
         }
+
+        // Best-effort — the server already decremented/awarded waiver
+        // credits as part of processing the transfer; this just refreshes
+        // what the app has cached so Home's fee-waiver banner reflects it
+        // next time it's seen, without blocking on the result here.
+        fetchMyFeeWaivers(userPhone).catch(() => {});
+
+        // Local safety net for Home's "Recent recipients" row — recorded
+        // synchronously here rather than depending solely on the backend's
+        // /recipients/recent endpoint reflecting this transfer in time.
+        recordRecentRecipient(userPhone, {
+          id: savedRecipientId,
+          accountName: recipient.accountName,
+          accountNumber: recipient.accountNumber || recipient.iban,
+          bankCode: recipient.bankCode,
+          bankName: recipient.bankName,
+          destCurrency,
+          countryCode: recipient.countryCode,
+          payoutMethod: recipient.payoutMethod,
+          networkCode: recipient.networkCode,
+          networkName: recipient.networkName,
+          nameVerified: recipient.nameVerified,
+          lastAmount: toAmount,
+        }).catch(() => {});
 
         const successMessage = isInterac
           ? `An Interac e-Transfer of ${formattedToAmount} ${destCurrency} has been sent to ${recipient.accountNumber}`
@@ -511,6 +559,26 @@ export default function RecipientConfirmScreen() {
           </View>
         </View>
 
+        {/* Save recipient toggle — only meaningful for a brand new
+            recipient; one already picked from saved beneficiaries is
+            already saved, so there's nothing to ask. */}
+        {!recipient.beneficiaryId && (
+          <View style={otherstyles.confirmCard}>
+            <View style={[otherstyles.confirmDetailBlock, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <AppText style={otherstyles.confirmDetailValue}>Save this recipient</AppText>
+                <AppText style={otherstyles.confirmDetailLabel}>For faster transfers next time</AppText>
+              </View>
+              <Switch
+                value={saveRecipientToggle}
+                onValueChange={setSaveRecipientToggle}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
+        )}
+
         {/* ✅ Interac Security Q&A (NEW, inserted using your existing design language) */}
         {isInterac && (
           <>
@@ -603,7 +671,7 @@ export default function RecipientConfirmScreen() {
               <AppText style={otherstyles.confirmPrimaryBtnText}>Sending…</AppText>
             </View>
           ) : (
-            <AppText style={otherstyles.confirmPrimaryBtnText}>
+            <AppText style={[otherstyles.confirmPrimaryBtnText]}>
               {isInterac ? "Send Interac e-Transfer" : "Confirm & send"}
             </AppText>
           )}

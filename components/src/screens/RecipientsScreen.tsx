@@ -8,34 +8,61 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../../../theme/colors";
-import { getRecentRecipientsFromDB, RecentRecipientFromDB } from "../../../api/sync";
-import { CURRENCY_TO_COUNTRY } from "../../../api/flutterwave";
+import { getSavedRecipients, RecentRecipientFromDB } from "../../../api/sync";
+import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "../../../api/flutterwave";
+import RecipientAvatar from "../../../components/RecipientAvatar";
 
 function getInitials(name: string) {
   return (name || "U").split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
 }
 
+// Saved with payoutType:"exxsend" / bankCode:"EXXSEND" — sent peer-to-peer
+// via @username rather than to an actual bank account (see
+// ExxsendMembersScreen.tsx's saveRecipientToDB call).
+function isExxsendRecipient(r: any): boolean {
+  return r?.payoutType === "exxsend" || r?.bankCode === "EXXSEND";
+}
+function getExxsendUsername(r: any): string {
+  return String(r?.accountNumber || r?.accountName || "").replace(/^@/, "");
+}
+
 function RecipientBubble({ item, onPress }: { item: RecentRecipientFromDB; onPress: () => void }) {
+  const exxsend = isExxsendRecipient(item);
   return (
     <Pressable onPress={onPress} style={s.bubble}>
-      <View style={s.bubbleAvatar}>
-        <AppText style={s.bubbleInitials}>{getInitials(item.accountName)}</AppText>
-      </View>
+      <RecipientAvatar
+        name={item.accountName}
+        currencyCode={item.destCurrency}
+        countryCode={(item as any).countryCode}
+        isExxsend={exxsend}
+        photoUrl={(item as any).avatarUrl}
+        size={56}
+        backgroundColor={COLORS.primary}
+      />
       <AppText style={s.bubbleName} numberOfLines={1}>{item.accountName.split(" ")[0]}</AppText>
-      <AppText style={s.bubbleBank} numberOfLines={1}>{item.bankName ? item.bankName.split(" ")[0] : item.destCurrency}</AppText>
+      <AppText style={s.bubbleBank} numberOfLines={1}>{exxsend ? "Exxsend" : (item.bankName ? item.bankName.split(" ")[0] : item.destCurrency)}</AppText>
     </Pressable>
   );
 }
 
 function RecipientRow({ item, onPress }: { item: RecentRecipientFromDB; onPress: () => void }) {
+  const exxsend = isExxsendRecipient(item);
   return (
     <Pressable onPress={onPress} style={s.row}>
-      <View style={s.rowAvatar}>
-        <AppText style={s.rowInitials}>{getInitials(item.accountName)}</AppText>
-      </View>
-      <View style={{ flex: 1 }}>
+      <RecipientAvatar
+        name={item.accountName}
+        currencyCode={item.destCurrency}
+        countryCode={(item as any).countryCode}
+        isExxsend={exxsend}
+        photoUrl={(item as any).avatarUrl}
+        size={44}
+        backgroundColor={COLORS.primary}
+      />
+      <View style={{ flex: 1, marginLeft: 12 }}>
         <AppText style={s.rowName}>{item.accountName}</AppText>
-        <AppText style={s.rowMeta}>{item.bankName}{item.accountNumber ? `, ${item.accountNumber}` : ""}</AppText>
+        <AppText style={s.rowMeta}>
+          {exxsend ? `Exxsend • @${getExxsendUsername(item)}` : `${item.bankName}${item.accountNumber ? `, ${item.accountNumber}` : ""}`}
+        </AppText>
       </View>
       <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
     </Pressable>
@@ -54,7 +81,7 @@ export default function RecipientsScreen() {
     const p = ph || phone;
     if (!p) return;
     try {
-      const res = await getRecentRecipientsFromDB(p, 50);
+      const res = await getSavedRecipients(p, undefined, 50);
       if (res.success) setRecipients(res.recipients);
     } catch { }
     finally { setLoading(false); setRefreshing(false); }
@@ -87,26 +114,33 @@ export default function RecipientsScreen() {
   );
 
   const navigateToRecipient = useCallback((r: RecentRecipientFromDB) => {
-    const countryCode = (CURRENCY_TO_COUNTRY[r.destCurrency] || "NG").toUpperCase();
+    if (isExxsendRecipient(r)) {
+      router.push({
+        pathname: "/exxsendmembers" as any,
+        params: { prefillUsername: getExxsendUsername(r) } as any,
+      });
+      return;
+    }
+
+    // Route through amount entry with this recipient already known, rather
+    // than pushing straight to /recipientconfirm with no amount params —
+    // that always rendered $0.00 since nothing had actually been entered
+    // yet. RecipientNewScreen.tsx's prefilledRecipient path skips its own
+    // bank-detail form (the recipient is already on file) and goes
+    // straight to "pick a wallet, enter an amount", then on to confirm
+    // with everything filled in.
+    const destCurrency = (r.destCurrency || "NGN").toUpperCase();
+    const countryCode = (destCurrency === "CAD" ? "CA" : (CURRENCY_TO_COUNTRY[destCurrency] || "NG")).toUpperCase();
+    const countryName = COUNTRY_NAMES[countryCode] || countryCode;
     router.push({
-      pathname: "/recipientconfirm" as any,
+      pathname: "/recipientnew" as any,
       params: {
-        destCurrency: r.destCurrency,
-        fromCurrency: r.destCurrency, // will be overridden if coming from send flow
-        fromAmount: "",
-        toAmount: "",
-        recipient: JSON.stringify({
-          accountName: r.accountName,
-          accountNumber: r.accountNumber,
-          bankCode: r.bankCode,
-          bankName: r.bankName,
-          currency: r.destCurrency,
-          countryCode,
-          isInterac: r.destCurrency === "CAD",
-        }),
-        mode: "recent",
-      },
-    } as any);
+        destCurrency,
+        countryCode,
+        countryName,
+        prefilledRecipient: JSON.stringify(r),
+      } as any,
+    });
   }, [router]);
 
   return (
@@ -127,8 +161,14 @@ export default function RecipientsScreen() {
         {q.length > 0 && <Pressable onPress={() => setQ("")}><Ionicons name="close-circle" size={16} color={COLORS.muted} /></Pressable>}
       </View>
 
-      {/* New recipient */}
-      <Pressable onPress={() => router.push("/recipientnew" as any)} style={s.newRow}>
+      {/* New recipient — this hub screen (reached from Home with no prior
+          currency context) doesn't know what currency the user wants to
+          send yet, so route through the destination-currency picker first
+          rather than pushing straight to /recipientnew. That screen's own
+          "destCurrency || NGN" fallback was silently defaulting every new
+          recipient to Nigeria/NGN regardless of what the user actually
+          intended to send, since nothing here was passing a currency at all. */}
+      <Pressable onPress={() => router.push("/sendmoney" as any)} style={s.newRow}>
         <View style={s.newIcon}><Ionicons name="add" size={20} color={COLORS.primary} /></View>
         <AppText style={s.newText}>Send to a new recipient</AppText>
         <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />

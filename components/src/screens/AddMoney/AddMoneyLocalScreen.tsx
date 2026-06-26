@@ -27,7 +27,7 @@ import {
 } from "../../../../api/flutterwave";
 import { getCurrencySymbol } from "../../../../api/flutterwave";
 import { getCorridorByCurrency } from "../../../../api/corridors";
-import { getStripeConfig, createStripePaymentIntent, confirmStripePayment } from "../../../../api/stripe";
+import { getStripeConfig, createStripePaymentIntent, confirmStripePayment, getSavedStripeCards, chargeWithSavedStripeCard, SavedStripeCard } from "../../../../api/stripe";
 import { StripeProvider, CardField, useConfirmPayment } from "@stripe/stripe-react-native";
 import { COLORS } from "@/theme/colors";
 import CountryFlag from "../../../CountryFlag";
@@ -577,8 +577,12 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
   const [quote, setQuote] = useState<{ surchargeAmount: number; totalCharged: number } | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "success">("idle");
+  const [savedCards, setSavedCards] = useState<SavedStripeCard[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [saveNewCard, setSaveNewCard] = useState(false);
 
-  // Step 1: load config once for the surcharge/hold-time display.
+  // Step 1: load config once for the surcharge/hold-time display, and any
+  // saved cards this user already has on file.
   useEffect(() => {
     (async () => {
       const cfg = await getStripeConfig();
@@ -587,11 +591,16 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
         setHoldHours(cfg.holdHours);
       }
     })();
-  }, []);
+    if (phone) {
+      getSavedStripeCards(phone).then((res) => {
+        if (res.success && res.cards.length > 0) setSavedCards(res.cards);
+      });
+    }
+  }, [phone]);
 
   const parsedAmount = parseFloat(amount);
   const amountValid = !!amount && Number.isFinite(parsedAmount) && parsedAmount > 0;
-  const canPay = amountValid && !!cardDetails?.complete && !loading && !confirming;
+  const canPay = amountValid && !loading && !confirming && (selectedCardId ? true : !!cardDetails?.complete);
 
   const handlePay = async () => {
     if (currency.toUpperCase() === "NGN") {
@@ -602,12 +611,36 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
       Alert.alert("Enter amount", "Please enter the amount you want to deposit.");
       return;
     }
-    if (!cardDetails?.complete) {
-      Alert.alert("Card details incomplete", "Please enter your full card number, expiry, and CVC.");
-      return;
-    }
     if (!phone) {
       Alert.alert("Error", "Could not find your account phone number. Please try logging in again.");
+      return;
+    }
+
+    // ── Paying with a saved card — handled entirely server-side, no
+    // CardField/confirmPayment involvement since there's no new card data
+    // to transmit. ──────────────────────────────────────────────────────
+    if (selectedCardId) {
+      setLoading(true);
+      setQuote(null);
+      setPaymentIntentId(null);
+      try {
+        const res = await chargeWithSavedStripeCard({ phone, amount: parsedAmount, currency, paymentMethodId: selectedCardId });
+        if (res.success) {
+          setPaymentIntentId(res.reference || null);
+          setStatus("success");
+        } else {
+          Alert.alert("Payment failed", res.message || "Your saved card could not be charged. Please try again or use a different card.");
+        }
+      } catch (e: any) {
+        Alert.alert("Error", e?.message || "Something went wrong while processing your payment.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (!cardDetails?.complete) {
+      Alert.alert("Card details incomplete", "Please enter your full card number, expiry, and CVC.");
       return;
     }
 
@@ -617,7 +650,7 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
 
     try {
       // Step 2: create the PaymentIntent server-side.
-      const intentRes = await createStripePaymentIntent({ phone, amount: parsedAmount, currency });
+      const intentRes = await createStripePaymentIntent({ phone, amount: parsedAmount, currency, savePaymentMethod: saveNewCard });
       if (!intentRes.success || !intentRes.clientSecret) {
         Alert.alert("Error", intentRes.message || "Could not start payment. Please try again.");
         setLoading(false);
@@ -722,31 +755,59 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
         </View>
       </View>
 
-      <View style={s.formCard}>
-        <AppText style={s.formLabel}>CARD DETAILS</AppText>
-        <CardField
-          postalCodeEnabled={false}
-          placeholders={{ number: "4242 4242 4242 4242" }}
-          cardStyle={{
-            backgroundColor: "#FFFFFF",
-            // NOTE: Stripe's CardField forwards this string straight to
-            // Android's native Color.parseColor(), which only understands
-            // hex (#RRGGBB / #AARRGGBB) or a few named colors — NOT CSS
-            // rgba(...) syntax. An rgba() string here crashes the app on
-            // real Android devices with "Unknown color" (it doesn't crash
-            // on iOS or in Expo Go, which is why it can slip through).
-            // #59B4C3E1 = rgba(180,195,225,0.35) in #AARRGGBB hex.
-            borderColor: "#59B4C3E1",
-            borderWidth: 1,
-            textColor: COLORS.text,
-            placeholderColor: COLORS.muted,
-            borderRadius: 10,
-            fontSize: 15,
-          }}
-          style={{ width: "100%", height: 50, marginTop: 4 }}
-          onCardChange={(details) => setCardDetails({ complete: details.complete })}
-        />
-      </View>
+      {savedCards.length > 0 && (
+        <View style={s.formCard}>
+          <AppText style={s.formLabel}>SAVED CARDS</AppText>
+          {savedCards.map((card) => (
+            <Pressable
+              key={card.id}
+              onPress={() => setSelectedCardId(selectedCardId === card.id ? null : card.id)}
+              style={[s.savedCardRow, selectedCardId === card.id && s.savedCardRowActive]}
+            >
+              <Ionicons name="card-outline" size={18} color={selectedCardId === card.id ? COLORS.primary : COLORS.muted} style={{ marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <AppText style={s.savedCardName}>{card.brand} •••• {card.last4}</AppText>
+                <AppText style={s.savedCardMeta}>Expires {String(card.expMonth).padStart(2, "0")}/{String(card.expYear).slice(-2)}</AppText>
+              </View>
+              {selectedCardId === card.id && <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />}
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {!selectedCardId && (
+        <View style={s.formCard}>
+          <AppText style={s.formLabel}>CARD DETAILS</AppText>
+          <CardField
+            postalCodeEnabled={false}
+            placeholders={{ number: "4242 4242 4242 4242" }}
+            cardStyle={{
+              backgroundColor: "#FFFFFF",
+              // NOTE: Stripe's CardField forwards this string straight to
+              // Android's native Color.parseColor(), which only understands
+              // hex (#RRGGBB / #AARRGGBB) or a few named colors — NOT CSS
+              // rgba(...) syntax. An rgba() string here crashes the app on
+              // real Android devices with "Unknown color" (it doesn't crash
+              // on iOS or in Expo Go, which is why it can slip through).
+              // #59B4C3E1 = rgba(180,195,225,0.35) in #AARRGGBB hex.
+              borderColor: "#59B4C3E1",
+              borderWidth: 1,
+              textColor: COLORS.text,
+              placeholderColor: COLORS.muted,
+              borderRadius: 10,
+              fontSize: 15,
+            }}
+            style={{ width: "100%", height: 50, marginTop: 4 }}
+            onCardChange={(details) => setCardDetails({ complete: details.complete })}
+          />
+          <Pressable onPress={() => setSaveNewCard((v) => !v)} style={s.saveCardRow}>
+            <View style={[s.saveCardCheckbox, saveNewCard && s.saveCardCheckboxOn]}>
+              {saveNewCard && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+            </View>
+            <AppText style={s.saveCardText}>Save this card for future deposits</AppText>
+          </Pressable>
+        </View>
+      )}
 
       <View style={s.feeRow}>
         {surchargePercent > 0 && (
@@ -1005,6 +1066,14 @@ const s = StyleSheet.create({
   // Form card
   formCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: SPACE.lg, marginBottom: SPACE.md, ...GLASS_BORDER, ...CARD_SHADOW },
   formLabel: { ...TYPE.eyebrow, color: COLORS.muted, marginBottom: SPACE.md },
+  savedCardRow: { flexDirection: "row", alignItems: "center", padding: SPACE.md, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.borderLight, marginBottom: SPACE.sm },
+  savedCardRowActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  savedCardName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  savedCardMeta: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
+  saveCardRow: { flexDirection: "row", alignItems: "center", marginTop: SPACE.lg, gap: 10 },
+  saveCardCheckbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },
+  saveCardCheckboxOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  saveCardText: { fontSize: 13, color: COLORS.muted, fontWeight: "500" },
   amtRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   amtSym: { fontSize: 26, fontWeight: "700", color: COLORS.muted },
   amtInput: { flex: 1, fontSize: 36, fontWeight: "700", color: COLORS.text, padding: 0 },

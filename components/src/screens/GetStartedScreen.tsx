@@ -64,6 +64,7 @@ export default function GetStartedScreen() {
         await AsyncStorage.setItem("user_country_code", country!.code);
         await AsyncStorage.setItem("user_country_name", country!.name);
         await AsyncStorage.setItem("user_country_flag", country!.flag ?? "");
+        await AsyncStorage.setItem("signup_stage", "phone_submitted");
         router.push({ pathname: "/verifynumber", params: { phone: fullPhone, requestId: result.request_id || result.requestId || "" } });
       } else { Alert.alert("Error", result?.message || "Failed to send OTP"); }
     } catch { Alert.alert("Error", "Network error. Please try again."); }

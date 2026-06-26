@@ -8,8 +8,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ScreenHeader from "../../../../components/ScreenHeader";
-import { getRecentRecipientsFromDB, deleteRecipientFromDB } from "../../../../api/sync";
+import { getSavedRecipients, deleteRecipientFromDB } from "../../../../api/sync";
 import { updateSavedRecipient } from "../../../../api/config";
+import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "../../../../api/flutterwave";
+import RecipientAvatar from "../../../../components/RecipientAvatar";
 import { COLORS } from "../../../../theme/colors";
 import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER_SUBTLE, GLASS_BORDER } from "../../../../theme/designSystem";
 
@@ -30,14 +32,17 @@ function RecipientCard({ item, onSend, onEdit, onDelete }: {
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const exxsend = item.bankCode === "EXXSEND" || (item as any).payoutType === "exxsend";
   const initials = item.accountName.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
   return (
     <View style={s.card}>
       <View style={s.cardLeft}>
-        <View style={s.avatar}><AppText style={s.avatarText}>{initials}</AppText></View>
+        <RecipientAvatar name={item.accountName} currencyCode={item.destCurrency} countryCode={(item as any).countryCode} isExxsend={exxsend} photoUrl={(item as any).avatarUrl} size={44} />
         <View style={{ flex: 1 }}>
           <AppText style={s.name}>{item.accountName}</AppText>
-          <AppText style={s.meta}>{item.bankName} · {item.accountNumber}</AppText>
+          <AppText style={s.meta}>
+            {exxsend ? `Exxsend • ${item.accountNumber}` : `${item.bankName} · ${item.accountNumber}`}
+          </AppText>
           <View style={s.ccyTag}><AppText style={s.ccyText}>{item.destCurrency}</AppText></View>
         </View>
       </View>
@@ -72,7 +77,7 @@ export default function RecipientsManagementScreen() {
       const ph = await AsyncStorage.getItem("user_phone") || "";
       setPhone(ph);
       if (!ph) return;
-      const res = await getRecentRecipientsFromDB(ph, 100);
+      const res = await getSavedRecipients(ph, undefined, 100);
       setRecipients(res.success ? res.recipients as unknown as Recipient[] : []);
     } catch { setRecipients([]); }
     finally { setLoading(false); }
@@ -96,10 +101,25 @@ export default function RecipientsManagementScreen() {
   }, {});
 
   const handleSend = (r: Recipient) => {
+    if (r.bankCode === "EXXSEND" || (r as any).payoutType === "exxsend") {
+      router.push({
+        pathname: "/exxsendmembers" as any,
+        params: { prefillUsername: String(r.accountNumber || "").replace(/^@/, "") } as any,
+      });
+      return;
+    }
+    const destCurrency = (r.destCurrency || "NGN").toUpperCase();
+    const countryCode = (destCurrency === "CAD" ? "CA" : (CURRENCY_TO_COUNTRY[destCurrency] || "NG")).toUpperCase();
+    const countryName = COUNTRY_NAMES[countryCode] || countryCode;
     router.push({
-      pathname: "/sendmoney" as any,
-      params: { recipient: JSON.stringify(r), mode: "recent" },
-    } as any);
+      pathname: "/recipientnew" as any,
+      params: {
+        destCurrency,
+        countryCode,
+        countryName,
+        prefilledRecipient: JSON.stringify(r),
+      } as any,
+    });
   };
 
   const handleDelete = (r: Recipient) => {

@@ -315,11 +315,12 @@ export function makeStyles(colors: ColorTokens) {
     backgroundColor: colors.card, borderRadius: 16, marginTop: 10,
     borderWidth: 1, borderColor: colors.borderLight,
   },
-  txLeft:   { flexDirection: "row", alignItems: "center", gap: 12 },
+
+  txLeft:   { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 0, marginBottom: 5 },
+  txRight:  { alignItems: "flex-end", flexShrink: 0, marginLeft: 8, marginTop: 2 },
   txIcon:   { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center" },
   txTitle:  { fontWeight: "600", color: colors.text },
   txTime:   { color: colors.muted, fontWeight: "600", marginTop: 2, fontSize: 12 },
-  txRight:  { alignItems: "flex-end" },
   txAmt:    { fontWeight: "700", color: colors.text },
   txSubAmt: { marginTop: 2, color: colors.muted, fontWeight: "600", fontSize: 12 },
 

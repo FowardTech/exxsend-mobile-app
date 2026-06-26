@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Pressable, ActivityIndicator, StyleSheet, ScrollView, Alert } from "react-native";
+import { View, Image, Pressable, ActivityIndicator, StyleSheet, ScrollView, Alert } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import AppText from "../../../../AppText";
 import BackButton from "../../../../BackButton";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,8 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { clearCachedPin } from "../../../../../utils/pinCache";
 import { LinearGradient } from "expo-linear-gradient";
-import { getUserProfile } from "../../../../../api/config";
-import { toHandle } from "../../../../../utils/handle";
+import { getUserProfile, uploadProfilePhoto, removeProfilePhoto } from "../../../../../api/config";
 import { COLORS } from "../../../../../theme/colors";
 import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../../../theme/designSystem";
 
@@ -48,9 +48,18 @@ function Section({ children }: { children: React.ReactNode }) {
 export default function ProfileScreen() {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<{ fullName: string; email: string; phone?: string } | null>(null);
-  const [handle, setHandle] = useState("");
+  // null = not yet known/not set — distinct from "" so we know whether to
+  // show the real @handle or a "choose one" prompt instead.
+  const [realUsername, setRealUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [verified, setVerified] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  // The photo endpoints are keyed by userId in the URL path, not phone —
+  // different from most other calls in this app, so this is tracked
+  // separately rather than reusing whatever "phone for X" state exists
+  // elsewhere on this screen.
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -59,23 +68,105 @@ export default function ProfileScreen() {
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           setUserInfo({ fullName: `${parsed.firstName || ""} ${parsed.lastName || ""}`.trim() || "User", email: parsed.email || "" });
-          setHandle(toHandle(parsed.firstName, parsed.lastName));
         }
+        const cachedUsername = await AsyncStorage.getItem("user_username");
+        if (cachedUsername) setRealUsername(cachedUsername);
         const cachedKyc = await AsyncStorage.getItem("user_kyc_status");
         if (cachedKyc) setVerified(cachedKyc === "verified");
+        const cachedPhoto = await AsyncStorage.getItem("user_profile_photo_url");
+        if (cachedPhoto) setProfilePhotoUrl(cachedPhoto);
         const phone = await AsyncStorage.getItem("user_phone");
         if (phone) {
           const result = await getUserProfile(phone);
           if (result.success && result.user) {
-            const { firstName, lastName, email, kycStatus } = result.user;
+            const { id, firstName, lastName, email, kycStatus, username, profilePhotoUrl: remotePhoto } = result.user;
+            if (id) setUserId(String(id));
             setUserInfo({ fullName: `${firstName || ""} ${lastName || ""}`.trim() || "User", email: email || "", phone });
-            setHandle(toHandle(firstName, lastName));
+            if (username) { setRealUsername(username); AsyncStorage.setItem("user_username", username); }
             if (kycStatus) { setVerified(kycStatus === "verified"); AsyncStorage.setItem("user_kyc_status", kycStatus); }
+            if (remotePhoto) { setProfilePhotoUrl(remotePhoto); AsyncStorage.setItem("user_profile_photo_url", remotePhoto); }
+            else { setProfilePhotoUrl(null); AsyncStorage.removeItem("user_profile_photo_url"); }
           }
         }
       } catch (e) {} finally { setLoading(false); }
     })();
   }, []);
+
+  const handleUpload = useCallback(async () => {
+    if (uploadingPhoto) return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permission needed", "Allow photo library access to set a profile picture.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      if (!userId) {
+        Alert.alert("Not signed in", "Please sign in again and retry.");
+        return;
+      }
+
+      setUploadingPhoto(true);
+      // Show the picked photo immediately rather than waiting on the
+      // upload round-trip — if the upload fails we just revert below.
+      const localUri = result.assets[0].uri;
+      const previousPhoto = profilePhotoUrl;
+      setProfilePhotoUrl(localUri);
+
+      const res = await uploadProfilePhoto(userId, localUri);
+      if (res.success && res.profilePhotoUrl) {
+        setProfilePhotoUrl(res.profilePhotoUrl);
+        AsyncStorage.setItem("user_profile_photo_url", res.profilePhotoUrl);
+      } else {
+        setProfilePhotoUrl(previousPhoto);
+        Alert.alert("Couldn't update photo", res.message || "Please try again.");
+      }
+    } catch (e: any) {
+      Alert.alert("Something went wrong", e?.message || "Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }, [uploadingPhoto, userId, profilePhotoUrl]);
+
+  const handleRemove = useCallback(async () => {
+    if (uploadingPhoto || !userId) return;
+    setUploadingPhoto(true);
+    const previousPhoto = profilePhotoUrl;
+    setProfilePhotoUrl(null);
+    try {
+      const res = await removeProfilePhoto(userId);
+      if (res.success) {
+        AsyncStorage.removeItem("user_profile_photo_url");
+      } else {
+        setProfilePhotoUrl(previousPhoto);
+        Alert.alert("Couldn't remove photo", res.message || "Please try again.");
+      }
+    } catch (e: any) {
+      setProfilePhotoUrl(previousPhoto);
+      Alert.alert("Something went wrong", e?.message || "Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }, [uploadingPhoto, userId, profilePhotoUrl]);
+
+  const handleAvatarPress = useCallback(() => {
+    if (uploadingPhoto) return;
+    if (profilePhotoUrl) {
+      Alert.alert("Profile photo", undefined, [
+        { text: "Choose new photo", onPress: handleUpload },
+        { text: "Remove photo", style: "destructive", onPress: handleRemove },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    } else {
+      handleUpload();
+    }
+  }, [uploadingPhoto, profilePhotoUrl, handleUpload, handleRemove]);
 
   const requireVerified = useCallback((action: () => void) => {
     if (!verified) {
@@ -114,11 +205,22 @@ export default function ProfileScreen() {
         </LinearGradient>
 
         <View style={s.avatarSection}>
-          <View style={s.avatarRing}>
-            <View style={s.avatarCircle}>
-              <AppText style={s.avatarInitials}>{initials}</AppText>
+          <Pressable onPress={handleAvatarPress} disabled={uploadingPhoto} style={s.avatarRing}>
+            {profilePhotoUrl ? (
+              <Image source={{ uri: profilePhotoUrl }} style={s.avatarPhoto} />
+            ) : (
+              <View style={s.avatarCircle}>
+                <AppText style={s.avatarInitials}>{initials}</AppText>
+              </View>
+            )}
+            <View style={s.avatarEditBadge}>
+              {uploadingPhoto ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="camera" size={14} color="#FFFFFF" />
+              )}
             </View>
-          </View>
+          </Pressable>
           {loading ? (
             <ActivityIndicator size="small" color={COLORS.primary} style={{ marginTop: 8 }} />
           ) : (
@@ -127,7 +229,14 @@ export default function ProfileScreen() {
                 <AppText style={s.profileName}>{userInfo?.fullName || "User"}</AppText>
                 <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
               </View>
-              {!!handle && <AppText style={s.profileHandle}>{handle}</AppText>}
+              {realUsername ? (
+                <AppText style={s.profileHandle}>@{realUsername}</AppText>
+              ) : (
+                <Pressable onPress={() => router.push("/setusername" as any)} style={s.setUsernameRow}>
+                  <AppText style={s.setUsernameText}>Choose your @username</AppText>
+                  <Ionicons name="chevron-forward" size={13} color={COLORS.primary} />
+                </Pressable>
+              )}
               <AppText style={s.profileEmail}>{userInfo?.email}</AppText>
             </>
           )}
@@ -195,9 +304,17 @@ const s = StyleSheet.create({
   avatarSection: { alignItems: "center", marginTop: -40 },
   avatarRing: { width: 84, height: 84, borderRadius: RADIUS.full, backgroundColor: "#FFFFFF", padding: 3, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
   avatarCircle: { flex: 1, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
+  avatarPhoto: { flex: 1, borderRadius: RADIUS.full },
   avatarInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 26 },
+  avatarEditBadge: {
+    position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: 13,
+    backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center",
+    borderWidth: 2, borderColor: "#FFFFFF",
+  },
   profileName: { fontSize: 18, fontWeight: "700", color: COLORS.text },
   profileHandle: { fontSize: 13, color: COLORS.primary, fontWeight: "700", marginTop: 3 },
+  setUsernameRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  setUsernameText: { fontSize: 13, color: COLORS.primary, fontWeight: "700" },
   profileEmail: { fontSize: 13, color: COLORS.muted, fontWeight: "600", marginTop: 4, marginBottom: SPACE.sm },
   sectionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.8, paddingHorizontal: SPACE.xl, marginTop: SPACE.xl, marginBottom: SPACE.sm },
   section: { marginHorizontal: SCREEN_PADDING, backgroundColor: COLORS.white, borderRadius: RADIUS.lg, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },

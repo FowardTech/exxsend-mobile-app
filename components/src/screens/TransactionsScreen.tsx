@@ -123,8 +123,12 @@ export default function AllTransactionsScreen() {
         return "arrow-down";
       case "fee":
         return "wallet";
+      // Anything else (e.g. an Exxsend member-to-member transfer, whose
+      // transactionType doesn't match any case above) still has a sign on
+      // its amount — using that gives a meaningful arrow instead of a
+      // blank dot that conveys nothing to the user.
       default:
-        return "ellipse";
+        return tx.amount < 0 ? "arrow-up" : "arrow-down";
     }
   };
 
@@ -281,7 +285,7 @@ export default function AllTransactionsScreen() {
                             color:
                               tx.transactionType === "payout" || tx.amount < 0
                                 ? "#ef4444"
-                                : colors.primary,
+                                : colors.green,
                           },
                         ]}
                       >

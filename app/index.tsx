@@ -6,12 +6,16 @@ import { COLORS } from "../theme/colors";
 
 /**
  * Signup stage keys saved at each step:
+ *   signup_stage = "phone_submitted"  after OTP sent       → go to /verifynumber
  *   signup_stage = "phone_verified"   after OTP verified  → go to /pin
  *   signup_stage = "pin_set"          after PIN confirmed → go to /basicinfo
  *   signup_stage = "basic_info_saved" after basicinfo    → go to /protectpassword
  *   signup_stage = "password_set"     after password set → go to /(tabs)
- *   email_verified = "true"           after email OTP    → go to /homeaddress (if needed)
- *   auth_token present                fully signed in    → go to /(tabs)
+ *
+ * email_verified / homeaddress are NOT part of this chain — those are
+ * post-login profile-completion prompts surfaced from within the
+ * authenticated app (see HomeScreen's "Verify your email" card), not steps
+ * a not-yet-logged-in user could be mid-way through here.
  */
 async function resolveStartRoute(): Promise<string> {
   const [
@@ -19,13 +23,11 @@ async function resolveStartRoute(): Promise<string> {
     stage,
     phone,
     hasSeenOnboarding,
-    emailVerified,
   ] = await Promise.all([
     AsyncStorage.getItem("auth_token"),
     AsyncStorage.getItem("signup_stage"),
     AsyncStorage.getItem("user_phone"),
     AsyncStorage.getItem("hasSeenOnboarding"),
-    AsyncStorage.getItem("email_verified"),
   ]);
 
   // ── Fully authenticated ──────────────────────────────────────
@@ -34,6 +36,11 @@ async function resolveStartRoute(): Promise<string> {
   // ── Mid-signup: resume from where they left off ──────────────
   if (phone && stage) {
     switch (stage) {
+      // No requestId param here — whatever OTP was sent before has very
+      // likely expired by now, so VerifyNumberScreen auto-resends a fresh
+      // one on mount when it notices it wasn't handed a requestId, rather
+      // than showing an input for a code that can no longer be valid.
+      case "phone_submitted":   return `/verifynumber?phone=${encodeURIComponent(phone)}`;
       case "phone_verified":   return "/pin";
       case "pin_set":          return "/basicinfo";
       case "basic_info_saved": return "/protectpassword";
@@ -43,7 +50,7 @@ async function resolveStartRoute(): Promise<string> {
   }
 
   // ── Partially started: has phone but no stage yet ────────────
-  // Phone saved but OTP never completed — restart from getstarted
+  // Phone saved but OTP never even sent — restart from getstarted
   if (phone && !stage) return "/getstarted";
 
   // ── First launch ─────────────────────────────────────────────

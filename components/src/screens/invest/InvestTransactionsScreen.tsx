@@ -59,7 +59,7 @@ export default function InvestTransactionsScreen() {
     <SafeAreaView style={s.root}>
       <View style={s.header}>
         <BackButton onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)" as any)} />
-        <AppText style={s.headerTitle}>Investment Activity</AppText>
+        <AppText style={s.headerTitle}>Stock Activity</AppText>
         <View style={{ width: 34 }} />
       </View>
 

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { View, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import BackButton from "../../BackButton";
@@ -11,8 +11,9 @@ import { useStyles } from "../../../theme/styles";
 import { useOtherStyles } from "../../../theme/otherstyles";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { isFlutterwaveCurrency, COUNTRY_NAMES, CURRENCY_TO_COUNTRY } from "../../../api/flutterwave";
+import RecipientAvatar from "../../../components/RecipientAvatar";
 import { getCorridorOrFallback } from "../../../api/corridors";
-import { getRecentRecipientsFromDB, RecentRecipientFromDB } from "@/api/sync";
+import { getSavedRecipients, RecentRecipientFromDB } from "@/api/sync";
 
 export interface SavedRecipient {
   id: string;
@@ -71,6 +72,19 @@ function isInteracRecipient(r: any): boolean {
   return t === "interac" || t === "etransfer" || t === "e-transfer";
 }
 
+// ✅ detect a saved Exxsend-member recipient (sent peer-to-peer via
+// @username, not an actual bank account) — saved with payoutType:"exxsend"
+// and bankCode:"EXXSEND" per saveRecipientToDB's call site in
+// ExxsendMembersScreen.tsx.
+function isExxsendRecipient(r: any): boolean {
+  return r?.payoutType === "exxsend" || r?.bankCode === "EXXSEND";
+}
+
+// Their username is stored as the literal accountNumber value ("@username").
+function getExxsendUsername(r: any): string {
+  return String(r?.accountNumber || r?.accountName || "").replace(/^@/, "");
+}
+
 export default function RecipientSelectScreen() {
   const { colors } = useAppTheme();
   const styles = useStyles();
@@ -97,6 +111,16 @@ export default function RecipientSelectScreen() {
   }, [raw.destCurrency, raw.fromWalletId, raw.fromCurrency, raw.fromAmount, raw.toAmount, raw.rate]);
 
   const destCurrency = (navParams.destCurrency || "NGN").toUpperCase().trim();
+
+  // If a caller ever forgets to pass destCurrency again (exactly what
+  // happened before — this screen silently defaulted to NGN/Nigeria
+  // regardless of what the user actually wanted to send), surface it
+  // instead of quietly proceeding with a guessed currency.
+  useEffect(() => {
+    if (!navParams.destCurrency) {
+      console.warn("[RecipientSelectScreen] No destCurrency param received — defaulting to NGN. This usually means an upstream screen navigated here without passing a currency.");
+    }
+  }, [navParams.destCurrency]);
 
   // ✅ Interac support
   const isInterac = destCurrency === "CAD";
@@ -154,7 +178,7 @@ export default function RecipientSelectScreen() {
         }
 
         // ✅ Keep your same API call, then filter by currency (CAD will work if your DB stores CAD recipients)
-        const rawRecipients = await getRecentRecipientsFromDB(phone);
+        const rawRecipients = await getSavedRecipients(phone);
         if (!mounted) return;
 
         const recipientsArr = normalizeRecipients(rawRecipients);
@@ -314,10 +338,20 @@ export default function RecipientSelectScreen() {
             </View>
           ) : (
             <View style={otherstyles.recipientSelectCard}>
-              {filtered.map((r: any, idx: number) => (
+              {filtered.map((r: any, idx: number) => {
+                const exxsendFlag = isExxsendRecipient(r);
+                return (
                 <View key={`${r?.id || ""}-${r?.bankCode || ""}-${r?.accountNumber || ""}-${idx}`}>
                   <Pressable
                     onPress={() => {
+                      if (exxsendFlag) {
+                        router.push({
+                          pathname: "/exxsendmembers" as any,
+                          params: { prefillUsername: getExxsendUsername(r) } as any,
+                        });
+                        return;
+                      }
+
                       const rCurrency = getRecipientCurrency(r) || destCurrency;
 
                       // ✅ For CAD, always force CA
@@ -328,16 +362,79 @@ export default function RecipientSelectScreen() {
 
                       const interacFlag = isInteracRecipient(r) || rCurrency === "CAD";
 
+                      // Resolve this recipient's own corridor (not necessarily
+                      // the one this screen was opened for) to know which
+                      // granular field its saved generic bankCode actually
+                      // belongs in, and whether its accountNumber is really
+                      // an IBAN. Without this, the confirm screen only ever
+                      // saw a generic accountName/accountNumber/bankCode —
+                      // never iban, routingNumber/sortCode/bsbCode, bicSwift,
+                      // or payoutType — so the actual transfer execution had
+                      // nothing to send for any of those, and "USD
+                      // withdrawals require a 9-digit ABA routing number"
+                      // came back from the backend instead of being caught
+                      // here first.
+                      const rCorridor = !interacFlag ? getCorridorOrFallback(rCurrency, cc) : undefined;
+                      const rMethod = rCorridor?.methods?.find((m) =>
+                        r?.networkCode ? m.method === "momo" : m.method !== "momo"
+                      ) || rCorridor?.methods?.[0];
+                      const isIbanCorridor = rMethod?.routingFieldType === "iban_only";
+                      const routingValue = r?.bankCode || "";
+
+                      // Block here — the same way the manual-entry form
+                      // itself would — if this corridor requires a routing
+                      // code and the saved record doesn't actually have a
+                      // validly-formatted one.
+                      if (!isIbanCorridor && rMethod?.routingFieldType) {
+                        const routingFieldDef = rMethod.fields?.find(
+                          (f) => f.key === "routingNumber" || f.key === "sortCode" || f.key === "bsbCode"
+                        );
+                        const routingErr = routingFieldDef?.validate(routingValue);
+                        if (routingErr) {
+                          Alert.alert(
+                            "Missing bank details",
+                            `${r?.accountName || "This recipient"} is missing their ${routingFieldDef?.label || "routing code"}. Please re-add them with full bank details.`,
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Add new recipient",
+                                onPress: () =>
+                                  router.push({
+                                    pathname: "/recipientnew" as any,
+                                    params: { destCurrency: rCurrency, countryCode: cc, countryName: COUNTRY_NAMES[cc] || cc } as any,
+                                  }),
+                              },
+                            ]
+                          );
+                          return;
+                        }
+                      }
+
                       router.push({
                         pathname: "/recipientconfirm" as any,
                         params: {
                           ...navParams,
                           recipient: JSON.stringify({
-                            ...r,
-                            destCurrency: rCurrency,
+                            accountName: r?.accountName || "",
+                            accountNumber: isIbanCorridor ? "" : (r?.accountNumber || ""),
+                            bankCode: r?.bankCode || (interacFlag ? "INTERAC" : ""),
+                            bankName: r?.bankName || (interacFlag ? "Interac e-Transfer" : ""),
+                            currency: rCurrency,
                             countryCode: cc,
-                            // ✅ standardize this flag for your confirm screen
-                            ...(interacFlag ? { isInterac: true } : {}),
+                            isInterac: interacFlag,
+                            payoutMethod: r?.payoutMethod || (interacFlag ? "interac" : rMethod?.method),
+                            payoutType: r?.payoutType,
+                            networkCode: r?.networkCode || "",
+                            networkName: r?.networkName || "",
+                            nameVerified: !!r?.nameVerified,
+                            beneficiaryId: r?.id,
+                            bankCountry: cc,
+                            iban: isIbanCorridor ? (r?.accountNumber || "") : "",
+                            bicSwift: isIbanCorridor ? routingValue : "",
+                            routingFieldType: rMethod?.routingFieldType ?? null,
+                            routingNumber: rMethod?.routingFieldType === "aba" ? routingValue : "",
+                            sortCode: rMethod?.routingFieldType === "sort_code" ? routingValue : "",
+                            bsbCode: rMethod?.routingFieldType === "bsb_code" ? routingValue : "",
                           }),
                           mode: "saved",
                         } as any,
@@ -345,9 +442,15 @@ export default function RecipientSelectScreen() {
                     }}
                     style={otherstyles.recipientSelectRow}
                   >
-                    <View style={otherstyles.recipientSelectAvatarCircle}>
-                      <AppText style={otherstyles.recipientSelectAvatarText}>{getInitials(r?.accountName)}</AppText>
-                    </View>
+                    <RecipientAvatar
+                      name={r?.accountName || ""}
+                      currencyCode={getRecipientCurrency(r)}
+                      countryCode={r?.countryCode}
+                      isExxsend={exxsendFlag}
+                      photoUrl={r?.avatarUrl}
+                      size={44}
+                      style={{ marginRight: 12 }}
+                    />
 
                     <View style={otherstyles.recipientSelectRowInfo}>
                       <AppText style={otherstyles.recipientSelectRowName} numberOfLines={1}>
@@ -355,9 +458,11 @@ export default function RecipientSelectScreen() {
                       </AppText>
 
                       <AppText style={otherstyles.recipientSelectRowSub} numberOfLines={1}>
-                        {isInterac
-                          ? `Interac • ${String(r?.accountNumber || "—")}`
-                          : `${r?.bankName || "—"} • ${String(r?.accountNumber || "—")}`}
+                        {exxsendFlag
+                          ? `Exxsend • @${getExxsendUsername(r)}`
+                          : isInterac
+                            ? `Interac • ${String(r?.accountNumber || "—")}`
+                            : `${r?.bankName || "—"} • ${String(r?.accountNumber || "—")}`}
                       </AppText>
                     </View>
 
@@ -366,7 +471,8 @@ export default function RecipientSelectScreen() {
 
                   {idx !== filtered.length - 1 && <View style={otherstyles.recipientSelectDivider} />}
                 </View>
-              ))}
+                );
+              })}
             </View>
           )}
 

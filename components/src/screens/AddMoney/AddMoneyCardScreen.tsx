@@ -100,7 +100,20 @@ export default function AddMoneyCardScreen() {
   const handlePay = async () => {
     if (!amount || parseFloat(amount) <= 0) { Alert.alert("Enter amount", "Please enter a valid amount."); return; }
     const rawNum = num.replace(/\s/g, "");
-    if (rawNum.length < 15) { Alert.alert("Invalid card", "Please enter a valid card number."); return; }
+    const selectedCard = selectedId ? savedCards.find((c) => c.id === selectedId) : null;
+    if (rawNum.length < 15) {
+      Alert.alert(
+        selectedCard ? "Confirm your card" : "Invalid card",
+        selectedCard
+          ? `For security, please re-enter the full card number for ${selectedCard.brand} •••• ${selectedCard.last4} to continue.`
+          : "Please enter a valid card number."
+      );
+      return;
+    }
+    if (selectedCard && rawNum.slice(-4) !== selectedCard.last4) {
+      Alert.alert("That doesn't match", `The number you entered doesn't match ${selectedCard.brand} •••• ${selectedCard.last4}. Please re-check, or use a different card.`);
+      return;
+    }
     if (!month || !year) { Alert.alert("Expiry required", "Please enter the card expiry date."); return; }
     if (cvv.length < 3) { Alert.alert("CVV required", "Please enter the 3 or 4 digit CVV."); return; }
     if (!name.trim()) { Alert.alert("Name required", "Please enter the cardholder name."); return; }
@@ -171,7 +184,12 @@ export default function AddMoneyCardScreen() {
 
           {/* Card details form */}
           <View style={s.section}>
-            <AppText style={s.sectionTitle}>Card Details</AppText>
+            <AppText style={s.sectionTitle}>{selectedId ? "Confirm Card" : "Card Details"}</AppText>
+            {!!selectedId && (
+              <AppText style={s.confirmHint}>
+                For your security, re-enter the full card number and CVV to confirm this is the right card.
+              </AppText>
+            )}
 
             <AppText style={s.fieldLabel}>Card number</AppText>
             <View style={s.inputRow}>
@@ -182,11 +200,21 @@ export default function AddMoneyCardScreen() {
             <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
               <View style={{ flex: 1 }}>
                 <AppText style={s.fieldLabel}>Month</AppText>
-                <AppTextInput value={month} onChangeText={t => setMonth(t.replace(/\D/g, "").slice(0, 2))} keyboardType="number-pad" placeholder="MM" placeholderTextColor={COLORS.muted} style={s.inputPlain} maxLength={2} />
+                <AppTextInput
+                  value={month} onChangeText={t => setMonth(t.replace(/\D/g, "").slice(0, 2))}
+                  keyboardType="number-pad" placeholder="MM" placeholderTextColor={COLORS.muted}
+                  editable={!selectedId}
+                  style={[s.inputPlain, !!selectedId && s.inputLocked]} maxLength={2}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <AppText style={s.fieldLabel}>Year</AppText>
-                <AppTextInput value={year} onChangeText={t => setYear(t.replace(/\D/g, "").slice(0, 2))} keyboardType="number-pad" placeholder="YY" placeholderTextColor={COLORS.muted} style={s.inputPlain} maxLength={2} />
+                <AppTextInput
+                  value={year} onChangeText={t => setYear(t.replace(/\D/g, "").slice(0, 2))}
+                  keyboardType="number-pad" placeholder="YY" placeholderTextColor={COLORS.muted}
+                  editable={!selectedId}
+                  style={[s.inputPlain, !!selectedId && s.inputLocked]} maxLength={2}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <AppText style={s.fieldLabel}>CVV</AppText>
@@ -195,14 +223,20 @@ export default function AddMoneyCardScreen() {
             </View>
 
             <AppText style={[s.fieldLabel, { marginTop: 14 }]}>Cardholder name</AppText>
-            <AppTextInput value={name} onChangeText={setName} placeholder="John Doe" placeholderTextColor={COLORS.muted} autoCapitalize="words" style={s.inputPlain} />
+            <AppTextInput
+              value={name} onChangeText={setName} placeholder="John Doe" placeholderTextColor={COLORS.muted}
+              autoCapitalize="words" editable={!selectedId}
+              style={[s.inputPlain, !!selectedId && s.inputLocked]}
+            />
 
-            <Pressable onPress={() => setSave(v => !v)} style={s.saveRow}>
-              <View style={[s.checkbox, save && s.checkboxOn]}>
-                {save && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
-              </View>
-              <AppText style={s.saveText}>Save this card for future payments</AppText>
-            </Pressable>
+            {!selectedId && (
+              <Pressable onPress={() => setSave(v => !v)} style={s.saveRow}>
+                <View style={[s.checkbox, save && s.checkboxOn]}>
+                  {save && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+                </View>
+                <AppText style={s.saveText}>Save this card for future payments</AppText>
+              </Pressable>
+            )}
           </View>
 
           {/* Pay button */}
@@ -231,12 +265,14 @@ const s = StyleSheet.create({
   body: { padding: 20, paddingBottom: 40 },
   section: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.borderLight },
   sectionTitle: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 14 },
+  confirmHint: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: -8, marginBottom: 14, lineHeight: 17 },
   amtRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   ccy: { fontSize: 16, fontWeight: "700", color: COLORS.muted },
   amtInput: { flex: 1, fontSize: 32, fontWeight: "700", color: COLORS.text, padding: 0 },
   inputRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.bg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 50 },
   input: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text, padding: 0 },
   inputPlain: { backgroundColor: COLORS.bg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 50, fontSize: 15, fontWeight: "600", color: COLORS.text },
+  inputLocked: { backgroundColor: COLORS.borderLight, color: COLORS.muted },
   fieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
   saveRow: { flexDirection: "row", alignItems: "center", marginTop: 16, gap: 10 },
   checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },

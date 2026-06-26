@@ -1,20 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StatusBar, View, StyleSheet, Dimensions } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, StatusBar, View, StyleSheet, Dimensions } from "react-native";
 import AppText from "../../AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as LocalAuthentication from "expo-local-authentication";
 import NetInfo from "@react-native-community/netinfo";
 
 import {
-  checkEmailVerified, createPlaidIdvSession, getExchangeRates,
+  checkEmailVerified, getExchangeRates,
   getTotalBalance, getUserAccounts, getUserProfile, sendEmailOtp,
   getReferralConfig, getActivePromotionalBanners, PromotionalBanner,
 } from "@/api/config";
 import { getUserTransactions, WalletTransaction } from "@/api/transactions";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { getRecentRecipientsFromDB, RecentRecipientFromDB } from "@/api/sync";
+import { getRecentRecipientsFromDB, getLocalRecentRecipients, RecentRecipientFromDB } from "@/api/sync";
+import { fetchMyFeeWaivers, FeeWaiversResponse } from "@/api/feeWaivers";
+import FeeWaiverBanner from "@/components/FeeWaiverBanner";
+import RecipientAvatar from "@/components/RecipientAvatar";
+import BiometricPromptBanner from "@/components/BiometricPromptBanner";
+import { getIncomingMoneyRequests } from "@/api/moneyRequests";
 import { getLocalBalance } from "../../../api/flutterwave";
 import { usePendingSettlements, clearPendingForCurrency } from "../../../hooks/usePendingSettlements";
 import { useAppTheme } from "../../../theme/ThemeProvider";
@@ -29,6 +35,7 @@ import VerifyIdentityCardScreen from "./VerifyIdentityCardScreen";
 import BottomSheet from "../../BottomSheet";
 import HomeQuickActionsCarousel from "../../HomeQuickActionsCarousel";
 import { useNotificationContext } from "../../../context/NotificationContext";
+import { COLORS } from "@/theme/colors";
 
 // ─── Types ───────────────────────────────────────────────────
 type UserAccount = {
@@ -79,7 +86,11 @@ function getTxIcon(tx: WalletTransaction): keyof typeof Ionicons.glyphMap {
     case "deposit":
     case "transfer_in": return "arrow-down";
     case "fee": return "wallet";
-    default: return "ellipse";
+    // Anything else (e.g. an Exxsend member-to-member transfer, whose
+    // transactionType doesn't match any case above) still has a sign on
+    // its amount — using that gives a meaningful arrow instead of a blank
+    // dot that conveys nothing to the user.
+    default: return tx.amount < 0 ? "arrow-up" : "arrow-down";
   }
 }
 function getTxTitle(tx: WalletTransaction): string {
@@ -124,8 +135,11 @@ async function saveTotal(total: number, currency: string, symbol: string, phone:
 }
 
 // ─── Small sub-components ────────────────────────────────────
-function InitialsAvatar({ name, size = 38 }: { name: string; size?: number }) {
+function InitialsAvatar({ name, size = 38, photoUrl }: { name: string; size?: number; photoUrl?: string | null }) {
   const { colors } = useAppTheme();
+  if (photoUrl) {
+    return <Image source={{ uri: photoUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+  }
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center" }}>
       <AppText style={{ color: "#FFFFFF", fontWeight: "700", fontSize: size * 0.36 }}>{getInit(name)}</AppText>
@@ -156,6 +170,8 @@ export default function HomeScreen() {
   const [loading,       setLoading]       = useState(true);
   const [refreshing,    setRefreshing]    = useState(false);
   const [userName,      setUserName]      = useState("");
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [email,         setEmail]         = useState("");
   const [totalBalance,  setTotalBalance]  = useState<number | null>(null);
   const [homeCcy,       setHomeCcy]       = useState("CAD");
@@ -167,6 +183,12 @@ export default function HomeScreen() {
   const [userPhone,     setUserPhone]     = useState("");
   const [emailVerified, setEmailVerified] = useState(true);
   const [kycStatus,     setKycStatus]     = useState("");
+  // Small "turn on biometric login" banner, shown above the balance hero
+  // card once identity verification is approved — only relevant once the
+  // device actually has biometric hardware enrolled, isn't already
+  // enabled, and hasn't been dismissed before.
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [bioType, setBioType] = useState("Biometric");
   const [saving,        setSaving]        = useState(false);
   const [recipients,    setRecipients]    = useState<RecentRecipient[]>([]);
   const [sheetOpen,     setSheetOpen]     = useState(false);
@@ -187,6 +209,11 @@ export default function HomeScreen() {
   // and verification status, since both are used to target which banners
   // they're eligible to see.
   const [promoBanners, setPromoBanners] = useState<PromotionalBanner[]>([]);
+
+  // Fee-waiver program — free-transaction credits and progress toward
+  // earning more. Read-only banner; the actual waiver application happens
+  // server-side on send/transfer/conversion.
+  const [feeWaivers, setFeeWaivers] = useState<FeeWaiversResponse | null>(null);
 
   const isFetching = useRef(false);
   const lastFetch  = useRef(0);
@@ -230,12 +257,13 @@ export default function HomeScreen() {
         if (pref === "true" && mounted.current) setHideBalance(true);
         if (!phone) { if (mounted.current) setLoading(false); return; }
         if (mounted.current) setUserPhone(phone);
-        const [ca, ct, su, sk] = await Promise.all([loadAccts(phone), loadTotal(phone), AsyncStorage.getItem("user_info"), AsyncStorage.getItem("user_kyc_status")]);
+        const [ca, ct, su, sk, photo] = await Promise.all([loadAccts(phone), loadTotal(phone), AsyncStorage.getItem("user_info"), AsyncStorage.getItem("user_kyc_status"), AsyncStorage.getItem("user_profile_photo_url")]);
         if (!mounted.current) return;
         if (ca.length > 0) { setAccounts(ca); accsRef.current = ca; }
         if (ct) { setTotalBalance(ct.total); setHomeCcy(ct.currency || "CAD"); setHomeSym(ct.symbol || "$"); }
         if (su) { try { const u = JSON.parse(su); setUserName(String(u.firstName || u.first_name || "").trim()); setEmail(u.email || ""); } catch {} }
         if (sk) setKycStatus(sk);
+        if (photo) setProfilePhotoUrl(photo);
       } catch {}
     })();
   }, []); // eslint-disable-line
@@ -252,11 +280,13 @@ export default function HomeScreen() {
 
       getUserProfile(phone).then(res => {
         if (!mounted.current || !res?.success || !res.user) return;
-        const { kycStatus: ks, firstName, first_name, email: em, homeCurrency: hc, homeCurrencySymbol: hs, countryCode: cc } = res.user;
+        const { kycStatus: ks, firstName, first_name, email: em, homeCurrency: hc, homeCurrencySymbol: hs, countryCode: cc, profilePhotoUrl: photo } = res.user;
         if (ks) { setKycStatus(ks); AsyncStorage.setItem("user_kyc_status", ks); }
         const nm = String(firstName || first_name || "").trim(); if (nm) setUserName(nm);
         if (em) setEmail(em);
         if (hc) setHomeCcy(hc); if (hs || hc) setHomeSym(hs || hc || "$");
+        if (photo) { setProfilePhotoUrl(photo); AsyncStorage.setItem("user_profile_photo_url", photo); }
+        else { setProfilePhotoUrl(null); AsyncStorage.removeItem("user_profile_photo_url"); }
         // Country + verification status are both used to target which
         // promotional banners this user is eligible to see — fetched here
         // since this is the first point either becomes known this session.
@@ -289,6 +319,11 @@ export default function HomeScreen() {
         if (mounted.current && txRes.success) setRecentTx(txRes.transactions);
       } catch {} finally { if (mounted.current) setRecentTxLoading(false); }
 
+      try {
+        const waiverRes = await fetchMyFeeWaivers(phone);
+        if (mounted.current) setFeeWaivers(waiverRes);
+      } catch {}
+
       setRatesLoading(true);
       try {
         const ccys = [...new Set(accsRef.current.map(a => normCcy(a.currencyCode)).filter(Boolean))];
@@ -314,30 +349,109 @@ export default function HomeScreen() {
 
   const loadRecipients = useCallback(async () => {
     const phone = userPhone || (await AsyncStorage.getItem("user_phone")) || "";
-    if (!phone) return;
-    getRecentRecipientsFromDB(phone, 5).then(r => {
-      if (r.success && mounted.current) {
-        // Defensive sort: the backend's /recent endpoint should already
-        // return these most-recent-first, but sorting by lastSentAt here
-        // too guarantees the UI never shows a stale order even if the
-        // backend's ordering is ever off.
-        const sorted = [...r.recipients].sort((a, b) => (b.lastSentAt || 0) - (a.lastSentAt || 0));
-        setRecipients(sorted);
+    if (!phone) { console.log("[HomeScreen] loadRecipients: no phone, skipping"); return; }
+    try {
+      const [backendRes, localList] = await Promise.all([
+        getRecentRecipientsFromDB(phone, 6),
+        getLocalRecentRecipients(phone),
+      ]);
+      if (!mounted.current) { console.log("[HomeScreen] loadRecipients: unmounted before resolving, dropping result"); return; }
+      const backendList = backendRes.success ? backendRes.recipients : [];
+      console.log(
+        `[HomeScreen] loadRecipients: backend success=${backendRes.success} count=${backendList.length}` +
+        `, local count=${localList.length}`
+      );
+      // Local entries take priority for the same recipient (matched by
+      // account identity) since they're recorded the instant a transfer
+      // actually succeeds — the freshest possible signal — rather than
+      // waiting on whatever the backend's own computation/timing is.
+      const merged = [...localList];
+      for (const r of backendList) {
+        const isDup = merged.some(
+          (m) => m.accountNumber === r.accountNumber && m.bankCode === r.bankCode && m.destCurrency === r.destCurrency
+        );
+        if (!isDup) merged.push(r);
       }
-    });
+      const sorted = merged.sort((a, b) => (b.lastSentAt || 0) - (a.lastSentAt || 0)).slice(0, 6);
+      console.log(`[HomeScreen] loadRecipients: final merged count=${sorted.length}`, JSON.stringify(sorted.map(r => r.accountName)));
+      setRecipients(sorted);
+    } catch (e: any) {
+      console.log("[HomeScreen] loadRecipients: threw, recipients NOT updated:", e?.message);
+    }
   }, [userPhone]);
 
+  // Lightweight — just enough to decide whether to show a "you have a
+  // pending request" banner; the full list/actions live in
+  // MoneyRequestsScreen.tsx.
+  const loadPendingRequests = useCallback(async () => {
+    const phone = userPhone || (await AsyncStorage.getItem("user_phone")) || "";
+    if (!phone) return;
+    try {
+      const res = await getIncomingMoneyRequests(phone);
+      if (!mounted.current) return;
+      if (res.success) {
+        setPendingRequestCount(res.requests.filter((r) => r.status === "pending").length);
+      }
+    } catch {}
+  }, [userPhone]);
+
+  // Re-checks whenever kycStatus changes (e.g. the moment verification
+  // gets approved) — gated on "verified" specifically, hardware actually
+  // being enrolled, not already enabled, and not previously dismissed.
+  const checkBiometricPrompt = useCallback(async (status: string) => {
+    if (status !== "verified") { setShowBiometricPrompt(false); return; }
+    try {
+      const [enabled, dismissed] = await Promise.all([
+        AsyncStorage.getItem("biometric_enabled"),
+        AsyncStorage.getItem("biometric_prompt_dismissed"),
+      ]);
+      if (enabled === "true" || dismissed === "true") { setShowBiometricPrompt(false); return; }
+
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!compatible || !enrolled) { setShowBiometricPrompt(false); return; }
+
+      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+        setBioType("Face ID");
+      } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+        setBioType("Touch ID");
+      } else {
+        setBioType("Biometric");
+      }
+      setShowBiometricPrompt(true);
+    } catch {
+      setShowBiometricPrompt(false);
+    }
+  }, []);
+
+  useEffect(() => { checkBiometricPrompt(kycStatus); }, [kycStatus, checkBiometricPrompt]);
+
+  const handleBiometricPromptPress = useCallback(() => {
+    router.push("/securityprivacy" as any);
+  }, [router]);
+
+  const handleBiometricPromptDismiss = useCallback(async () => {
+    setShowBiometricPrompt(false);
+    try { await AsyncStorage.setItem("biometric_prompt_dismissed", "true"); } catch {}
+  }, []);
+
   useEffect(() => {
-    fetchData(false); loadRecipients(); refreshSettlements();
+    fetchData(false); loadRecipients(); refreshSettlements(); loadPendingRequests();
     AsyncStorage.getItem("user_phone").then(p => { if (p) checkEmailVerified(p).then(r => { if (mounted.current) setEmailVerified(!!r?.emailVerified); }); });
-  }, [fetchData, loadRecipients, refreshSettlements]);
+  }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests]);
 
   useFocusEffect(useCallback(() => {
     focusCount.current += 1; if (focusCount.current <= 1) return;
-    fetchData(true); loadRecipients(); refreshSettlements();
-  }, [fetchData, loadRecipients, refreshSettlements]));
+    fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests();
+    // Re-check rather than relying solely on kycStatus changing — covers
+    // returning from Settings right after toggling biometric on/off,
+    // where kycStatus itself never changes but the prompt should
+    // disappear immediately.
+    checkBiometricPrompt(kycStatus);
+  }, [fetchData, loadRecipients, refreshSettlements, checkBiometricPrompt, kycStatus, loadPendingRequests]));
 
-  const onRefresh = useCallback(() => { setRefreshing(true); fetchData(true); loadRecipients(); refreshSettlements(); }, [fetchData, loadRecipients, refreshSettlements]);
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests(); }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests]);
   const toggleHide = useCallback(() => { setHideBalance(p => { const n = !p; AsyncStorage.setItem(HIDE_KEY, String(n)).catch(() => {}); return n; }); }, []);
 
   useEffect(() => {
@@ -360,16 +474,8 @@ export default function HomeScreen() {
     catch { Alert.alert("Error", "Could not send verification email"); }
   }, [email, router]);
 
-  const handleVerifyIdentity = useCallback(async () => {
-    setSaving(true);
-    try {
-      const phone = await AsyncStorage.getItem("user_phone");
-      if (!phone) { Alert.alert("Error", "Phone number not found"); return; }
-      const res = await createPlaidIdvSession({ phone });
-      if (!res?.success || !res?.shareable_url) { Alert.alert("Error", res?.message || "Could not start verification"); return; }
-      router.push({ pathname: "/persona-verification", params: { url: res.shareable_url, inquiryId: res.idv_session_id || "" } });
-    } catch { Alert.alert("Error", "Could not start identity verification"); }
-    finally { setSaving(false); }
+  const handleVerifyIdentity = useCallback(() => {
+    router.push("/sumsub-verification" as any);
   }, [router]);
 
   const s = useMemo(() => StyleSheet.create({
@@ -417,6 +523,9 @@ export default function HomeScreen() {
     backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center",
   },
   balanceActionLabel: { ...TYPE.caption, color: "#FFFFFF", marginTop: SPACE.xs },
+  requestBanner: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.sm + 2, paddingHorizontal: SPACE.md, marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md, gap: SPACE.sm },
+  requestBannerIcon: { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  requestBannerText: { flex: 1, fontSize: 12.5, fontWeight: "600", color: COLORS.primary },
 
   // Quick actions — a clean white card, blue icon tiles (navigation, not money)
   qaCard: {
@@ -459,13 +568,18 @@ export default function HomeScreen() {
   walletScroll: { paddingHorizontal: SCREEN_PADDING, gap: SPACE.md, paddingBottom: SPACE.xs },
   walletCard: {
     width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg, padding: SPACE.xl,
-    backgroundColor: colors.card, overflow: "hidden",
-    ...GLASS_BORDER,
-    ...CARD_SHADOW,
+    backgroundColor: "transparent", overflow: "hidden",
+    // Not the shared GLASS_BORDER here on purpose — that border color
+    // (#EEF3FA) is actually lighter than the page background (#f9f9f9) and
+    // only reads as a visible edge when there's a card fill behind it to
+    // anchor it. With the fill gone, it needs a tone that's genuinely
+    // darker than the page itself to stay visible as a line.
+    borderWidth: 1,
+    borderColor: "#e2e4e5ff",
   },
   walletCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACE.xl },
   walletFlagRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  walletIconBadge: { width: 22, height: 22, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center" },
+  walletIconBadge: { width: 35, height: 35, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center" },
   walletCcy: { ...TYPE.subtitle, color: colors.text },
   walletBalLabel: { ...TYPE.caption, color: colors.muted, marginBottom: SPACE.xs },
   walletBal: { fontSize: 28, fontWeight: "700" as const, color: colors.text, letterSpacing: -0.3 },
@@ -551,7 +665,7 @@ export default function HomeScreen() {
         {/* ── Plain header: avatar, greeting, bell ── */}
         <View style={s.header}>
           <Pressable onPress={() => router.push("/profile")} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <InitialsAvatar name={userName} size={42} />
+            <InitialsAvatar name={userName} size={42} photoUrl={profilePhotoUrl} />
             <View>
               <AppText style={s.greetName}>Hi, {userName || "there"}</AppText>
               <AppText style={s.greetSub}>{homeCcy} Wallet</AppText>
@@ -566,6 +680,14 @@ export default function HomeScreen() {
             )}
           </Pressable>
         </View>
+
+        {showBiometricPrompt && (
+          <BiometricPromptBanner
+            bioType={bioType}
+            onPress={handleBiometricPromptPress}
+            onDismiss={handleBiometricPromptDismiss}
+          />
+        )}
 
         {/* ── Balance card ── */}
         <LinearGradient
@@ -601,6 +723,12 @@ export default function HomeScreen() {
               </View>
               <AppText style={s.balanceActionLabel}>Send</AppText>
             </Pressable>
+            <Pressable onPress={() => isKyc ? router.push("/requestmoney" as any) : blocked()} style={{ alignItems: "center", gap: 6 }}>
+              <View style={s.balanceActionIcon}>
+                <Ionicons name="arrow-down-outline" size={20} color="#FFFFFF" />
+              </View>
+              <AppText style={s.balanceActionLabel}>Request</AppText>
+            </Pressable>
             <Pressable onPress={() => router.push("/exchangerates")} style={{ alignItems: "center", gap: 6 }}>
               <View style={s.balanceActionIcon}>
                 <Ionicons name="repeat-outline" size={20} color="#FFFFFF" />
@@ -616,34 +744,51 @@ export default function HomeScreen() {
           </View>
         </LinearGradient>
 
-        {/* ── Quick send ── */}
+        {!!feeWaivers && (
+          <View style={{ marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md }}>
+            <FeeWaiverBanner waivers={feeWaivers} />
+          </View>
+        )}
+
+        {pendingRequestCount > 0 && (
+          <Pressable onPress={() => router.push("/moneyrequests" as any)} style={s.requestBanner}>
+            <View style={s.requestBannerIcon}>
+              <Ionicons name="cash-outline" size={16} color={COLORS.primary} />
+            </View>
+            <AppText style={s.requestBannerText}>
+              You have {pendingRequestCount} pending money request{pendingRequestCount > 1 ? "s" : ""}
+            </AppText>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+          </Pressable>
+        )}
+
+        {/* ── Recent recipients — now placed right after the balance hero
+            card. Tapping one opens their activity/detail screen (with a
+            "Send to this recipient" button there) rather than jumping
+            straight into the send flow. ── */}
         {recipients.length > 0 && (
           <>
-            <View style={s.sectionRow}>
-              <AppText style={s.sectionTitle}>Quick send</AppText>
+            <View style={[s.sectionRow, { marginTop: SPACE.lg }]}>
+              <AppText style={s.sectionTitle}>Recent recipients</AppText>
               <Pressable onPress={() => router.push("/recipients")}>
                 <AppText style={s.sectionLink}>See all</AppText>
               </Pressable>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.recipientScroll}>
-              <Pressable
-                onPress={() => isKyc ? router.push("/recipients") : blocked()}
-                style={s.recipientItem}
-              >
-                <View style={[s.recipientAvatar, { backgroundColor: colors.primaryLight, borderWidth: 1.5, borderColor: colors.primary, borderStyle: "dashed" }]}>
-                  <Ionicons name="add" size={20} color={colors.primary} />
-                </View>
-                <AppText style={s.recipientName} numberOfLines={1}>Add</AppText>
-              </Pressable>
               {recipients.map((r, i) => (
                 <Pressable
                   key={i}
-                  onPress={() => { if (!isKyc) return blocked(); router.push({ pathname: "/sendmoney" as any, params: { recipient: JSON.stringify(r), mode: "recent" } } as any); }}
+                  onPress={() => { if (!isKyc) return blocked(); router.push({ pathname: "/recipientactivity" as any, params: { recipient: JSON.stringify(r) } } as any); }}
                   style={s.recipientItem}
                 >
-                  <View style={s.recipientAvatar}>
-                    <AppText style={s.recipientInitials}>{getInit(r.accountName)}</AppText>
-                  </View>
+                  <RecipientAvatar
+                    name={r.accountName}
+                    currencyCode={r.destCurrency}
+                    countryCode={(r as any).countryCode}
+                    isExxsend={(r as any).payoutType === "exxsend" || r.bankCode === "EXXSEND"}
+                    photoUrl={(r as any).avatarUrl}
+                    size={50}
+                  />
                   <AppText style={s.recipientName} numberOfLines={1}>{r.accountName.split(" ")[0]}</AppText>
                   <AppText style={s.recipientCcy}>{r.destCurrency}</AppText>
                 </Pressable>
@@ -651,6 +796,7 @@ export default function HomeScreen() {
             </ScrollView>
           </>
         )}
+
 {/* ── My Wallets ── */}
         <View style={[s.sectionRow, {marginTop: 6}]}>
           <AppText style={[s.sectionTitle, {marginTop: -8}]}>My Wallets</AppText>
@@ -698,7 +844,7 @@ export default function HomeScreen() {
                             : null
                         }
                         <View style={s.walletIconBadge}>
-                          <Ionicons name="wallet-outline" size={13} color={colors.primary} />
+                          <Ionicons name="wallet-outline" size={25} color={colors.primary} />
                         </View>
                       </View>
                     </View>
@@ -777,7 +923,7 @@ export default function HomeScreen() {
         {/* ── Quick actions ── */}
         {/* <View style={s.qaCard}>
           <QuickAction icon="trending-up-outline"     label="Rates"     onPress={() => isKyc ? router.push("/exchangerates") : blocked()} />
-          <QuickAction icon="bar-chart-outline"       label="Invest"    onPress={() => isKyc ? router.push("/investoverview" as any) : blocked()} />
+          <QuickAction icon="bar-chart-outline"       label="Stock"     onPress={() => isKyc ? router.push("/investoverview" as any) : blocked()} />
           <QuickAction icon="arrow-down-outline"      label="Withdraw"  onPress={() => isKyc ? router.push("/withdraw")       : blocked()} />
           <QuickAction icon="people-outline"          label="Recipients"onPress={() => isKyc ? router.push("/recipients")     : blocked()} />
           <QuickAction icon="gift-outline"            label="Refer"     onPress={() => router.push("/referral")} />
@@ -798,7 +944,7 @@ export default function HomeScreen() {
 
         {/* ── Verify banners ── */}
         {!emailVerified && <VerifyEmailCard email={email} onPress={handleVerifyEmail} />}
-        {emailVerified && kycStatus === "pending" && <VerifyIdentityCardScreen userPhone={userPhone} onPress={handleVerifyIdentity} />}
+        {emailVerified && (kycStatus === "pending" || kycStatus === "retry" || kycStatus === "unverified") && <VerifyIdentityCardScreen userPhone={userPhone} onPress={handleVerifyIdentity} />}
 
         
 

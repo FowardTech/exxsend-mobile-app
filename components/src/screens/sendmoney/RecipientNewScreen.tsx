@@ -24,7 +24,8 @@ import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER, GLASS_BORDER_SUBTLE, SC
 import CountryFlag from "../../../CountryFlag";
 import CurrencyPickerModal, { Wallet } from "../../../CurrencyPickerModal";
 import BeneficiaryPickerModal from "../../../BeneficiaryPickerModal";
-import { Beneficiary } from "../../../../api/currencycloud";
+import { RecentRecipientFromDB } from "../../../../api/sync";
+import RecipientAvatar from "../../../../components/RecipientAvatar";
 
 function getInitialValues(method: CorridorMethod): Record<string, string> {
   return Object.fromEntries(method.fields.map((f) => [f.key, ""]));
@@ -145,19 +146,28 @@ export default function RecipientNewScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const s = useMemo(() => makeLocalStyles(colors), [colors]);
-  const params = useLocalSearchParams<{ destCurrency: string; fromWalletId: string; fromCurrency: string; fromAmount: string; toAmount: string; rate?: string; countryCode?: string; countryName?: string }>();
+  const params = useLocalSearchParams<{ destCurrency: string; fromWalletId: string; fromCurrency: string; fromAmount: string; toAmount: string; rate?: string; countryCode?: string; countryName?: string; prefilledRecipient?: string }>();
   const destCurrency = (params.destCurrency || "NGN").toUpperCase();
   const corridor: Corridor | undefined = useMemo(
     () => getCorridorOrFallback(destCurrency, params.countryCode, params.countryName),
     [destCurrency, params.countryCode, params.countryName]
   );
+  // Set when arriving from a known recipient (e.g. Home screen's "Recent
+  // recipients" → recipient detail → "Send to this recipient"). Their bank
+  // details are already on file, so this screen should skip straight to
+  // amount entry rather than asking the user to either pick a corridor
+  // method or re-enter bank details for someone already known.
+  const prefilled: RecentRecipientFromDB | null = useMemo(() => {
+    if (!params.prefilledRecipient) return null;
+    try { return JSON.parse(String(params.prefilledRecipient)); } catch { return null; }
+  }, [params.prefilledRecipient]);
   const [methodIdx, setMethodIdx] = useState(0);
   const activeMethod: CorridorMethod | undefined = corridor?.methods[methodIdx];
 
   // ── CurrencyCloud: choose between a saved beneficiary or entering bank details ──
   const isCurrencyCloud = activeMethod?.method === "currencycloud";
   const [useSavedBeneficiary, setUseSavedBeneficiary] = useState(false);
-  const [selectedBeneficiary, setSelectedBeneficiary] = useState<Beneficiary | null>(null);
+  const [selectedBeneficiary, setSelectedBeneficiary] = useState<RecentRecipientFromDB | null>(null);
   const [beneficiaryPickerOpen, setBeneficiaryPickerOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -337,6 +347,99 @@ export default function RecipientNewScreen() {
       }
     }
 
+    // Known-recipient path (arrived via "Send to this recipient") — their
+    // bank details are already on file, so skip corridor-method selection
+    // and the bank-detail form entirely and go straight to confirm.
+    if (prefilled) {
+      const prefilledIsInterac = prefilled.payoutMethod === "interac" || destCurrency === "CAD";
+      const isIbanCorridor = activeMethod.routingFieldType === "iban_only";
+      // The saved-recipient record only has one generic "bankCode" field for
+      // whatever routing/SWIFT value applies — route it into whichever
+      // granular field executeCurrencyCloudWithdrawal's bank_details
+      // construction actually reads from for this corridor. Without this,
+      // a prefilled CurrencyCloud recipient's bank_details.bankCode came
+      // through empty regardless of what was actually saved.
+      const routingValue = prefilled.bankCode || "";
+
+      // This corridor requires a routing code (ABA/sort code/BSB) — block
+      // here, the same way the manual-entry form itself would, rather than
+      // letting an incomplete saved record's empty value reach the actual
+      // transfer call with no validation at all. Reuses the exact same
+      // field validator the form uses, so the message matches.
+      if (!isIbanCorridor && activeMethod.routingFieldType) {
+        const routingFieldDef = activeMethod.fields.find(
+          (f) => f.key === "routingNumber" || f.key === "sortCode" || f.key === "bsbCode"
+        );
+        const routingErr = routingFieldDef?.validate(routingValue);
+        if (routingErr) {
+          Alert.alert(
+            "Missing bank details",
+            `This saved recipient is missing their ${routingFieldDef?.label || "routing code"}. Please re-add them with full bank details.`,
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Add new recipient",
+                onPress: () =>
+                  router.push({
+                    pathname: "/recipientnew" as any,
+                    params: { destCurrency, countryCode: corridor.countryCode, countryName: corridor.countryName } as any,
+                  }),
+              },
+            ]
+          );
+          return;
+        }
+      }
+
+      const recipientPayload = {
+        accountName: prefilled.accountName || "",
+        // IBAN corridors keep the account identifier in `iban`, not
+        // `accountNumber` (see the matching fix in the saved-beneficiary
+        // branch above) — without this branch, a prefilled IBAN-corridor
+        // recipient's account number would never reach the actual transfer.
+        accountNumber: isIbanCorridor ? "" : (prefilled.accountNumber || ""),
+        bankCode: prefilled.bankCode || (prefilledIsInterac ? "INTERAC" : ""),
+        bankName: prefilled.bankName || (prefilledIsInterac ? "Interac e-Transfer" : ""),
+        currency: destCurrency,
+        countryCode: prefilled.countryCode || corridor.countryCode,
+        isInterac: prefilledIsInterac,
+        // This was the actual bug: defaulting to "bank" regardless of
+        // corridor meant any CurrencyCloud recipient (USD/GBP/AUD/EUR/...)
+        // whose saved record didn't already carry payoutMethod fell through
+        // RecipientConfirmScreen.tsx's isCurrencyCloud check and got routed
+        // through the Flutterwave-only execute path instead — which is
+        // exactly why a GBP transfer failed with "not supported for
+        // Flutterwave payouts". The corridor itself already knows its own
+        // correct method; there's no reason to guess "bank" here.
+        payoutMethod: prefilled.payoutMethod || (prefilledIsInterac ? "interac" : activeMethod.method),
+        payoutType: prefilledIsInterac ? "interac" : toPayoutType(activeMethod.method, activeMethod.routingFieldType),
+        networkCode: prefilled.networkCode || "",
+        networkName: prefilled.networkName || "",
+        nameVerified: !!prefilled.nameVerified,
+        beneficiaryId: prefilled.id,
+        bankCountry: prefilled.countryCode || corridor.countryCode,
+        iban: isIbanCorridor ? (prefilled.accountNumber || "") : "",
+        bicSwift: isIbanCorridor ? routingValue : "",
+        routingFieldType: activeMethod.routingFieldType ?? null,
+        routingNumber: activeMethod.routingFieldType === "aba" ? routingValue : "",
+        sortCode: activeMethod.routingFieldType === "sort_code" ? routingValue : "",
+        bsbCode: activeMethod.routingFieldType === "bsb_code" ? routingValue : "",
+      };
+      router.push({
+        pathname: "/recipientconfirm" as any,
+        params: {
+          recipient: JSON.stringify(recipientPayload),
+          destCurrency,
+          fromWalletId: needsAmountEntry ? (fromWallet ? String(fromWallet.id) : "") : params.fromWalletId,
+          fromCurrency: needsAmountEntry ? (fromWallet?.currencyCode || "") : params.fromCurrency,
+          fromAmount: needsAmountEntry ? manualFromAmount : params.fromAmount,
+          toAmount: needsAmountEntry ? manualToAmount : params.toAmount,
+          rate: needsAmountEntry ? (manualRate ? String(manualRate) : "") : (params.rate || ""),
+        } as any,
+      });
+      return;
+    }
+
     // Saved-beneficiary path: skip bank-detail field validation entirely, just
     // require that a beneficiary has actually been picked.
     if (isCurrencyCloud && useSavedBeneficiary) {
@@ -344,11 +447,42 @@ export default function RecipientNewScreen() {
         Alert.alert("Choose a beneficiary", "Please select a saved beneficiary to continue.");
         return;
       }
+      const isIbanCorridor = activeMethod.routingFieldType === "iban_only";
+
+      // Same gate as the prefilled-recipient branch above — block here if
+      // this saved beneficiary is missing the routing code this corridor
+      // actually requires, rather than letting an empty value reach the
+      // transfer call unvalidated.
+      if (!isIbanCorridor && activeMethod.routingFieldType) {
+        const routingFieldDef = activeMethod.fields.find(
+          (f) => f.key === "routingNumber" || f.key === "sortCode" || f.key === "bsbCode"
+        );
+        const routingErr = routingFieldDef?.validate(selectedBeneficiary.bankCode || "");
+        if (routingErr) {
+          Alert.alert(
+            "Missing bank details",
+            `This saved beneficiary is missing their ${routingFieldDef?.label || "routing code"}. Please add them again with full bank details.`,
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Add new recipient",
+                onPress: () => { setUseSavedBeneficiary(false); setSelectedBeneficiary(null); },
+              },
+            ]
+          );
+          return;
+        }
+      }
+
       const recipientPayload = {
-        accountName: selectedBeneficiary.name || selectedBeneficiary.bank_account_holder_name || "",
-        accountNumber: selectedBeneficiary.account_number || "",
-        bankCode: selectedBeneficiary.routing_code_value_1 || selectedBeneficiary.bic_swift || "",
-        bankName: selectedBeneficiary.bank_name || "",
+        accountName: selectedBeneficiary.accountName || "",
+        // The saved-recipient record only has one generic account-number
+        // field — route it to whichever local field this corridor actually
+        // expects (RecipientConfirmScreen reads accountNumber vs. iban
+        // separately depending on corridor type).
+        accountNumber: isIbanCorridor ? "" : (selectedBeneficiary.accountNumber || ""),
+        bankCode: selectedBeneficiary.bankCode || "",
+        bankName: selectedBeneficiary.bankName || "",
         currency: destCurrency,
         countryCode: corridor.countryCode,
         isInterac: false,
@@ -356,11 +490,11 @@ export default function RecipientNewScreen() {
         payoutType: toPayoutType(activeMethod.method, activeMethod.routingFieldType),
         networkCode: "",
         networkName: "",
-        nameVerified: false,
+        nameVerified: !!selectedBeneficiary.nameVerified,
         beneficiaryId: selectedBeneficiary.id,
-        bankCountry: selectedBeneficiary.bank_country || corridor.countryCode,
-        iban: selectedBeneficiary.iban || "",
-        bicSwift: selectedBeneficiary.bic_swift || "",
+        bankCountry: selectedBeneficiary.countryCode || corridor.countryCode,
+        iban: isIbanCorridor ? (selectedBeneficiary.accountNumber || "") : "",
+        bicSwift: selectedBeneficiary.bankCode || "",
         routingFieldType: activeMethod.routingFieldType ?? null,
         routingNumber: "",
         sortCode: "",
@@ -431,7 +565,7 @@ export default function RecipientNewScreen() {
     activeMethod, corridor, values, selectedBank, selectedNetwork, nameVerified, destCurrency, router,
     needsAmountEntry, fromWallet, manualFromAmount, manualToAmount,
     effectiveFromWalletId, effectiveFromCurrency, effectiveFromAmount, effectiveToAmount, effectiveRate,
-    isCurrencyCloud, useSavedBeneficiary, selectedBeneficiary,
+    isCurrencyCloud, useSavedBeneficiary, selectedBeneficiary, prefilled, params,
   ]);
 
   if (!corridor || !activeMethod) {
@@ -502,13 +636,13 @@ export default function RecipientNewScreen() {
           <AppText style={s.summaryAmount}>{params.toAmount} {destCurrency}</AppText>
         </View>
       )}
-      {corridor.methods.length > 1 && (
+      {!prefilled && corridor.methods.length > 1 && (
         <View style={s.tabsRow}>
           {corridor.methods.map((m, i) => <MethodTab key={m.method} method={m} active={i === methodIdx} onPress={() => setMethodIdx(i)} />)}
         </View>
       )}
 
-      {isCurrencyCloud && (
+      {!prefilled && isCurrencyCloud && (
         <View style={s.ccToggleRow}>
           <Pressable
             style={[s.ccToggleBtn, !useSavedBeneficiary && s.ccToggleBtnActive]}
@@ -526,21 +660,38 @@ export default function RecipientNewScreen() {
       )}
 
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {isCurrencyCloud && useSavedBeneficiary ? (
+        {prefilled ? (
+          <View style={s.beneficiaryCard}>
+            <RecipientAvatar
+              name={prefilled.accountName || "?"}
+              currencyCode={destCurrency}
+              countryCode={prefilled.countryCode || corridor.countryCode}
+              isExxsend={prefilled.payoutMethod === "exxsend" || prefilled.bankCode === "EXXSEND"}
+              photoUrl={prefilled.avatarUrl}
+              size={46}
+            />
+            <View style={{ flex: 1 }}>
+              <AppText style={s.beneficiaryName}>{prefilled.accountName}</AppText>
+              <AppText style={s.beneficiaryMeta}>
+                {prefilled.bankName || "Bank"}
+                {prefilled.accountNumber ? ` · •••• ${prefilled.accountNumber.slice(-4)}` : ""}
+              </AppText>
+            </View>
+          </View>
+        ) : isCurrencyCloud && useSavedBeneficiary ? (
           selectedBeneficiary ? (
             <Pressable style={s.beneficiaryCard} onPress={() => setBeneficiaryPickerOpen(true)}>
-              <View style={s.avatar}>
-                <AppText style={s.avatarText}>
-                  {(selectedBeneficiary.name || selectedBeneficiary.bank_account_holder_name || "?")
-                    .split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")}
-                </AppText>
-              </View>
+              <RecipientAvatar
+                name={selectedBeneficiary.accountName || "?"}
+                currencyCode={destCurrency}
+                countryCode={selectedBeneficiary.countryCode || corridor.countryCode}
+                size={46}
+              />
               <View style={{ flex: 1 }}>
-                <AppText style={s.beneficiaryName}>{selectedBeneficiary.name || selectedBeneficiary.bank_account_holder_name}</AppText>
+                <AppText style={s.beneficiaryName}>{selectedBeneficiary.accountName}</AppText>
                 <AppText style={s.beneficiaryMeta}>
-                  {selectedBeneficiary.bank_name || "Bank"}
-                  {selectedBeneficiary.account_number ? ` · •••• ${selectedBeneficiary.account_number.slice(-4)}` : ""}
-                  {selectedBeneficiary.iban ? ` · •••• ${selectedBeneficiary.iban.slice(-4)}` : ""}
+                  {selectedBeneficiary.bankName || "Bank"}
+                  {selectedBeneficiary.accountNumber ? ` · •••• ${selectedBeneficiary.accountNumber.slice(-4)}` : ""}
                 </AppText>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.muted} />

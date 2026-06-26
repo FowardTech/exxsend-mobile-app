@@ -24,7 +24,7 @@ export default function WalletOptionsSheet({ visible, onClose, priceCurrency, pr
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Pay with Wallet">
       <AppText style={s.subtitle}>
-        Invest costs {prizeSym}{price.toFixed(2)} {priceCurrency}/month. Choose which wallet to pay from.
+        Stock costs {prizeSym}{price.toFixed(2)} {priceCurrency}/month. Choose which wallet to pay from.
       </AppText>
 
       {options.length === 0 ? (

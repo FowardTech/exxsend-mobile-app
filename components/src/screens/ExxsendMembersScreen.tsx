@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, Pressable, ActivityIndicator, Alert, StyleSheet, StatusBar, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Image, Pressable, ActivityIndicator, Alert, StyleSheet, StatusBar, ScrollView, KeyboardAvoidingView, Platform, Switch } from "react-native";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,7 +9,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../../../theme/colors";
 import ScreenHeader from "../../../components/ScreenHeader";
 import PinVerificationModal from "../../../components/PinVerificationModal";
-import { lookupExxsendMember, sendToExxsendMember } from "../../../api/config";
+import { lookupExxsendMember, sendToExxsendMember, getUserWallets } from "../../../api/config";
+import { saveRecipientToDB, getSavedRecipients, recordRecentRecipient } from "../../../api/sync";
+import { fulfillMoneyRequest } from "../../../api/moneyRequests";
+import { fetchMyFeeWaivers } from "../../../api/feeWaivers";
+import CurrencyPickerModal, { Wallet } from "../../../components/CurrencyPickerModal";
 
 interface Member {
   username: string;
@@ -21,19 +25,40 @@ interface Member {
 export default function ExxsendMembersScreen() {
   const router = useRouter();
   // scannedUsername arrives from ScanToPayScreen after decoding another
-  // member's QR "pay code" — when present, we skip straight to looking
-  // that member up instead of waiting for manual entry.
-  const params = useLocalSearchParams<{ fromCurrency?: string; fromAmount?: string; scannedUsername?: string }>();
+  // member's QR "pay code"; prefillUsername arrives from RecipientSelectScreen
+  // when the user taps a saved Exxsend-member recipient. Either way, we skip
+  // straight to looking that member up instead of waiting for manual entry.
+  const params = useLocalSearchParams<{ fromCurrency?: string; fromAmount?: string; scannedUsername?: string; prefillUsername?: string; requestId?: string; requestNote?: string }>();
 
   const [userPhone, setUserPhone]     = useState("");
-  const [username, setUsername]       = useState(params.scannedUsername ? String(params.scannedUsername).replace(/^@/, "") : "");
+  const [username, setUsername]       = useState(
+    params.scannedUsername ? String(params.scannedUsername).replace(/^@/, "")
+      : params.prefillUsername ? String(params.prefillUsername).replace(/^@/, "")
+      : ""
+  );
   const [member, setMember]           = useState<Member | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [notFound, setNotFound]       = useState(false);
   const [amount, setAmount]           = useState(params.fromAmount || "");
-  const [note, setNote]               = useState("");
+  const [note, setNote]               = useState(params.requestNote ? decodeURIComponent(params.requestNote) : "");
   const [sending, setSending]         = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  // Wallet/currency to send from — any currency the user has added, not
+  // just CAD. Defaults to whatever was passed in (e.g. from a recipient's
+  // "Send to this recipient" flow), falling back to the user's first
+  // active wallet once the list loads.
+  const [wallets, setWallets]         = useState<Wallet[]>([]);
+  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [showWalletPicker, setShowWalletPicker] = useState(false);
+  const currencyCode = selectedWallet?.currencyCode || params.fromCurrency || "";
+  // Visible control over whether this member gets saved as a recipient —
+  // previously this happened silently/automatically with no way to opt out.
+  const [saveRecipientToggle, setSaveRecipientToggle] = useState(true);
+  // True once we've actively confirmed this exact member is already in the
+  // saved-recipients list — not just inferred from how this screen was
+  // reached (e.g. prefillUsername), since a plain manual search for an
+  // already-saved username should be caught too.
+  const [alreadySaved, setAlreadySaved] = useState(false);
 
   const getInitials = (m: Member) =>
     `${m.firstName?.[0] || ""}${m.lastName?.[0] || ""}`.toUpperCase() || m.username[0]?.toUpperCase() || "?";
@@ -44,6 +69,7 @@ export default function ExxsendMembersScreen() {
     setLookupLoading(true);
     setMember(null);
     setNotFound(false);
+    setAlreadySaved(false);
     try {
       // Passing our own phone lets the backend exclude ourselves from the
       // result, so scanning/typing your own handle correctly comes back
@@ -51,6 +77,22 @@ export default function ExxsendMembersScreen() {
       const res = await lookupExxsendMember(u, userPhone || undefined);
       if (res?.success && res.member) {
         setMember(res.member);
+        // Best-effort — if this check fails for any reason, the toggle
+        // just defaults back to showing (the safer of the two outcomes:
+        // worst case is offering to re-save someone already saved, which
+        // is harmless, rather than silently never saving someone new).
+        if (userPhone) {
+          getSavedRecipients(userPhone)
+            .then((savedRes) => {
+              if (!savedRes.success) return;
+              const target = `@${u}`.toLowerCase();
+              const match = (savedRes.recipients || []).some(
+                (r) => (r.payoutMethod === "exxsend" || r.bankCode === "EXXSEND") && (r.accountNumber || "").toLowerCase() === target
+              );
+              setAlreadySaved(match);
+            })
+            .catch(() => {});
+        }
       } else {
         setNotFound(true);
       }
@@ -70,6 +112,19 @@ export default function ExxsendMembersScreen() {
       setUserPhone(phone);
       if (params.scannedUsername) {
         handleLookup(String(params.scannedUsername));
+      } else if (params.prefillUsername) {
+        handleLookup(String(params.prefillUsername));
+      }
+      if (phone) {
+        const res = await getUserWallets(phone);
+        if (res.success) {
+          const active = res.wallets.filter((w: Wallet) => w.status === "active");
+          setWallets(active);
+          const preselected = params.fromCurrency
+            ? active.find((w: Wallet) => w.currencyCode?.toUpperCase() === String(params.fromCurrency).toUpperCase())
+            : undefined;
+          setSelectedWallet(preselected || active[0] || null);
+        }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,15 +145,78 @@ export default function ExxsendMembersScreen() {
       const res = await sendToExxsendMember({
         phone: userPhone,
         toUsername: member.username,
-        currency: params.fromCurrency || "CAD",
+        currency: currencyCode,
         amount: parseFloat(amount),
         pin,
         note: note.trim() || undefined,
       });
       if (res?.success) {
-        Alert.alert("Sent! 🎉", `Successfully sent ${params.fromCurrency || "CAD"} ${amount} to @${member.username}`, [
-          { text: "Done", onPress: () => router.replace("/(tabs)") },
-        ]);
+        // Best-effort, and now only when the user actually left the toggle
+        // on — saving this recipient is a convenience, not a requirement
+        // for the transfer itself, so it never blocks or surfaces an error
+        // if it fails, and never happens at all if the user opted out.
+        if (saveRecipientToggle && !alreadySaved) {
+          saveRecipientToDB({
+            phone: userPhone,
+            accountName: `${member.firstName} ${member.lastName}`.trim() || member.username,
+            accountNumber: `@${member.username}`,
+            bankCode: "EXXSEND",
+            bankName: "Exxsend",
+            currency: currencyCode,
+            countryCode: "XX",
+            payoutMethod: "exxsend",
+            payoutType: "exxsend",
+            avatarUrl: member.avatar,
+          }).catch(() => {});
+        }
+
+        // Refresh the cached fee-waiver state — the server already
+        // recorded this as a qualifying send (which may grant a new
+        // credit), this just keeps Home's banner in sync.
+        fetchMyFeeWaivers(userPhone).catch(() => {});
+
+        // Local safety net for Home's "Recent recipients" row — Exxsend
+        // member-to-member transfers especially have not been reliably
+        // showing up via the backend's /recipients/recent endpoint.
+        recordRecentRecipient(userPhone, {
+          accountName: `${member.firstName} ${member.lastName}`.trim() || member.username,
+          accountNumber: `@${member.username}`,
+          bankCode: "EXXSEND",
+          bankName: "Exxsend",
+          destCurrency: currencyCode,
+          countryCode: "XX",
+          payoutMethod: "exxsend",
+          avatarUrl: member.avatar,
+          lastAmount: parseFloat(amount) || 0,
+        }).catch(() => {});
+
+        // Paying a money request — confirm fulfillment using the actual
+        // transfer reference, so the backend can verify it matches before
+        // flipping the request to "paid" and notifying the requester.
+        if (params.requestId) {
+          const reference = (res as any)?.reference;
+          if (reference) {
+            fulfillMoneyRequest(Number(params.requestId), userPhone, reference).catch(() => {});
+          }
+        }
+
+        router.push({
+          pathname: "/result" as any,
+          params: {
+            type: "success",
+            title: "Sent!",
+            message: `Successfully sent ${currencyCode} ${amount} to @${member.username}`,
+            amount: `${currencyCode} ${amount}`,
+            transactionId: (res as any)?.transaction_id || (res as any)?.reference || (res as any)?.id || "",
+            fee: "Free",
+            recipientName: `${member.firstName} ${member.lastName}`.trim() || member.username,
+            note: `@${member.username}`,
+            primaryText: "Done",
+            primaryRoute: "/(tabs)/",
+            secondaryText: "Go to Home",
+            secondaryRoute: "/(tabs)/",
+          } as any,
+        });
       } else {
         Alert.alert("Failed", res?.message || "Could not complete the transfer.");
       }
@@ -107,9 +225,9 @@ export default function ExxsendMembersScreen() {
     } finally {
       setSending(false);
     }
-  }, [member, amount, note, userPhone, params, router]);
+  }, [member, amount, note, userPhone, currencyCode, router, saveRecipientToggle, alreadySaved, params.requestId]);
 
-  const canSend = !!member && !!amount && parseFloat(amount) > 0 && !sending;
+  const canSend = !!member && !!amount && parseFloat(amount) > 0 && !!currencyCode && !sending;
 
   return (
     <SafeAreaView style={s.root}>
@@ -163,9 +281,13 @@ export default function ExxsendMembersScreen() {
           {/* Member found card */}
           {member && (
             <View style={s.memberCard}>
-              <View style={s.memberAvatar}>
-                <AppText style={s.memberInitials}>{getInitials(member)}</AppText>
-              </View>
+              {member.avatar ? (
+                <Image source={{ uri: member.avatar }} style={s.memberAvatarPhoto} />
+              ) : (
+                <View style={s.memberAvatar}>
+                  <AppText style={s.memberInitials}>{getInitials(member)}</AppText>
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <AppText style={s.memberName}>{member.firstName} {member.lastName}</AppText>
                 <AppText style={s.memberUsername}>@{member.username}</AppText>
@@ -180,9 +302,15 @@ export default function ExxsendMembersScreen() {
           {/* Amount */}
           {member && (
             <>
-              <AppText style={s.fieldLabel}>Amount ({params.fromCurrency || "CAD"})</AppText>
+              <AppText style={s.fieldLabel}>Amount {currencyCode ? `(${currencyCode})` : ""}</AppText>
               <View style={s.amountBox}>
-                <AppText style={s.currencySymbol}>{params.fromCurrency || "CAD"}</AppText>
+                <Pressable
+                  onPress={() => wallets.length > 1 && setShowWalletPicker(true)}
+                  style={[s.currencyPill, wallets.length > 1 && s.currencyPillTappable]}
+                >
+                  <AppText style={s.currencySymbol}>{currencyCode || "—"}</AppText>
+                  {wallets.length > 1 && <Ionicons name="chevron-down" size={14} color={COLORS.primary} />}
+                </Pressable>
                 <AppTextInput
                   value={amount}
                   onChangeText={setAmount}
@@ -192,6 +320,11 @@ export default function ExxsendMembersScreen() {
                   style={s.amountInput}
                 />
               </View>
+              {!!selectedWallet && (
+                <AppText style={s.balanceHint}>
+                  Balance: {selectedWallet.formattedBalance} {selectedWallet.currencyCode}
+                </AppText>
+              )}
 
               <AppText style={s.fieldLabel}>Note (optional)</AppText>
               <View style={s.noteBox}>
@@ -210,32 +343,52 @@ export default function ExxsendMembersScreen() {
                 <Ionicons name="flash-outline" size={14} color={COLORS.green} style={{ marginRight: 6 }} />
                 <AppText style={s.rateNoteText}>Transfers between Exxsend members are instant and free.</AppText>
               </View>
+
+              {!alreadySaved && (
+                <View style={s.saveRow}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <AppText style={s.saveRowTitle}>Save this recipient</AppText>
+                    <AppText style={s.saveRowSub}>For faster transfers next time</AppText>
+                  </View>
+                  <Switch
+                    value={saveRecipientToggle}
+                    onValueChange={setSaveRecipientToggle}
+                    trackColor={{ true: COLORS.primary, false: COLORS.border }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
+              )}
+
+              <Pressable
+                onPress={handleSend}
+                disabled={!canSend}
+                style={[s.sendBtn, !canSend && { opacity: 0.45 }]}
+              >
+                {sending
+                  ? <ActivityIndicator color={COLORS.actionText} />
+                  : <AppText style={s.sendBtnText}>Send {currencyCode} {amount || "0.00"} to @{member.username}</AppText>
+                }
+              </Pressable>
             </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {member && (
-        <View style={s.footer}>
-          <Pressable
-            onPress={handleSend}
-            disabled={!canSend}
-            style={[s.sendBtn, !canSend && { opacity: 0.45 }]}
-          >
-            {sending
-              ? <ActivityIndicator color={COLORS.actionText} />
-              : <AppText style={s.sendBtnText}>Send {params.fromCurrency || ""} {amount || "0.00"} to @{member.username}</AppText>
-            }
-          </Pressable>
-        </View>
-      )}
 
       <PinVerificationModal
         visible={showPinModal}
         onClose={() => setShowPinModal(false)}
         onSuccess={performSend}
         title="Confirm Transfer"
-        subtitle={member ? `Enter your PIN to send ${params.fromCurrency || "CAD"} ${amount || "0.00"} to @${member.username}` : undefined}
+        subtitle={member ? `Enter your PIN to send ${currencyCode} ${amount || "0.00"} to @${member.username}` : undefined}
+      />
+
+      <CurrencyPickerModal
+        visible={showWalletPicker}
+        onClose={() => setShowWalletPicker(false)}
+        wallets={wallets}
+        selected={selectedWallet}
+        onSelect={(w) => { setSelectedWallet(w); setShowWalletPicker(false); }}
+        title="Send From"
       />
     </SafeAreaView>
   );
@@ -257,19 +410,25 @@ const s = StyleSheet.create({
   notFoundText: { flex: 1, fontSize: 13, color: COLORS.red, fontWeight: "600" },
   memberCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginTop: 14, borderWidth: 1, borderColor: COLORS.greenLight,},
   memberAvatar: { width: 46, height: 46, borderRadius: 15, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  memberAvatarPhoto: { width: 46, height: 46, borderRadius: 15, marginRight: 12 },
   memberInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
   memberName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
   memberUsername: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
   verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4 },
   verifiedText: { fontSize: 12, fontWeight: "700", color: COLORS.green },
   amountBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
-  currencySymbol: { fontSize: 15, fontWeight: "700", color: COLORS.muted, marginRight: 8 },
+  currencyPill: { flexDirection: "row", alignItems: "center", gap: 4, marginRight: 10, paddingRight: 10, borderRightWidth: 1, borderRightColor: COLORS.borderLight },
+  currencyPillTappable: { opacity: 1 },
+  currencySymbol: { fontSize: 15, fontWeight: "700", color: COLORS.muted },
   amountInput: { flex: 1, fontSize: 22, fontWeight: "700", color: COLORS.text },
+  balanceHint: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 6 },
   noteBox: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, paddingHorizontal: 14, paddingVertical: 12, minHeight: 80 },
   noteInput: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
-  rateNote: { flexDirection: "row", alignItems: "center", marginTop: 14, backgroundColor: COLORS.greenSoft, borderRadius: 10, padding: 12 },
+  rateNote: { flexDirection: "row", alignItems: "center", marginTop: 14, backgroundColor: COLORS.primaryLight, borderRadius: 10, padding: 12 },
   rateNoteText: { flex: 1, fontSize: 12, color: COLORS.green, fontWeight: "600" },
-  footer: { padding: 20, paddingBottom: 32, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.borderLight },
-  sendBtn: { backgroundColor: COLORS.actionBg, borderRadius: 14, paddingVertical: 16, alignItems: "center" },
+  saveRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, padding: 14, marginTop: 14 },
+  saveRowTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  saveRowSub: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
+  sendBtn: { backgroundColor: COLORS.actionBg, borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 20 },
   sendBtnText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
 });

@@ -143,7 +143,7 @@ export default function InvestPaywallScreen({
         <View style={s.heroIcon}>
           <Ionicons name="trending-up" size={32} color={COLORS.primary} />
         </View>
-        <AppText style={s.title}>Invest with ExxSend</AppText>
+        <AppText style={s.title}>Trade Stocks with ExxSend</AppText>
         <AppText style={s.subtitle}>
           Connect your brokerage and track every holding in your home currency.
         </AppText>
@@ -176,7 +176,7 @@ export default function InvestPaywallScreen({
           </View>
         ) : (
           <View style={s.planCard}>
-            <AppText style={s.errorText}>Couldn't load the Invest plan. Please try again later.</AppText>
+            <AppText style={s.errorText}>Couldn't load the Stock plan. Please try again later.</AppText>
           </View>
         )}
 
@@ -397,7 +397,7 @@ function SubscriptionCardForm({
             <Ionicons name="checkmark-circle" size={32} color={COLORS.green} />
           </View>
           <AppText style={s.title}>Subscription active</AppText>
-          <AppText style={s.subtitle}>Your Invest subscription is now active.</AppText>
+          <AppText style={s.subtitle}>Your Stock subscription is now active.</AppText>
           <Pressable
             onPress={() => embedded && onSubscribed ? onSubscribed() : router.replace("/investoverview" as any)}
             style={[s.btn, s.btnPrimary, { marginTop: SPACE.xl, width: "100%" }]}

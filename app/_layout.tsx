@@ -3,7 +3,18 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { AppState, AppStateStatus, View, Pressable } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import * as LocalAuthentication from "expo-local-authentication";
+import * as SplashScreen from "expo-splash-screen";
 import { COLORS } from "../theme/colors";
+
+// Keep the native splash screen (the Exxsend logo configured in app.json)
+// visible until the app is actually ready to render real content — by
+// default it auto-hides on the very first JS frame, which is often before
+// fonts/auth/lock-state are ready, and RootLayoutContent below intentionally
+// renders null until then. Without this call, that gap between "splash
+// auto-hid" and "first real frame" is exactly the blank white screen users
+// were seeing. Must run at module scope, before anything else, since the
+// native side checks for this call immediately on launch.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NotificationProvider } from "../context/NotificationContext";
@@ -210,6 +221,16 @@ function RootLayoutContent() {
     checkAuth();
   }, [fontsLoaded, segments]);
 
+  // The instant all three conditions below flip true is exactly the instant
+  // this component starts rendering real content instead of null — hide
+  // the splash right then, so it bridges that gap seamlessly instead of
+  // hiding early and leaving a blank frame in between.
+  useEffect(() => {
+    if (fontsLoaded && authChecked && lockCheckDone) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, authChecked, lockCheckDone]);
+
   if (!fontsLoaded || !authChecked || !lockCheckDone) return null;
 
   return (
@@ -246,6 +267,7 @@ function RootLayoutContent() {
 
       {/* ── Authenticated screens ── */}
       <Stack.Screen name="profile"           options={{ headerShown: false }} />
+      <Stack.Screen name="setusername"       options={{ headerShown: false }} />
       <Stack.Screen name="accountInfo"       options={{ headerShown: false }} />
       <Stack.Screen name="userdetails"       options={{ headerShown: false }} />
       <Stack.Screen name="accountlimit"      options={{ headerShown: false }} />
@@ -257,7 +279,11 @@ function RootLayoutContent() {
       <Stack.Screen name="chatsupport"       options={{ headerShown: false }} />
       <Stack.Screen name="notificationpref"  options={{ headerShown: false }} />
       <Stack.Screen name="globalaccount"     options={{ headerShown: false }} />
-      <Stack.Screen name="persona-verification" options={{ headerShown: false }} />
+      <Stack.Screen name="sumsub-verification" options={{ headerShown: false }} />
+      <Stack.Screen name="requestmoney"       options={{ headerShown: false }} />
+      <Stack.Screen name="moneyrequests"      options={{ headerShown: false }} />
+      <Stack.Screen name="cryptotrade"        options={{ headerShown: false }} />
+      <Stack.Screen name="optionstrade"       options={{ headerShown: false }} />
       <Stack.Screen name="addaccount"        options={{ headerShown: false }} />
       <Stack.Screen name="bank-details"      options={{ headerShown: false }} />
       <Stack.Screen name="wallet"            options={{ headerShown: false }} />
@@ -269,6 +295,10 @@ function RootLayoutContent() {
       <Stack.Screen name="recipientnew"      options={{ headerShown: false }} />
       <Stack.Screen name="recipientdetails"  options={{ headerShown: false }} />
       <Stack.Screen name="recipientconfirm"  options={{ headerShown: false }} />
+      <Stack.Screen name="recipientactivity" options={{ headerShown: false }} />
+      <Stack.Screen name="offerdetail"       options={{ headerShown: false }} />
+      <Stack.Screen name="tradeticket"       options={{ headerShown: false }} />
+      <Stack.Screen name="pendingorders"     options={{ headerShown: false }} />
       <Stack.Screen name="reviewdetails"     options={{ headerShown: false }} />
       <Stack.Screen name="fraudaware"        options={{ headerShown: false }} />
       <Stack.Screen name="transferconfirm"   options={{ headerShown: false }} />

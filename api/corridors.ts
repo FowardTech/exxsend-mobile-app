@@ -745,11 +745,11 @@ export const CORRIDORS: Corridor[] = [
   // USD/GBP/AUD carry a country-specific routing identifier; the rest rely on
   // IBAN (where the country uses IBAN) or plain account number + SWIFT.
   ccCorridor("USD", "US", "United States", "🇺🇸", "aba",
-    { key: "routingNumber", label: "Routing number (ABA)", placeholder: "9-digit ABA routing number", len: 9 }, false),
+    { key: "routingNumber", label: "Routing Number / ABA (9 digits) *", placeholder: "9-digit ABA routing number", len: 9 }, false),
   ccCorridor("GBP", "GB", "United Kingdom", "🇬🇧", "sort_code",
-    { key: "sortCode", label: "Sort code", placeholder: "6-digit sort code", len: 6 }, false),
+    { key: "sortCode", label: "Sort Code (6 digits) *", placeholder: "6-digit sort code", len: 6 }, false),
   ccCorridor("AUD", "AU", "Australia", "🇦🇺", "bsb_code",
-    { key: "bsbCode", label: "BSB code", placeholder: "6-digit BSB code", len: 6 }, false),
+    { key: "bsbCode", label: "BSB Code (6 digits) *", placeholder: "6-digit BSB code", len: 6 }, false),
   ccCorridor("EUR", "DE", "Eurozone", "🇪🇺", "iban_only", undefined, true),
   ccCorridor("CHF", "CH", "Switzerland", "🇨🇭", "iban_only", undefined, true),
   ccCorridor("JPY", "JP", "Japan", "🇯🇵", null, undefined, false),

@@ -55,7 +55,7 @@ export default function InvestSettingsScreen() {
   const handleDisconnect = (acc: BrokerageAccount) => {
     showAlert(
       "Disconnect broker",
-      `Remove ${acc.brokerageName} (${acc.accountNumberMasked}) from your Invest account?`,
+      `Remove ${acc.brokerageName} (${acc.accountNumberMasked}) from your Stock account?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -80,7 +80,7 @@ export default function InvestSettingsScreen() {
   const handleCancelSubscription = () => {
     showAlert(
       "Cancel subscription",
-      "Your Invest subscription will remain active until the end of the current billing period, then will not renew. Continue?",
+      "Your Stock subscription will remain active until the end of the current billing period, then will not renew. Continue?",
       [
         { text: "Keep subscription", style: "cancel" },
         {
@@ -107,7 +107,7 @@ export default function InvestSettingsScreen() {
     <SafeAreaView style={s.root}>
       <View style={s.header}>
         <BackButton onPress={() => router.back()} />
-        <AppText style={s.headerTitle}>Invest Settings</AppText>
+        <AppText style={s.headerTitle}>Stock Settings</AppText>
         <View style={{ width: 34 }} />
       </View>
 

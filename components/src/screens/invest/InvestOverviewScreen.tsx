@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, RefreshControl, StyleSheet } from "react-native";
+import { View, Pressable, ScrollView, ActivityIndicator, RefreshControl, Alert, Modal, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,14 +13,17 @@ import {
   getSnapTradeAccounts,
   getSnapTradeHoldings,
   getSnapTradePortalUrl,
+  getTradePortalUrl,
   syncSnapTrade,
   getPerformance,
+  getBenchmark,
   getDividends,
   BrokerageAccount,
   PerformanceRange,
   PerformancePoint,
 } from "@/api/investments";
 import InvestPaywallScreen from "./InvestPaywallScreen";
+import InvestInfoScreen, { hasAcknowledgedStockInfo } from "./InvestInfoScreen";
 import BrokerLogo from "@/components/BrokerLogo";
 import PerformanceChart from "@/components/PerformanceChart";
 
@@ -52,9 +55,18 @@ export default function InvestOverviewScreen() {
   const [perfChangeInBase, setPerfChangeInBase] = useState(0);
   const [perfChangePct, setPerfChangePct] = useState(0);
   const [perfLoading, setPerfLoading] = useState(false);
+  // "You vs S&P 500" — a simple side-by-side comparison rather than
+  // overlaying a second series on the existing chart, which would need a
+  // larger rework of PerformanceChart itself to support two series safely.
+  const [benchmarkChangePct, setBenchmarkChangePct] = useState<number | null>(null);
 
   const [dividendsTotal, setDividendsTotal] = useState(0);
   const [dividendsThisYear, setDividendsThisYear] = useState(0);
+  // null = not yet checked. Gates whether the "how it works" info screen
+  // shows before the paywall — only relevant pre-subscription, and only
+  // needs to be shown once per user.
+  const [infoAcknowledged, setInfoAcknowledged] = useState<boolean | null>(null);
+  const [tradeTypeSheetOpen, setTradeTypeSheetOpen] = useState(false);
 
   const loadPerformance = useCallback(async (savedPhone: string, range: PerformanceRange) => {
     setPerfLoading(true);
@@ -62,6 +74,7 @@ export default function InvestOverviewScreen() {
       const res = await getPerformance(savedPhone, range);
       if (res.subscriptionRequired) {
         setIsSubscribed(false);
+        setInfoAcknowledged(await hasAcknowledgedStockInfo(savedPhone));
         setPerfLoading(false);
         return;
       }
@@ -69,6 +82,17 @@ export default function InvestOverviewScreen() {
       setPerfChangeInBase(res.changeInBase);
       setPerfChangePct(res.changePct);
     } catch {}
+
+    // Best-effort, separate from the main performance fetch above — a
+    // benchmark hiccup shouldn't block the user's own performance chart
+    // from showing.
+    try {
+      const benchRes = await getBenchmark("SPY", range);
+      setBenchmarkChangePct(benchRes.success ? (benchRes.changePct ?? null) : null);
+    } catch {
+      setBenchmarkChangePct(null);
+    }
+
     setPerfLoading(false);
   }, []);
 
@@ -81,6 +105,7 @@ export default function InvestOverviewScreen() {
       const sub = await getMySubscription(savedPhone);
       if (!sub.isActive) {
         setIsSubscribed(false);
+        setInfoAcknowledged(await hasAcknowledgedStockInfo(savedPhone));
         setLoading(false);
         return;
       }
@@ -93,6 +118,7 @@ export default function InvestOverviewScreen() {
 
       if (accountsRes.subscriptionRequired || holdingsRes.subscriptionRequired) {
         setIsSubscribed(false);
+        setInfoAcknowledged(await hasAcknowledgedStockInfo(savedPhone));
         setLoading(false);
         return;
       }
@@ -118,6 +144,7 @@ export default function InvestOverviewScreen() {
       const divRes = await getDividends(savedPhone);
       if (divRes.subscriptionRequired) {
         setIsSubscribed(false);
+        setInfoAcknowledged(await hasAcknowledgedStockInfo(savedPhone));
         setLoading(false);
         return;
       }
@@ -169,6 +196,31 @@ export default function InvestOverviewScreen() {
     }
   };
 
+  // Same flow as above, but hits trade-portal-url instead of portal-url —
+  // either connects a new brokerage with trading permissions directly, or
+  // upgrades an existing read-only connection to trade-capable if the user
+  // picks the same brokerage again in the portal.
+  const handleConnectForTrading = async () => {
+    if (!phone) return;
+    setConnecting(true);
+    try {
+      const res = await getTradePortalUrl(phone, "https://exxsend.com/snaptrade/connected");
+      setConnecting(false);
+      if (res.success && res.redirectUri) {
+        router.push({
+          pathname: "/investconnectbroker" as any,
+          params: { webViewUrl: res.redirectUri },
+        } as any);
+      } else if (res.subscriptionRequired) {
+        router.replace("/investpaywall" as any);
+      } else if (res.message) {
+        Alert.alert("Couldn't connect for trading", res.message);
+      }
+    } catch {
+      setConnecting(false);
+    }
+  };
+
   const sym = getCurrencySymbol(baseCurrency);
 
   if (loading) {
@@ -182,6 +234,18 @@ export default function InvestOverviewScreen() {
   }
 
   if (isSubscribed === false) {
+    if (infoAcknowledged === false) {
+      return <InvestInfoScreen phone={phone} onAcknowledge={() => setInfoAcknowledged(true)} />;
+    }
+    if (infoAcknowledged === null) {
+      return (
+        <SafeAreaView style={s.root}>
+          <View style={s.centered}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        </SafeAreaView>
+      );
+    }
     return <InvestPaywallScreen embedded onSubscribed={() => load()} />;
   }
 
@@ -193,29 +257,43 @@ export default function InvestOverviewScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
         <View style={s.header}>
-          <AppText style={s.headerTitle}>Invest</AppText>
+          <AppText style={s.headerTitle}>Stock</AppText>
           <Pressable onPress={() => router.push("/investsettings" as any)} style={s.settingsBtn}>
             <Ionicons name="settings-outline" size={20} color={COLORS.text} />
           </Pressable>
         </View>
 
-        <View style={s.totalCard}>
-          <AppText style={s.totalLabel}>Total Portfolio Value</AppText>
-          <AppText style={s.totalAmount}>{sym}{totalValueInBase.toFixed(2)}</AppText>
-          {baseCurrency !== "USD" && (
-            <AppText style={s.totalUsd}>${totalValueInUsd.toFixed(2)} USD</AppText>
-          )}
+        <AppText style={s.totalLabel}>Total Portfolio Value</AppText>
+        <AppText style={s.totalAmount}>{sym}{totalValueInBase.toFixed(2)}</AppText>
+        {baseCurrency !== "USD" && (
+          <AppText style={s.totalUsd}>${totalValueInUsd.toFixed(2)} USD</AppText>
+        )}
 
-          <View style={s.actionsRow}>
-            <Pressable onPress={() => router.push("/investholdings" as any)} style={s.actionBtn}>
-              <Ionicons name="pie-chart-outline" size={18} color={COLORS.white} />
-              <AppText style={s.actionLabel}>Holdings</AppText>
-            </Pressable>
-            <Pressable onPress={() => router.push("/investtransactions" as any)} style={s.actionBtn}>
-              <Ionicons name="receipt-outline" size={18} color={COLORS.white} />
-              <AppText style={s.actionLabel}>History</AppText>
-            </Pressable>
-          </View>
+        <View style={s.quickActionsRow}>
+          <Pressable onPress={() => setTradeTypeSheetOpen(true)} style={s.quickAction}>
+            <View style={[s.quickActionIcon, { backgroundColor: COLORS.primary }]}>
+              <Ionicons name="swap-vertical" size={18} color="#FFFFFF" />
+            </View>
+            <AppText style={s.quickActionLabel}>Trade</AppText>
+          </Pressable>
+          <Pressable onPress={() => router.push("/investholdings" as any)} style={s.quickAction}>
+            <View style={s.quickActionIcon}>
+              <Ionicons name="pie-chart-outline" size={18} color={COLORS.primary} />
+            </View>
+            <AppText style={s.quickActionLabel}>Holdings</AppText>
+          </Pressable>
+          <Pressable onPress={() => router.push("/pendingorders" as any)} style={s.quickAction}>
+            <View style={s.quickActionIcon}>
+              <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+            </View>
+            <AppText style={s.quickActionLabel}>Orders</AppText>
+          </Pressable>
+          <Pressable onPress={() => router.push("/investtransactions" as any)} style={s.quickAction}>
+            <View style={s.quickActionIcon}>
+              <Ionicons name="receipt-outline" size={18} color={COLORS.primary} />
+            </View>
+            <AppText style={s.quickActionLabel}>History</AppText>
+          </Pressable>
         </View>
 
         {/* Performance chart */}
@@ -240,6 +318,16 @@ export default function InvestOverviewScreen() {
           <View style={{ marginTop: SPACE.lg }}>
             <PerformanceChart series={perfSeries} height={120} />
           </View>
+
+          {benchmarkChangePct != null && (
+            <View style={s.benchmarkRow}>
+              <AppText style={s.benchmarkText}>
+                S&amp;P 500 over this period: <AppText style={{ fontWeight: "700", color: benchmarkChangePct >= 0 ? COLORS.green : COLORS.red }}>
+                  {benchmarkChangePct >= 0 ? "+" : ""}{benchmarkChangePct.toFixed(2)}%
+                </AppText>
+              </AppText>
+            </View>
+          )}
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: SPACE.lg }}>
             <View style={{ flexDirection: "row", gap: SPACE.xs }}>
@@ -316,7 +404,59 @@ export default function InvestOverviewScreen() {
             </>
           )}
         </Pressable>
+
+        <Pressable onPress={handleConnectForTrading} disabled={connecting} style={s.tradeConnectBtn}>
+          <Ionicons name="swap-vertical" size={16} color={COLORS.muted} />
+          <AppText style={s.tradeConnectBtnText}>Enable trading on a connected account</AppText>
+        </Pressable>
       </ScrollView>
+
+      <Modal visible={tradeTypeSheetOpen} transparent animationType="fade" onRequestClose={() => setTradeTypeSheetOpen(false)}>
+        <Pressable style={s.tradeSheetOverlay} onPress={() => setTradeTypeSheetOpen(false)}>
+          <View style={s.tradeSheet}>
+            <AppText style={s.tradeSheetTitle}>What do you want to trade?</AppText>
+            <Pressable
+              onPress={() => { setTradeTypeSheetOpen(false); router.push("/tradeticket" as any); }}
+              style={s.tradeSheetRow}
+            >
+              <View style={[s.tradeSheetIcon, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="trending-up-outline" size={18} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText style={s.tradeSheetRowTitle}>Stocks</AppText>
+                <AppText style={s.tradeSheetRowSub}>Buy or sell shares</AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+            </Pressable>
+            <Pressable
+              onPress={() => { setTradeTypeSheetOpen(false); router.push("/cryptotrade" as any); }}
+              style={s.tradeSheetRow}
+            >
+              <View style={[s.tradeSheetIcon, { backgroundColor: "#FEF3C7" }]}>
+                <Ionicons name="logo-bitcoin" size={18} color="#D97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText style={s.tradeSheetRowTitle}>Crypto</AppText>
+                <AppText style={s.tradeSheetRowSub}>Buy or sell cryptocurrency pairs</AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+            </Pressable>
+            <Pressable
+              onPress={() => { setTradeTypeSheetOpen(false); router.push("/optionstrade" as any); }}
+              style={s.tradeSheetRow}
+            >
+              <View style={[s.tradeSheetIcon, { backgroundColor: "#EDE9FE" }]}>
+                <Ionicons name="layers-outline" size={18} color="#7C3AED" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText style={s.tradeSheetRowTitle}>Options</AppText>
+                <AppText style={s.tradeSheetRowSub}>Multi-leg options orders</AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -328,13 +468,13 @@ const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACE.lg },
   headerTitle: { fontSize: 22, fontWeight: "700", color: COLORS.text },
   settingsBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center", ...GLASS_BORDER, ...CARD_SHADOW },
-  totalCard: { backgroundColor: COLORS.primaryLight, borderWidth: 1, borderColor: COLORS.primary, borderRadius: RADIUS.xl, padding: SPACE.xxl, ...CARD_SHADOW },
-  totalLabel: { fontSize: 12, fontWeight: "700", color: COLORS.primaryDark, opacity: 0.75, textTransform: "uppercase", letterSpacing: 0.6 },
-  totalAmount: { fontSize: 36, fontWeight: "700", color: COLORS.text, marginTop: SPACE.sm, letterSpacing: -1 },
+  totalLabel: { fontSize: 13, fontWeight: "600", color: COLORS.muted, marginTop: SPACE.xs },
+  totalAmount: { fontSize: 38, fontWeight: "700", color: COLORS.text, marginTop: 4, letterSpacing: -1 },
   totalUsd: { fontSize: 13, fontWeight: "600", color: COLORS.muted, marginTop: 2 },
-  actionsRow: { flexDirection: "row", gap: SPACE.md, marginTop: SPACE.xl },
-  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, backgroundColor: COLORS.primaryDark, borderRadius: RADIUS.sm, paddingVertical: SPACE.md },
-  actionLabel: { fontSize: 13, fontWeight: "700", color: COLORS.white },
+  quickActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.xxl },
+  quickAction: { alignItems: "center", gap: SPACE.sm, width: 70 },
+  quickActionIcon: { width: 46, height: 46, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center" },
+  quickActionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.text },
 
   chartCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.lg, marginTop: SPACE.lg, ...GLASS_BORDER, ...CARD_SHADOW },
   chartHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
@@ -344,6 +484,8 @@ const s = StyleSheet.create({
   rangePillActive: { backgroundColor: COLORS.primary },
   rangePillText: { fontSize: 12, fontWeight: "700", color: COLORS.muted },
   rangePillTextActive: { color: COLORS.white },
+  benchmarkRow: { marginTop: SPACE.md },
+  benchmarkText: { fontSize: 12, color: COLORS.muted, fontWeight: "500" },
 
   dividendCard: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.lg, marginTop: SPACE.lg, ...GLASS_BORDER, ...CARD_SHADOW },
   dividendIconWrap: { width: 42, height: 42, borderRadius: RADIUS.full, backgroundColor: COLORS.greenSoft, alignItems: "center", justifyContent: "center", marginRight: SPACE.md },
@@ -366,4 +508,13 @@ const s = StyleSheet.create({
   lastSync: { fontSize: 11, color: COLORS.muted, fontWeight: "500" },
   connectBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, marginTop: SPACE.md },
   connectBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  tradeConnectBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xs, paddingVertical: SPACE.lg },
+  tradeConnectBtnText: { fontSize: 12, fontWeight: "600", color: COLORS.muted },
+  tradeSheetOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  tradeSheet: { backgroundColor: COLORS.white, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: SPACE.xl, paddingBottom: SPACE.huge },
+  tradeSheetTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.lg },
+  tradeSheetRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.md },
+  tradeSheetIcon: { width: 40, height: 40, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center" },
+  tradeSheetRowTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  tradeSheetRowSub: { fontSize: 12, color: COLORS.muted, marginTop: 1 },
 });

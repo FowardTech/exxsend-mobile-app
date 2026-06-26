@@ -51,7 +51,7 @@ export default function WalletPinModal({ visible, onClose, onSuccess, phone, wal
         onClose={onClose}
         onSuccess={handlePinVerified}
         title="Confirm subscription"
-        subtitle="Enter your PIN to pay for Invest from your wallet."
+        subtitle="Enter your PIN to pay for Stock from your wallet."
       />
       {submitting && (
         <View style={s.overlay}>

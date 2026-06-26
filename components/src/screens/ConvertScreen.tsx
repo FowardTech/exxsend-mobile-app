@@ -626,7 +626,7 @@ export default function ConvertScreen() {
               color: colors.text,
             }}
             placeholder="Search currency..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={fromSearch}
             onChangeText={setFromSearch}
           />
@@ -712,7 +712,7 @@ export default function ConvertScreen() {
               color: colors.text,
             }}
             placeholder="Search currency..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={toSearch}
             onChangeText={setToSearch}
           />
@@ -764,7 +764,7 @@ export default function ConvertScreen() {
       <ScreenShell>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <AppText style={{ marginTop: 16, color: "#666" }}>Loading wallets...</AppText>
+          <AppText style={{ marginTop: 16, color: colors.muted }}>Loading wallets...</AppText>
         </View>
       </ScreenShell>
     );
@@ -787,7 +787,7 @@ export default function ConvertScreen() {
 
           {wallets.length > 0 && (
             <View style={{ marginBottom: 24 }}>
-              <AppText style={{ fontSize: 16, fontWeight: "600", color: "#333", marginBottom: 12 }}>
+              <AppText style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>
                 Your Current Wallet{wallets.length > 1 ? "s" : ""}
               </AppText>
 
@@ -806,15 +806,15 @@ export default function ConvertScreen() {
                 >
                   <CountryFlag currencyCode={wallet.currencyCode} fallbackEmoji={(wallet as any).flag} size="md" style={{ marginRight: 12 }} />
                   <View style={{ flex: 1 }}>
-                    <AppText style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>{(wallet as any).currencyName}</AppText>
-                    <AppText style={{ fontSize: 14, color: "#666" }}>
+                    <AppText style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>{(wallet as any).currencyName}</AppText>
+                    <AppText style={{ fontSize: 14, color: colors.muted }}>
                       {toNumberSafe(wallet.balance).toFixed(2)} {wallet.currencyCode}
                     </AppText>
                   </View>
 
                   {wallet.status !== "active" && (
                     <View style={{ backgroundColor: colors.muted, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-                      <AppText style={{ color: "#fff", fontSize: 10, fontWeight: "600" }}>INACTIVE</AppText>
+                      <AppText style={{ color: colors.white, fontSize: 10, fontWeight: "600" }}>INACTIVE</AppText>
                     </View>
                   )}
                 </View>
@@ -822,7 +822,7 @@ export default function ConvertScreen() {
             </View>
           )}
 
-          <AppText style={{ fontSize: 12, color: "#999", textAlign: "center", marginTop: 16 }}>
+          <AppText style={{ fontSize: 12, color: colors.muted, textAlign: "center", marginTop: 16 }}>
             Add {wallets.length === 0 ? "at least 2 currencies" : "one more currency"} to start converting
           </AppText>
         </View>

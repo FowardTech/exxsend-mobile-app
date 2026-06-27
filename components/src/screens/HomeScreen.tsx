@@ -26,6 +26,7 @@ import { getLocalBalance } from "../../../api/flutterwave";
 import { usePendingSettlements, clearPendingForCurrency } from "../../../hooks/usePendingSettlements";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle, Path } from "react-native-svg";
 import { useStyles } from "../../../theme/styles";
 import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../theme/designSystem";
 import { userScopedKey } from "../../../utils/cacheKeys";
@@ -246,12 +247,41 @@ export default function HomeScreen() {
     (async () => {
       try {
         const res = await getReferralPublicConfig();
-        if (mounted.current && res.success && res.rewardText) {
-          setReferralReward(res.rewardText);
+        if (!mounted.current || !res.success) return;
+
+        const minPhrase = res.minDepositAmount && res.minDepositAmount > 0
+          ? ` when they send ${homeSym}${res.minDepositAmount.toFixed(2)} ${homeCcy} or more`
+          : " on their first transfer";
+
+        if (res.bonusType === "percentage") {
+          setReferralReward(`${res.percentage}%${minPhrase}`);
+          return;
         }
+
+        // Flat bonus — convert from whatever currency the backend
+        // configured it in to the user's own base currency. Showing "10
+        // USD" to someone whose wallet is in CAD/NGN/GBP isn't actually
+        // meaningful to them; converting it is what makes the number real.
+        let amount = res.flatAmount ?? 0;
+        let currencyLabel = res.bonusCurrency || homeCcy;
+        if (res.bonusCurrency && homeCcy && res.bonusCurrency !== homeCcy) {
+          try {
+            const rateRes = await getExchangeRates(`${res.bonusCurrency}_${homeCcy}`);
+            const rateEntry = rateRes.success ? rateRes.rates?.[0] : null;
+            const rateNum = rateEntry ? parseFloat(rateEntry.rate || rateEntry.core_rate || 0) : NaN;
+            if (isFinite(rateNum) && rateNum > 0) {
+              amount = (res.flatAmount ?? 0) * rateNum;
+              currencyLabel = homeCcy;
+            }
+            // If the rate fetch fails or doesn't include this pair, fall
+            // back to showing the original currency rather than a
+            // mis-converted number — better to say "10 USD" than guess.
+          } catch {}
+        }
+        setReferralReward(`${homeSym}${amount.toFixed(2)} ${currencyLabel}${minPhrase}`);
       } catch {}
     })();
-  }, []);
+  }, [homeCcy, homeSym]);
 
   // Load cache once on mount
   useEffect(() => {
@@ -541,16 +571,27 @@ export default function HomeScreen() {
   // since the gradient runs genuinely dark at the primaryDark end.
   balanceCard: {
     marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg,
-    borderRadius: RADIUS.xl, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.md,
+    borderRadius: RADIUS.xl, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.xl,
+    overflow: "hidden", position: "relative",
     shadowColor: colors.primaryDark,
     shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.4,
     shadowRadius: 24,
     elevation: 16,
   },
+  balanceDecoration: { position: "absolute", top: -20, right: -20 },
   balanceLabel: { ...TYPE.eyebrow, color: "#FFFFFF", opacity: 0.8 },
   balanceAmount: { ...TYPE.heroNumber, color: "#FFFFFF", marginTop: SPACE.sm },
-  balanceActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.xxl },
+  miniCard: {
+    flexDirection: "row", alignItems: "center", gap: SPACE.sm,
+    backgroundColor: "rgba(255,255,255,0.12)", borderRadius: RADIUS.md,
+    paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginTop: SPACE.xl,
+  },
+  miniCardChip: { width: 22, height: 16, borderRadius: 3, backgroundColor: "#D4AF7A" },
+  miniCardNumber: { flex: 1, color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: "700", letterSpacing: 2 },
+  miniCardLock: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.14)", justifyContent: "center", alignItems: "center" },
+
+  balanceActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.md },
   balanceActionIcon: {
     width: 50, height: 50, borderRadius: RADIUS.full,
     backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center",
@@ -600,7 +641,7 @@ export default function HomeScreen() {
   // Wallet cards — white, soft-shadowed, blue used only for the small decorative ring
   walletScroll: { paddingHorizontal: SCREEN_PADDING, gap: SPACE.md, paddingBottom: SPACE.xs },
   walletCard: {
-    width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg, padding: SPACE.xl,
+    width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg, padding: SPACE.md,
     backgroundColor: "transparent", overflow: "hidden",
     // Not the shared GLASS_BORDER here on purpose — that border color
     // (#EEF3FA) is actually lighter than the page background (#f9f9f9) and
@@ -637,7 +678,7 @@ export default function HomeScreen() {
   recipientCcy: { fontSize: 10, color: colors.muted, fontWeight: "500" as const },
 
   // Live rates — white card, green/red only on the change tag
-  ratesCard: { marginHorizontal: SCREEN_PADDING, backgroundColor: colors.card, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
+  ratesCard: { marginHorizontal: SCREEN_PADDING, backgroundColor: colors.card, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW, marginBottom: SPACE.md },
   rateRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 1, gap: SPACE.md },
   rateFlagWrap: { flexDirection: "row", alignItems: "center", width: 42 },
   rateFlagOver: { marginLeft: -7, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: RADIUS.full },
@@ -653,18 +694,22 @@ export default function HomeScreen() {
   txDate: { fontSize: 11, color: colors.muted, fontWeight: "500" as const, marginTop: 2 },
   txAmount: { fontSize: 14, fontWeight: "700" as const },
 
-  // Recommendations — accent (orange) reserved for this one promotional context
+  // Recommendations — subtle purple card, distinct from the rest of
+  // Home's neutral palette since this is a one-off promotional banner.
   refBanner: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.xl,
-    backgroundColor: colors.card, borderRadius: RADIUS.md, padding: SPACE.lg,
-    ...GLASS_BORDER,
-    ...CARD_SHADOW,
+    backgroundColor: "#F3EFFD",
+    borderWidth: 1, borderColor: "#C4B5FD",
+    borderRadius: RADIUS.lg, padding: SPACE.lg,
+    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md,
   },
-  refBannerLeft: { flexDirection: "row", alignItems: "center", gap: SPACE.md, flex: 1, marginRight: SPACE.sm },
-  refBannerIcon: { width: 40, height: 40, borderRadius: RADIUS.sm, backgroundColor: colors.accentLight, justifyContent: "center", alignItems: "center" },
-  refBannerTitle: { ...TYPE.subtitle, fontSize: 14, color: colors.text },
-  refBannerSub: { ...TYPE.caption, color: colors.muted, marginTop: 2 },
+  refBannerTitle: { fontSize: 14, fontWeight: "700", color: "#4C1D95" },
+  refBannerSub: { fontSize: 12, color: "#6D28D9", fontWeight: "500", marginTop: 3, lineHeight: 16 },
+  refBannerIconWrap: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: "#8B5CF6",
+    justifyContent: "center", alignItems: "center",
+  },
   }), [colors]);
 
   // ─── RENDER ──────────────────────────────────────────────────
@@ -727,56 +772,9 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* ── Balance card ── */}
-        <LinearGradient
-          colors={[colors.primary, colors.primaryDark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.balanceCard}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <AppText style={s.balanceLabel}>Total Balance</AppText>
-            <Pressable onPress={toggleHide} hitSlop={8}>
-              <Ionicons name={hideBalance ? "eye-off-outline" : "eye-outline"} size={18} color="#FFFFFF" />
-            </Pressable>
-          </View>
-          {showSkel ? (
-            <View style={{ width: 160, height: 36, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.2)", marginTop: 8 }} />
-          ) : (
-            <AppText style={s.balanceAmount}>
-              {hideBalance ? "••••••" : `${homeSym}${fmt(totalBalance)}`}
-            </AppText>
-          )}
 
-          <View style={s.balanceActionsRow}>
-            <Pressable onPress={() => isKyc ? setSheetOpen(true) : blocked()} style={{ alignItems: "center", gap: 6 }}>
-              <View style={s.balanceActionIcon}>
-                <Ionicons name="add" size={20} color="#FFFFFF" />
-              </View>
-              <AppText style={s.balanceActionLabel}>Add</AppText>
-            </Pressable>
-            <Pressable onPress={() => isKyc ? router.push("/sendmoney") : blocked()} style={{ alignItems: "center", gap: 6 }}>
-              <View style={s.balanceActionIcon}>
-                <Ionicons name="arrow-up-outline" size={20} color="#FFFFFF" />
-              </View>
-              <AppText style={s.balanceActionLabel}>Send</AppText>
-            </Pressable>
-            <Pressable onPress={() => isKyc ? router.push("/exchangerates") : blocked()} style={{ alignItems: "center", gap: 6 }}>
-              <View style={s.balanceActionIcon}>
-                <Ionicons name="repeat-outline" size={20} color="#FFFFFF" />
-              </View>
-              <AppText style={s.balanceActionLabel}>Convert</AppText>
-            </Pressable>
-            <Pressable onPress={() => isKyc ? router.push("/recipients") : blocked()} style={{ alignItems: "center", gap: 6 }}>
-              <View style={s.balanceActionIcon}>
-                <Ionicons name="grid-outline" size={20} color="#FFFFFF" />
-              </View>
-              <AppText style={s.balanceActionLabel}>More</AppText>
-            </Pressable>
-          </View>
-        </LinearGradient>
 
-        {/* ── Verify banners ── */}
+{/* ── Verify banners ── */}
         {!emailVerified && <VerifyEmailCard email={email} onPress={handleVerifyEmail} />}
         {emailVerified && !!verificationStatus?.needsVerification && verificationStatus.action !== "none" && (() => {
           const vs = verificationStatus;
@@ -831,6 +829,81 @@ export default function HomeScreen() {
               return <VerifyIdentityCardScreen userPhone={userPhone} onPress={handleVerifyIdentity} />;
           }
         })()}
+
+        
+        {/* ── Balance card ── */}
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.balanceCard}
+        >
+          {/* Abstract decorative illustration — a literal hand graphic
+              isn't something hand-coded SVG can pull off convincingly
+              without a real illustrator asset, so this uses a soft,
+              abstract overlapping-circles motif in the same color family
+              instead, tucked into the corner the same way the reference's
+              illustration sits. */}
+          <View style={s.balanceDecoration} pointerEvents="none">
+            <Svg width={140} height={140} viewBox="0 0 140 140">
+              <Circle cx="100" cy="30" r="55" fill="rgba(255,255,255,0.06)" />
+              <Circle cx="120" cy="60" r="32" fill="rgba(255,255,255,0.08)" />
+              <Circle cx="90" cy="15" r="18" fill="rgba(255,255,255,0.10)" />
+            </Svg>
+          </View>
+
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <AppText style={s.balanceLabel}>Available Balance</AppText>
+            <Pressable onPress={toggleHide} hitSlop={8}>
+              <Ionicons name={hideBalance ? "eye-off-outline" : "eye-outline"} size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
+          {showSkel ? (
+            <View style={{ width: 160, height: 36, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.2)", marginTop: 8 }} />
+          ) : (
+            <AppText style={s.balanceAmount}>
+              {hideBalance ? "••••••" : `${homeSym}${fmt(totalBalance)}`}
+            </AppText>
+          )}
+
+          {/* Decorative card motif — purely visual, not tied to any real
+              card number, since this view isn't displaying an actual
+              issued card. */}
+          {/* <View style={s.miniCard}>
+            <View style={s.miniCardChip} />
+            <AppText style={s.miniCardNumber}>•••• •••• ••••</AppText>
+            <View style={s.miniCardLock}>
+              <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.85)" />
+            </View>
+          </View> */}
+
+          <View style={s.balanceActionsRow}>
+            <Pressable onPress={() => isKyc ? setSheetOpen(true) : blocked()} style={{ alignItems: "center", gap: 6 }}>
+              <View style={s.balanceActionIcon}>
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+              </View>
+              <AppText style={s.balanceActionLabel}>Add</AppText>
+            </Pressable>
+            <Pressable onPress={() => isKyc ? router.push("/sendmoney") : blocked()} style={{ alignItems: "center", gap: 6 }}>
+              <View style={s.balanceActionIcon}>
+                <Ionicons name="arrow-up-outline" size={20} color="#FFFFFF" />
+              </View>
+              <AppText style={s.balanceActionLabel}>Send</AppText>
+            </Pressable>
+            <Pressable onPress={() => isKyc ? router.push("/exchangerates") : blocked()} style={{ alignItems: "center", gap: 6 }}>
+              <View style={s.balanceActionIcon}>
+                <Ionicons name="repeat-outline" size={20} color="#FFFFFF" />
+              </View>
+              <AppText style={s.balanceActionLabel}>Convert</AppText>
+            </Pressable>
+            <Pressable onPress={() => isKyc ? router.push("/recipients") : blocked()} style={{ alignItems: "center", gap: 6 }}>
+              <View style={s.balanceActionIcon}>
+                <Ionicons name="grid-outline" size={20} color="#FFFFFF" />
+              </View>
+              <AppText style={s.balanceActionLabel}>More</AppText>
+            </Pressable>
+          </View>
+        </LinearGradient>
 
         {!!feeWaivers && (
           <View style={{ marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md }}>
@@ -971,6 +1044,7 @@ export default function HomeScreen() {
             <AppText style={s.sectionLink}>View all</AppText>
           </Pressable>
         </View>
+        
         {recentTxLoading ? (
           <View style={s.ratesCard}>
             <View style={{ padding: 20, alignItems: "center" }}>
@@ -985,11 +1059,11 @@ export default function HomeScreen() {
             </View>
           </View>
         ) : (
-          <View style={s.ratesCard}>
+          <View>
             {recentTx.map((tx, i) => (
               <View key={`${tx.reference}_${i}`}>
                 <Pressable
-                  style={s.txRow}
+                  style={[s.txRow, s.ratesCard]}
                   onPress={() => router.push({ pathname: "/transactiondetail/[reference]", params: { reference: encodeURIComponent(String(tx.reference)) } } as any)}
                 >
                   <View style={s.txIconWrap}>
@@ -1036,20 +1110,17 @@ export default function HomeScreen() {
           <AppText style={s.sectionTitle}>Recommendations</AppText>
         </View>
         <Pressable onPress={() => router.push("/referral")} style={s.refBanner}>
-          <View style={s.refBannerLeft}>
-            <View style={s.refBannerIcon}>
-              <Ionicons name="gift-outline" size={18} color={colors.accent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText style={s.refBannerTitle} numberOfLines={1}>Earn Rewards by Referring Friends!</AppText>
-              <AppText style={s.refBannerSub} numberOfLines={2}>
-                {referralReward
-                  ? `Invite your friends and earn ${referralReward} on their first transfer`
-                  : "Invite your friends and earn a cash bonus when they sign up"}
-              </AppText>
-            </View>
+          <View style={{ flex: 1, marginRight: SPACE.md }}>
+            <AppText style={s.refBannerTitle} numberOfLines={1}>Earn Rewards by Referring Friends!</AppText>
+            <AppText style={s.refBannerSub} numberOfLines={2}>
+              {referralReward
+                ? `Invite your friends and earn ${referralReward}`
+                : "Invite your friends and earn a cash bonus when they sign up"}
+            </AppText>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+          <View style={s.refBannerIconWrap}>
+            <Ionicons name="gift" size={26} color="#FFFFFF" />
+          </View>
         </Pressable>
 
         {/* ── Live Rates ── */}

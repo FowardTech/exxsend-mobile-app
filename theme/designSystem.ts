@@ -41,11 +41,11 @@ export const RADIUS = {
 // Named by role, not by size, so intent stays clear at the call site.
 export const TYPE = {
   /** The single biggest number on a screen — a balance, a transfer amount. */
-  heroNumber: { fontSize: 40, fontWeight: "700" as const, letterSpacing: -1 },
+  heroNumber: { fontSize: 35, fontWeight: "600" as const, letterSpacing: -1 },
   /** Section/page titles. */
-  title: { fontSize: 22, fontWeight: "700" as const, letterSpacing: -0.3 },
+  title: { fontSize: 17, fontWeight: "600" as const, letterSpacing: -0.3 },
   /** Card titles, list-item primary text. */
-  subtitle: { fontSize: 16, fontWeight: "600" as const },
+  subtitle: { fontSize: 15, fontWeight: "600" as const },
   /** Standard body text. */
   body: { fontSize: 15, fontWeight: "400" as const },
   /** Secondary/supporting text under a title or value. */
@@ -53,7 +53,7 @@ export const TYPE = {
   /** Smallest text — timestamps, fine print, badge labels. */
   micro: { fontSize: 11, fontWeight: "600" as const, letterSpacing: 0.3 },
   /** Uppercase section eyebrow labels ("TOTAL BALANCE", "QUICK ACTIONS"). */
-  eyebrow: { fontSize: 12, fontWeight: "700" as const, letterSpacing: 0.6 },
+  eyebrow: { fontSize: 12, fontWeight: "600" as const, letterSpacing: 0.6 },
 };
 
 // ── Elevation ────────────────────────────────────────────────────────────

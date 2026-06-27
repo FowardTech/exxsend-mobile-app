@@ -8,7 +8,7 @@ import AppText from "@/components/AppText";
 import BackButton from "@/components/BackButton";
 import { COLORS } from "@/theme/colors";
 import { SPACE, RADIUS, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { getReferralLeaderboard, ReferralLeaderboardEntry, ReferralLeaderboardMe } from "@/api/config";
+import { getReferralLeaderboard, ReferralLeaderboardEntry, ReferralLeaderboardMe, getMyReferrals, MyReferralRecord } from "@/api/config";
 
 type Period = "all" | "month" | "week";
 
@@ -40,6 +40,8 @@ export default function ReferralLeaderboardScreen() {
   const [period, setPeriod] = useState<Period>("all");
   const [leaders, setLeaders] = useState<ReferralLeaderboardEntry[]>([]);
   const [me, setMe] = useState<ReferralLeaderboardMe | null>(null);
+  const [myReferrals, setMyReferrals] = useState<MyReferralRecord[]>([]);
+  const [myReferralsLoading, setMyReferralsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -54,9 +56,24 @@ export default function ReferralLeaderboardScreen() {
     setRefreshing(false);
   }, []);
 
+  // Separate from the aggregate leaderboard — this is the user's own
+  // referral activity directly from the source, so it still shows
+  // correctly even if something about the aggregate ranking calculation
+  // is lagging or off, e.g. a referral that's actually been rewarded but
+  // hasn't been reflected in the board yet.
+  const loadMyReferrals = useCallback(async () => {
+    const phone = (await AsyncStorage.getItem("user_phone")) || "";
+    if (!phone) { setMyReferralsLoading(false); return; }
+    const res = await getMyReferrals(phone);
+    if (res.success) setMyReferrals(res.referrals);
+    setMyReferralsLoading(false);
+  }, []);
+
+  useEffect(() => { loadMyReferrals(); }, [loadMyReferrals]);
+
   useEffect(() => { setLoading(true); load(period); }, [period, load]);
 
-  const onRefresh = () => { setRefreshing(true); load(period); };
+  const onRefresh = () => { setRefreshing(true); load(period); loadMyReferrals(); };
 
   // If "me" is already visible in the rendered list, don't show a second,
   // redundant pinned row for the exact same person.
@@ -77,6 +94,28 @@ export default function ReferralLeaderboardScreen() {
           </Pressable>
         ))}
       </View>
+
+      {!myReferralsLoading && myReferrals.length > 0 && (
+        <View style={s.myReferralsSection}>
+          <AppText style={s.myReferralsTitle}>Your Referrals</AppText>
+          {myReferrals.map((r) => {
+            const statusLower = (r.status || "").toLowerCase();
+            const isRewarded = statusLower.includes("reward") || statusLower.includes("paid") || statusLower.includes("complet");
+            const statusColor = isRewarded ? "#059669" : statusLower.includes("pend") || statusLower.includes("qualif") ? "#D97706" : COLORS.muted;
+            return (
+              <View key={r.id} style={s.myReferralRow}>
+                <View style={{ flex: 1 }}>
+                  <AppText style={s.myReferralName} numberOfLines={1}>{r.referredName || r.referredPhone || "Referral"}</AppText>
+                  <AppText style={[s.myReferralStatus, { color: statusColor }]}>{r.status}</AppText>
+                </View>
+                {isRewarded && r.rewardAmount != null && (
+                  <AppText style={s.myReferralReward}>+{r.rewardAmount} {r.rewardCurrency || ""}</AppText>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       {loading ? (
         <View style={s.centered}><ActivityIndicator size="small" color={COLORS.primary} /></View>
@@ -144,6 +183,13 @@ const s = StyleSheet.create({
   tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   tabText: { fontSize: 12.5, fontWeight: "700", color: COLORS.muted },
   tabTextActive: { color: "#FFFFFF" },
+
+  myReferralsSection: { paddingHorizontal: SCREEN_PADDING, marginBottom: SPACE.lg },
+  myReferralsTitle: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: SPACE.sm },
+  myReferralRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, marginBottom: SPACE.xs, ...GLASS_BORDER },
+  myReferralName: { fontSize: 13, fontWeight: "700", color: COLORS.text },
+  myReferralStatus: { fontSize: 11.5, fontWeight: "700", marginTop: 2, textTransform: "capitalize" },
+  myReferralReward: { fontSize: 14, fontWeight: "700", color: "#059669" },
 
   list: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, borderRadius: RADIUS.md, marginBottom: SPACE.xs },

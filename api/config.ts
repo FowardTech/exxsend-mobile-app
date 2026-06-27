@@ -571,6 +571,59 @@ export async function getReferralLeaderboard(params: {
   }
 }
 
+export interface MyReferralRecord {
+  id: string;
+  referredName?: string;
+  referredPhone?: string;
+  /** No documented status enum for this endpoint — passed through as-is
+   * and displayed verbatim (capitalized) rather than mapped to a fixed
+   * set of labels that might not match what the backend actually sends. */
+  status: string;
+  rewardAmount?: number | null;
+  rewardCurrency?: string;
+  createdAt?: string;
+}
+
+/**
+ * GET /referrals/my-referrals — no documented response shape was provided
+ * for this one, so parsing here is intentionally flexible: it checks a
+ * few plausible field-name/wrapper conventions (referrals/data/bare array,
+ * camelCase/snake_case) rather than assuming one exact shape.
+ */
+export async function getMyReferrals(phone: string): Promise<{
+  success: boolean;
+  referrals: MyReferralRecord[];
+  totalRewarded?: number;
+  message?: string;
+}> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/referrals/my-referrals?phone=${encodeURIComponent(phone)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      return { success: false, referrals: [], message: data?.message || `HTTP ${res.status}` };
+    }
+    const rawList = Array.isArray(data?.referrals) ? data.referrals
+      : Array.isArray(data?.data) ? data.data
+      : Array.isArray(data) ? data
+      : [];
+    const referrals: MyReferralRecord[] = rawList.map((r: any) => ({
+      id: String(r.id ?? r.referralId ?? r.referral_id ?? ""),
+      referredName: r.referredName ?? r.referred_name ?? r.name,
+      referredPhone: r.referredPhone ?? r.referred_phone ?? r.phone,
+      status: r.status ?? "pending",
+      rewardAmount: r.rewardAmount ?? r.reward_amount ?? null,
+      rewardCurrency: r.rewardCurrency ?? r.reward_currency ?? r.currency,
+      createdAt: r.createdAt ?? r.created_at,
+    }));
+    return { success: true, referrals, totalRewarded: data.totalRewarded ?? data.total_rewarded };
+  } catch (error: any) {
+    return { success: false, referrals: [], message: error?.message || "Could not load your referrals" };
+  }
+}
+
 export interface PromotionalBanner {
   id: string;
   title?: string;
@@ -1326,9 +1379,13 @@ export const getConversionQuote = async (
     const inflight = __quoteInflight.get(key);
     if (inflight) return inflight;
 
+    const authToken = await AsyncStorage.getItem("auth_token");
     const promise = strictAPICall<any>(`${API_BASE_URL}/currencycloud/user/convert/quote`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
       body: JSON.stringify({
         phone,
         sell_currency: sellCurrency,
@@ -1697,9 +1754,13 @@ export async function calculateSendFee(params: {
   message?: string;
 }> {
   try {
+    const authToken = await AsyncStorage.getItem("auth_token");
     const response = await fetchWithTimeout(`${API_BASE_URL}/fees/calculate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
       body: JSON.stringify({
         phone: params.phone,
         transactionType: params.transactionType,

@@ -4,7 +4,7 @@
  * Does NOT pre-save recipient — RecipientConfirmScreen persists after successful payout.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Alert, StyleSheet, Modal, FlatList, StatusBar } from "react-native";
+import { View, Pressable, ScrollView, ActivityIndicator, Alert, StyleSheet, Modal, FlatList, StatusBar, KeyboardAvoidingView, Platform } from "react-native";
 import AppText from "../../../AppText";
 import BackButton from "../../../BackButton";
 import AppTextInput from "../../../AppTextInput";
@@ -659,8 +659,9 @@ export default function RecipientNewScreen() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {prefilled ? (
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}>
+        <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {prefilled ? (
           <View style={s.beneficiaryCard}>
             <RecipientAvatar
               name={prefilled.accountName || "?"}
@@ -757,7 +758,8 @@ export default function RecipientNewScreen() {
           <AppText style={s.continueBtnText}>Continue</AppText>
         </Pressable>
         <View style={{ height: 24 }} />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
       <BankPicker visible={bankPickerOpen} banks={banks} loading={banksLoading} searchQuery={bankSearch} onSearch={setBankSearch} onSelect={handleBankSelect} onClose={() => setBankPickerOpen(false)} selected={selectedBank} />
       {activeMethod.networks && <NetworkPicker visible={networkPickerOpen} networks={activeMethod.networks} onSelect={handleNetworkSelect} onClose={() => setNetworkPickerOpen(false)} selected={selectedNetwork} />}
       {isCurrencyCloud && (
@@ -819,7 +821,7 @@ function makeLocalStyles(colors: any) {
   tabActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
   tabTextActive: { color: "#FFFFFF", fontWeight: "700" },
-  body: { padding: SCREEN_PADDING },
+  body: { padding: SCREEN_PADDING, paddingBottom: SPACE.huge },
   fieldWrap: { marginBottom: SPACE.lg },
   fieldLabel: { fontSize: 13, fontWeight: "700", color: colors.text, marginBottom: SPACE.sm },
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, ...CARD_SHADOW, borderRadius: RADIUS.sm + 2, paddingHorizontal: SPACE.md + 2, height: 52 },

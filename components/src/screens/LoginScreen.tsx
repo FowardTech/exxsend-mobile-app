@@ -117,7 +117,16 @@ export default function LoginScreen() {
       if (loginResult.user?.status === "suspended" || loginResult.suspended) { setSuspendedModalVisible(true); return; }
       if (!loginResult.success) { Alert.alert("Login Failed", loginResult.message || "Invalid credentials"); return; }
       await AsyncStorage.setItem("user_phone", fullPhone);
-      await AsyncStorage.setItem("auth_token", loginResult.auth_token || loginResult.accessToken || loginResult.token);
+      const issuedToken = loginResult.auth_token || loginResult.accessToken || loginResult.token;
+      console.log(`[LoginScreen] login response token present: ${!!issuedToken}`);
+      if (issuedToken) {
+        await AsyncStorage.setItem("auth_token", issuedToken);
+      } else {
+        // No token came back from this login at all — don't write
+        // anything rather than risk storing "undefined" as a literal,
+        // truthy string that later gets sent as a garbage Bearer header.
+        await AsyncStorage.removeItem("auth_token");
+      }
       await AsyncStorage.removeItem("signup_stage");
       if (loginResult.user) await AsyncStorage.setItem("user_info", JSON.stringify(loginResult.user));
       router.replace("/(tabs)");

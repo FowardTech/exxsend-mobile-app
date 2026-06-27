@@ -1,16 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { View, Pressable, ActivityIndicator, RefreshControl } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import { useRouter } from "expo-router";
-import { ScrollView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ScreenShell from "../../../components/ScreenShell";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { getUserTransactions, WalletTransaction } from "../../../api/transactions";
 import Pill from "../../../components/Pill";
+import ScreenShell from "../../../components/ScreenShell";
 import { useStyles } from "../../../theme/styles";
 import { useAppTheme } from "../../../theme/ThemeProvider";
-import { getUserTransactions, WalletTransaction } from "../../../api/transactions";
+import AppText from "../../AppText";
+import BackButton from "../../BackButton";
 
 interface TransactionGroup {
   date: string;
@@ -196,127 +195,127 @@ export default function AllTransactionsScreen() {
         contentContainerStyle={{ paddingBottom: 24 }}
       >
         {/* Header */}
-          <View style={styles.headerRow}>
-            {router.canGoBack() && <BackButton onPress={() => router.back()} />}
-            <View style={{ flex: 1 }}>
-              <AppText style={[styles.headerTitle, {paddingHorizontal: 16}]}>Transactions</AppText>
-              {/* <AppText style={styles.subtitle}>All your financial activity</AppText> */}
-            </View>
+        <View style={styles.headerRow}>
+          {router.canGoBack() && <BackButton onPress={() => router.back()} />}
+          <View style={{ flex: 1 }}>
+            <AppText style={[styles.headerTitle, { paddingHorizontal: 16 }]}>Transactions</AppText>
+            {/* <AppText style={styles.subtitle}>All your financial activity</AppText> */}
           </View>
+        </View>
 
-          {/* Status Filters */}
-          <View style={styles.filtersRow}>
-            {STATUS_FILTERS.map((filter) => (
-              <Pressable key={filter} onPress={() => setStatusFilter(filter)}>
-                <Pill title={filter} active={statusFilter === filter} />
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Transactions List */}
-          {loading ? (
-            <View style={{ padding: 40, alignItems: "center" }}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <AppText style={{ marginTop: 12, color: "#9CA3AF", fontWeight: "600" }}>
-                Loading transactions...
-              </AppText>
-            </View>
-          ) : groupedTransactions.length === 0 ? (
-            <View style={{ padding: 40, alignItems: "center" }}>
-              <Ionicons name="receipt-outline" size={48} color={colors.muted} style={{ marginBottom: 12 }} />
-              <AppText style={{ color: "#6b7280", fontWeight: "600", fontSize: 16 }}>
-                No transactions yet
-              </AppText>
-            </View>
-          ) : (
-            groupedTransactions.map((group) => (
-              // ✅ stable group key (date string is unique per group)
-              <View key={group.date} style={{ marginTop: 14, paddingHorizontal: 16 }}>
-                <AppText style={styles.groupDate}>{group.date}</AppText>
-                <View style={styles.groupLine} />
-
-                {group.items.map((tx, i) => (
-                  <Pressable
-                    // ✅ FIX: unique key even if reference repeats
-                    key={txKey(tx, i)}
-                    style={styles.txRow}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/transactiondetail/[reference]",
-                        params: { reference: encodeURIComponent(String((tx as any).reference)) },
-                      } as any)
-                    }
-                  >
-                    <View style={styles.txLeft}>
-                      <View style={styles.txIcon}>
-                        <Ionicons name={getTransactionIcon(tx)} size={16} color={colors.text} />
-                      </View>
-                      <View>
-                        <AppText style={styles.txTitle}>{getTransactionTitle(tx)}</AppText>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          <AppText style={styles.txTime}>{formatTime(tx.createdAt)}</AppText>
-                          <View
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: 3,
-                              backgroundColor: getStatusColor(tx.status),
-                            }}
-                          />
-                          <AppText
-                            style={{
-                              fontSize: 11,
-                              color: getStatusColor(tx.status),
-                              fontWeight: "600",
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            {tx.status}
-                          </AppText>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={styles.txRight}>
-                      <AppText
-                        style={[
-                          styles.txAmt,
-                          {
-                            color:
-                              tx.transactionType === "payout" || tx.amount < 0
-                                ? "#ef4444"
-                                : colors.green,
-                          },
-                        ]}
-                      >
-                        {formatAmount(tx)}
-                      </AppText>
-                    </View>
-                  </Pressable>
-                ))}
-              </View>
-            ))
-          )}
-
-          {/* Load More */}
-          {hasMore && !loading && (
-            <Pressable
-              onPress={() => {
-                setPage((p) => p + 1);
-                loadTransactions(false);
-              }}
-              style={{
-                marginHorizontal: 16,
-                marginTop: 16,
-                paddingVertical: 12,
-                backgroundColor: "#f3f4f6",
-                borderRadius: 8,
-                alignItems: "center",
-              }}
-            >
-              <AppText style={{ fontWeight: "700", color: "#374151" }}>Load More</AppText>
+        {/* Status Filters */}
+        <View style={styles.filtersRow}>
+          {STATUS_FILTERS.map((filter) => (
+            <Pressable key={filter} onPress={() => setStatusFilter(filter)}>
+              <Pill title={filter} active={statusFilter === filter} />
             </Pressable>
-          )}
+          ))}
+        </View>
+
+        {/* Transactions List */}
+        {loading ? (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <AppText style={{ marginTop: 12, color: "#9CA3AF", fontWeight: "600" }}>
+              Loading transactions...
+            </AppText>
+          </View>
+        ) : groupedTransactions.length === 0 ? (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <Ionicons name="receipt-outline" size={48} color={colors.muted} style={{ marginBottom: 12 }} />
+            <AppText style={{ color: "#6b7280", fontWeight: "600", fontSize: 16 }}>
+              No transactions yet
+            </AppText>
+          </View>
+        ) : (
+          groupedTransactions.map((group) => (
+            // ✅ stable group key (date string is unique per group)
+            <View key={group.date} style={{ marginTop: 14, paddingHorizontal: 16 }}>
+              <AppText style={styles.groupDate}>{group.date}</AppText>
+              <View style={styles.groupLine} />
+
+              {group.items.map((tx, i) => (
+                <Pressable
+                  // ✅ FIX: unique key even if reference repeats
+                  key={txKey(tx, i)}
+                  style={styles.txRow}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/transactiondetail/[reference]",
+                      params: { reference: encodeURIComponent(String((tx as any).reference)) },
+                    } as any)
+                  }
+                >
+                  <View style={styles.txLeft}>
+                    <View style={styles.txIcon}>
+                      <Ionicons name={getTransactionIcon(tx)} size={16} color={colors.text} />
+                    </View>
+                    <View>
+                      <AppText style={styles.txTitle}>{getTransactionTitle(tx)}</AppText>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <AppText style={styles.txTime}>{formatTime(tx.createdAt)}</AppText>
+                        <View
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: getStatusColor(tx.status),
+                          }}
+                        />
+                        <AppText
+                          style={{
+                            fontSize: 11,
+                            color: getStatusColor(tx.status),
+                            fontWeight: "600",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {tx.status}
+                        </AppText>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.txRight}>
+                    <AppText
+                      style={[
+                        styles.txAmt,
+                        {
+                          color:
+                            tx.transactionType === "payout" || tx.amount < 0
+                              ? "#ef4444"
+                              : colors.green,
+                        },
+                      ]}
+                    >
+                      {formatAmount(tx)}
+                    </AppText>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          ))
+        )}
+
+        {/* Load More */}
+        {hasMore && !loading && (
+          <Pressable
+            onPress={() => {
+              setPage((p) => p + 1);
+              loadTransactions(false);
+            }}
+            style={{
+              marginHorizontal: 16,
+              marginTop: 16,
+              paddingVertical: 12,
+              backgroundColor: "#f3f4f6",
+              borderRadius: 8,
+              alignItems: "center",
+            }}
+          >
+            <AppText style={{ fontWeight: "600", color: "#374151" }}>Load More</AppText>
+          </Pressable>
+        )}
       </ScrollView>
     </ScreenShell>
   );

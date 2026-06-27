@@ -1,21 +1,21 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, RefreshControl, Alert, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getUserProfile } from "@/api/config";
+import {
+  cancelMoneyRequest,
+  declineMoneyRequest,
+  getIncomingMoneyRequests,
+  getOutgoingMoneyRequests,
+  MoneyRequest,
+} from "@/api/moneyRequests";
 import AppText from "@/components/AppText";
 import BackButton from "@/components/BackButton";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import {
-  getIncomingMoneyRequests,
-  getOutgoingMoneyRequests,
-  declineMoneyRequest,
-  cancelMoneyRequest,
-  MoneyRequest,
-} from "@/api/moneyRequests";
-import { getUserProfile } from "@/api/config";
+import { GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Tab = "incoming" | "outgoing";
 
@@ -79,7 +79,7 @@ export default function MoneyRequestsScreen() {
     try {
       const profile = await getUserProfile(req.requesterPhone);
       prefillUsername = profile.success ? profile.user?.username || undefined : undefined;
-    } catch {}
+    } catch { }
     setResolvingPayId(null);
 
     router.push({
@@ -238,7 +238,7 @@ export default function MoneyRequestsScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   newBtn: { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   emptyText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
@@ -247,24 +247,24 @@ const s = StyleSheet.create({
   tab: { paddingVertical: SPACE.sm, borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: COLORS.primary },
   tabText: { fontSize: 13, fontWeight: "600", color: COLORS.muted },
-  tabTextActive: { color: COLORS.primary, fontWeight: "700" },
+  tabTextActive: { color: COLORS.primary, fontWeight: "600" },
 
   list: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge, gap: SPACE.md },
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.lg, ...GLASS_BORDER },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  cardName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  cardName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   cardNote: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2, maxWidth: 200 },
   statusPill: { borderRadius: RADIUS.full, paddingHorizontal: SPACE.sm, paddingVertical: 4 },
-  statusPillText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
+  statusPillText: { fontSize: 11, fontWeight: "600", textTransform: "capitalize" },
   cardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: SPACE.md },
-  cardAmount: { fontSize: 18, fontWeight: "700", color: COLORS.text },
+  cardAmount: { fontSize: 18, fontWeight: "600", color: COLORS.text },
   cardDate: { fontSize: 11, color: COLORS.muted, fontWeight: "500" },
 
   actionsRow: { flexDirection: "row", gap: SPACE.sm, marginTop: SPACE.md },
   declineBtn: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: SPACE.sm + 2, alignItems: "center", borderWidth: 1, borderColor: COLORS.border },
-  declineBtnText: { fontSize: 13, fontWeight: "700", color: COLORS.muted },
+  declineBtnText: { fontSize: 13, fontWeight: "600", color: COLORS.muted },
   payBtn: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: SPACE.sm + 2, alignItems: "center", backgroundColor: COLORS.primary },
-  payBtnText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  payBtnText: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
   cancelLink: { marginTop: SPACE.md, alignSelf: "flex-start" },
-  cancelLinkText: { fontSize: 13, fontWeight: "700", color: COLORS.red },
+  cancelLinkText: { fontSize: 13, fontWeight: "600", color: COLORS.red },
 });

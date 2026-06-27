@@ -1,14 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
-import AppText from "../../../../AppText";
-import BackButton from "../../../../BackButton";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../../../../theme/colors";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getUserProfile } from "../../../../../api/config";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../../../theme/designSystem";
+import { COLORS } from "../../../../../theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "../../../../../theme/designSystem";
+import AppText from "../../../../AppText";
+import BackButton from "../../../../BackButton";
 
 type ProfileInfo = {
   fullName?: string;
@@ -299,7 +299,7 @@ const s = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
 
@@ -344,13 +344,13 @@ const s = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.textSecondary,
   },
   rowValue: {
     maxWidth: "46%",
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
 
@@ -370,7 +370,7 @@ const s = StyleSheet.create({
     flex: 1,
     color: COLORS.accentDark,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     lineHeight: 18,
   },
 });

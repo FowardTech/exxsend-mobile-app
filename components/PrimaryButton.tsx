@@ -1,7 +1,7 @@
 import React from "react";
-import { Pressable, ActivityIndicator, StyleSheet, View } from "react-native";
-import AppText from "./AppText";
+import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { COLORS } from "../theme/colors";
+import AppText from "./AppText";
 
 interface Props {
   title: string;
@@ -17,10 +17,10 @@ export default function PrimaryButton({ title, onPress, style, disabled, loading
     disabled || loading
       ? "#C4BFD8"
       : variant === "accent"
-      ? COLORS.accent
-      : variant === "danger"
-      ? COLORS.red
-      : COLORS.primary;
+        ? COLORS.accent
+        : variant === "danger"
+          ? COLORS.red
+          : COLORS.primary;
 
   return (
     <Pressable
@@ -52,7 +52,7 @@ const s = StyleSheet.create({
   text: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     letterSpacing: 0.2,
   },
 });

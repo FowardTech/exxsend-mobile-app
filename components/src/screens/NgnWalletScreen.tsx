@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { View, Pressable } from "react-native";
-import AppText from "../../AppText";
 import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Pressable, View } from "react-native";
+import { styles } from "../../../theme/styles";
+import AppText from "../../AppText";
+import { cadWalletTx } from "../data/MockData";
+import DetailRow from "./../../DetailRow";
 import ScreenShell from "./../../ScreenShell";
 import WalletAction from "./../../WalletAction";
-import DetailRow from "./../../DetailRow";
-import { styles } from "../../../theme/styles";
-import { cadWalletTx } from "../data/MockData";
 
 export default function NgnWalletScreen() {
   const router = useRouter();
@@ -21,13 +21,13 @@ export default function NgnWalletScreen() {
 
         <Pressable style={styles.limitsPill}>
           <AppText style={{ marginRight: 8 }}>🪙</AppText>
-          <AppText style={{ fontWeight: "700", color: "#2D2D2D" }}>View account limits</AppText>
+          <AppText style={{ fontWeight: "600", color: "#2D2D2D" }}>View account limits</AppText>
         </Pressable>
 
         <View style={styles.walletActionRow}>
           <WalletAction icon="↑" label="Send" onPress={() => router.push("/sendmoney")} />
           <WalletAction icon="＋" label="Add" onPress={() => router.push("/addmoneymethods")} />
-          <WalletAction icon="－" label="Withdraw" onPress={() => {}} />
+          <WalletAction icon="－" label="Withdraw" onPress={() => { }} />
           <WalletAction icon="↻" label="Convert" onPress={() => router.push("/convert")} />
         </View>
 

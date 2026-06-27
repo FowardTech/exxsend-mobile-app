@@ -1,16 +1,15 @@
-import React, { useMemo, useState } from "react";
-import { View, Pressable, Modal, Platform, Alert, ScrollView, ActivityIndicator, StyleSheet, StatusBar, KeyboardAvoidingView } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import AppTextInput from "../../AppTextInput";
-import { useRouter } from "expo-router";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { COLORS } from "../../../theme/colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { saveBasicInfo } from "../../../api/config";
+import { COLORS } from "../../../theme/colors";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
 
 function FieldLabel({ label }: { label: string }) {
   return <AppText style={s.fieldLabel}>{label}</AppText>;
@@ -134,83 +133,83 @@ export default function BasicInfoScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Info banner */}
-        <View style={s.infoBanner}>
-          <Ionicons name="information-circle-outline" size={18} color={COLORS.accentDark} style={{ marginRight: 10, marginTop: 1 }} />
-          <AppText style={s.infoBannerText}>
-            Enter your full legal name exactly as it appears on your government-issued ID. No initials.
-          </AppText>
-        </View>
-
-        {/* Name row */}
-        <View style={s.twoCol}>
-          <View style={{ flex: 1 }}>
-            <FieldLabel label="First name" />
-            <InputBox value={first} onChangeText={setFirst} placeholder="John" />
-          </View>
-          <View style={{ width: 12 }} />
-          <View style={{ flex: 1 }}>
-            <FieldLabel label="Middle name" />
-            <InputBox value={middle} onChangeText={setMiddle} placeholder="Optional" />
-          </View>
-        </View>
-
-        <FieldLabel label="Last name" />
-        <InputBox value={last} onChangeText={setLast} placeholder="Smith" />
-
-        <FieldLabel label="Email address" />
-        <View style={s.inputBox}>
-          <Ionicons name="mail-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
-          <AppTextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={COLORS.muted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[s.input, { flex: 1 }]}
-          />
-        </View>
-
-        <FieldLabel label="Date of birth" />
-        <Pressable onPress={openDatePicker} style={[s.inputBox, s.dobBox]}>
-          <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={{ marginRight: 10 }} />
-          <AppText style={[s.input, { flex: 1, color: dob ? COLORS.text : COLORS.muted }]}>
-            {dob ? formatDob(dob) : "Select your date of birth"}
-          </AppText>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
-        </Pressable>
-
-        {/* Age feedback */}
-        {dob && (
-          <View style={[s.agePill, !isAdult && s.agePillError]}>
-            <Ionicons
-              name={isAdult ? "checkmark-circle" : "alert-circle-outline"}
-              size={15}
-              color={isAdult ? COLORS.green : COLORS.red}
-              style={{ marginRight: 6 }}
-            />
-            <AppText style={[s.ageText, !isAdult && { color: COLORS.red }]}>
-              {isAdult ? `Age ${age} — eligible to open an account` : `You must be 18 or older to continue`}
+          <View style={s.infoBanner}>
+            <Ionicons name="information-circle-outline" size={18} color={COLORS.accentDark} style={{ marginRight: 10, marginTop: 1 }} />
+            <AppText style={s.infoBannerText}>
+              Enter your full legal name exactly as it appears on your government-issued ID. No initials.
             </AppText>
           </View>
-        )}
 
-        <View style={{ height: 24 }} />
-      </ScrollView>
-
-      {/* Footer CTA */}
-      <View style={s.footer}>
-        <Pressable
-          onPress={handleContinue}
-          disabled={!canContinue || loading}
-          style={({ pressed }) => [s.ctaBtn, (!canContinue || loading) && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
-        >
-          <View style={s.ctaInner}>
-            {loading ? <ActivityIndicator color={COLORS.actionText} /> : <AppText style={s.ctaText}>Continue</AppText>}
+          {/* Name row */}
+          <View style={s.twoCol}>
+            <View style={{ flex: 1 }}>
+              <FieldLabel label="First name" />
+              <InputBox value={first} onChangeText={setFirst} placeholder="John" />
+            </View>
+            <View style={{ width: 12 }} />
+            <View style={{ flex: 1 }}>
+              <FieldLabel label="Middle name" />
+              <InputBox value={middle} onChangeText={setMiddle} placeholder="Optional" />
+            </View>
           </View>
-        </Pressable>
-      </View>
+
+          <FieldLabel label="Last name" />
+          <InputBox value={last} onChangeText={setLast} placeholder="Smith" />
+
+          <FieldLabel label="Email address" />
+          <View style={s.inputBox}>
+            <Ionicons name="mail-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
+            <AppTextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={COLORS.muted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={[s.input, { flex: 1 }]}
+            />
+          </View>
+
+          <FieldLabel label="Date of birth" />
+          <Pressable onPress={openDatePicker} style={[s.inputBox, s.dobBox]}>
+            <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={{ marginRight: 10 }} />
+            <AppText style={[s.input, { flex: 1, color: dob ? COLORS.text : COLORS.muted }]}>
+              {dob ? formatDob(dob) : "Select your date of birth"}
+            </AppText>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+          </Pressable>
+
+          {/* Age feedback */}
+          {dob && (
+            <View style={[s.agePill, !isAdult && s.agePillError]}>
+              <Ionicons
+                name={isAdult ? "checkmark-circle" : "alert-circle-outline"}
+                size={15}
+                color={isAdult ? COLORS.green : COLORS.red}
+                style={{ marginRight: 6 }}
+              />
+              <AppText style={[s.ageText, !isAdult && { color: COLORS.red }]}>
+                {isAdult ? `Age ${age} — eligible to open an account` : `You must be 18 or older to continue`}
+              </AppText>
+            </View>
+          )}
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+
+        {/* Footer CTA */}
+        <View style={s.footer}>
+          <Pressable
+            onPress={handleContinue}
+            disabled={!canContinue || loading}
+            style={({ pressed }) => [s.ctaBtn, (!canContinue || loading) && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
+          >
+            <View style={s.ctaInner}>
+              {loading ? <ActivityIndicator color={COLORS.actionText} /> : <AppText style={s.ctaText}>Continue</AppText>}
+            </View>
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Android date picker */}
@@ -265,16 +264,16 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  headerTitle: { fontSize: 17, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   helpPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.primaryLight },
-  helpText: { color: COLORS.primary, fontWeight: "700", fontSize: 12 },
+  helpText: { color: COLORS.primary, fontWeight: "600", fontSize: 12 },
   progressTrack: { height: 4, backgroundColor: COLORS.borderLight, borderRadius: 99, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: COLORS.primary, borderRadius: 99 },
   body: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20 },
   infoBanner: { flexDirection: "row", alignItems: "flex-start", backgroundColor: COLORS.accentLight, borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: "rgba(245,158,11,0.20)" },
   infoBannerText: { flex: 1, fontSize: 13, color: COLORS.accentDark, fontWeight: "600", lineHeight: 20 },
   twoCol: { flexDirection: "row", marginBottom: 0 },
-  fieldLabel: { fontSize: 13, fontWeight: "700", color: COLORS.text, marginTop: 14, marginBottom: 8 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginTop: 14, marginBottom: 8 },
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, paddingHorizontal: 14, height: 52 },
   input: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text, padding: 0 },
   dobBox: { borderColor: COLORS.primary, borderWidth: 1.5 },
@@ -284,15 +283,15 @@ const s = StyleSheet.create({
   footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8 },
   ctaBtn: { borderRadius: 16, overflow: "hidden", backgroundColor: COLORS.actionBg },
   ctaInner: { paddingVertical: 17, alignItems: "center", justifyContent: "center" },
-  ctaText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  ctaText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
   // Date modal
   modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(12,26,46,0.45)" },
   dateSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 34, overflow: "hidden" },
   dateSheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginTop: 10, marginBottom: 4 },
   dateSheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  dateSheetTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  dateSheetTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text },
   dateSheetCancel: { paddingVertical: 4, paddingHorizontal: 4 },
   dateSheetCancelText: { fontSize: 15, color: COLORS.muted, fontWeight: "600" },
   dateSheetDone: { paddingVertical: 4, paddingHorizontal: 4 },
-  dateSheetDoneText: { fontSize: 15, color: COLORS.primary, fontWeight: "700" },
+  dateSheetDoneText: { fontSize: 15, color: COLORS.primary, fontWeight: "600" },
 });

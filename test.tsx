@@ -131,14 +131,14 @@ async function loadCachedAccounts(phone: string): Promise<UserAccount[]> {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     }
-  } catch {}
+  } catch { }
   return [];
 }
 async function saveCachedAccounts(accounts: UserAccount[], phone: string): Promise<void> {
   try {
     if (!phone) return;
     await AsyncStorage.setItem(userScopedKey(CACHED_ACCOUNTS_KEY_BASE, phone), JSON.stringify(accounts || []));
-  } catch {}
+  } catch { }
 }
 async function loadCachedTotalBalance(
   phone: string
@@ -150,7 +150,7 @@ async function loadCachedTotalBalance(
       const parsed = JSON.parse(raw);
       if (typeof parsed?.total === "number") return parsed;
     }
-  } catch {}
+  } catch { }
   return null;
 }
 async function saveCachedTotalBalance(total: number, currency: string, symbol: string, phone: string): Promise<void> {
@@ -160,7 +160,7 @@ async function saveCachedTotalBalance(total: number, currency: string, symbol: s
       userScopedKey(CACHED_TOTAL_BALANCE_KEY_BASE, phone),
       JSON.stringify({ total, currency, symbol })
     );
-  } catch {}
+  } catch { }
 }
 
 /** ---------- Skeleton Components ---------- */
@@ -291,7 +291,7 @@ function NetworkBanner({
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: "700", color: "#9A3412", fontSize: 13 }}>Connection issue</Text>
+        <Text style={{ fontWeight: "600", color: "#9A3412", fontSize: 13 }}>Connection issue</Text>
         <Text style={{ color: "#9A3412", fontSize: 12, marginTop: 2 }}>{text}</Text>
       </View>
 
@@ -306,7 +306,7 @@ function NetworkBanner({
           borderColor: "rgba(234,88,12,0.25)",
         }}
       >
-        <Text style={{ fontWeight: "700", color: "#EA580C", fontSize: 12 }}>Retry</Text>
+        <Text style={{ fontWeight: "600", color: "#EA580C", fontSize: 12 }}>Retry</Text>
       </Pressable>
     </View>
   );
@@ -420,15 +420,15 @@ function LiveRateMiniChart({
               backgroundColor: r === range ? "rgba(25,149,95,0.10)" : "transparent",
             }}
           >
-            <Text style={{ fontWeight: "700", color: r === range ? "#19955f" : "#6b7280", fontSize: 12 }}>{r}</Text>
+            <Text style={{ fontWeight: "600", color: r === range ? "#19955f" : "#6b7280", fontSize: 12 }}>{r}</Text>
           </Pressable>
         ))}
       </View>
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
         <View>
-          <Text style={{ color: "#6b7280", fontSize: 12, fontWeight: "700" }}>{pairLabel}</Text>
-          <Text style={{ color: "#111827", fontSize: 16, fontWeight: "700", marginTop: 2 }}>
+          <Text style={{ color: "#6b7280", fontSize: 12, fontWeight: "600" }}>{pairLabel}</Text>
+          <Text style={{ color: "#111827", fontSize: 16, fontWeight: "600", marginTop: 2 }}>
             {Number(baseRate || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </Text>
         </View>
@@ -441,7 +441,7 @@ function LiveRateMiniChart({
             backgroundColor: isPositive ? "rgba(25,149,95,0.12)" : "rgba(239,68,68,0.12)",
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: "700", color: isPositive ? "#19955f" : "#ef4444" }}>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: isPositive ? "#19955f" : "#ef4444" }}>
             {isPositive ? "+" : ""}
             {changePercent.toFixed(2)}%
           </Text>
@@ -528,7 +528,7 @@ export default function HomeScreen() {
   // Keep amount skeleton visible until we confirm a fresh API balance.
   const [balanceLoadingByCurrency, setBalanceLoadingByCurrency] = useState<Record<string, boolean>>({});
 
-  const onSettlementConfirmedRef = useRef<() => void>(() => {});
+  const onSettlementConfirmedRef = useRef<() => void>(() => { });
   const { refresh: refreshPendingSettlements, getOptimisticBalance, hasPendingForCurrency } = usePendingSettlements(
     useCallback(() => {
       onSettlementConfirmedRef.current();
@@ -563,7 +563,7 @@ export default function HomeScreen() {
           const emailCheck = await checkEmailVerified(phone);
           setEmailVerified(!!emailCheck?.emailVerified);
         }
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -615,7 +615,7 @@ export default function HomeScreen() {
     setHideBalance(newValue);
     try {
       await AsyncStorage.setItem(HIDE_BALANCE_KEY, String(newValue));
-    } catch {}
+    } catch { }
   }, [hideBalance]);
 
   const formatBalance = useCallback(
@@ -722,7 +722,7 @@ export default function HomeScreen() {
             const userInfo = JSON.parse(storedUser);
             setEmail(userInfo.email || "");
             setUserName(String(userInfo.firstName || userInfo.first_name || "").trim());
-          } catch {}
+          } catch { }
         }
 
         // flags + disabled currencies
@@ -742,7 +742,7 @@ export default function HomeScreen() {
           }
           setFlagsByCurrency(flagsMap);
           setDisabledCurrencies(disabledMap);
-        } catch {}
+        } catch { }
 
         // profile
         let userHomeCurrency = "";
@@ -759,7 +759,7 @@ export default function HomeScreen() {
               setHomeCurrencySymbol(res.user.homeCurrencySymbol || res.user.homeCurrency);
             }
           }
-        } catch {}
+        } catch { }
 
         // accounts (wallets) — if we can't fetch balances and no cache, redirect
         let userAccounts: UserAccount[] = [];
@@ -813,7 +813,7 @@ export default function HomeScreen() {
                 if (balanceByCurrency.has(ccy)) return { ...a, balance: balanceByCurrency.get(ccy)!, isExotic: true };
                 return a;
               });
-            } catch {}
+            } catch { }
           }
 
           setAccounts(userAccounts);
@@ -1005,7 +1005,7 @@ export default function HomeScreen() {
         try {
           const res = await getUserAccounts(userPhone, true);
           if (res.success && res.accounts) setAccounts(res.accounts);
-        } catch {}
+        } catch { }
         setSheetRefreshing(false);
       })();
     }
@@ -1150,7 +1150,7 @@ export default function HomeScreen() {
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "700", color: "#856404" }}>Verification Required</Text>
+                <Text style={{ fontWeight: "600", color: "#856404" }}>Verification Required</Text>
                 <Text style={{ color: "#856404", fontSize: 12, marginTop: 2 }}>
                   To continue using your account, please verify your email and identity.
                 </Text>
@@ -1173,12 +1173,12 @@ export default function HomeScreen() {
                 <TotalBalanceSkeleton />
               ) : (
                 <Pressable onPress={toggleHideBalance} style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={{ fontWeight: "700", fontSize: 16, color: "#222" }}>
+                  <Text style={{ fontWeight: "600", fontSize: 16, color: "#222" }}>
                     {hideBalance
                       ? "••••••"
                       : totalBalance === null
-                      ? "—"
-                      : `${homeCurrencySymbol}${formatBalance(totalBalance)}`}
+                        ? "—"
+                        : `${homeCurrencySymbol}${formatBalance(totalBalance)}`}
                   </Text>
                   <Ionicons
                     name={hideBalance ? "eye-off-outline" : "eye-outline"}
@@ -1291,7 +1291,7 @@ export default function HomeScreen() {
                               backgroundColor: "rgba(0,0,0,0.35)",
                             }}
                           >
-                            <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>DISABLED</Text>
+                            <Text style={{ color: "#fff", fontSize: 10, fontWeight: "600" }}>DISABLED</Text>
                           </View>
                         ) : hasPendingForCurrency(a.currencyCode) ? (
                           <View style={{ position: "absolute", top: 10, right: 10 }}>
@@ -1370,7 +1370,7 @@ export default function HomeScreen() {
                     <Ionicons name="add" size={32} color={COLORS.primary} />
                   </View>
 
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: COLORS.primary }}>Add wallet</Text>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: COLORS.primary }}>Add wallet</Text>
                 </View>
               </Pressable>
             </ScrollView>
@@ -1421,7 +1421,7 @@ export default function HomeScreen() {
               >
                 <View style={styles.recentAvatarWrap}>
                   <View style={styles.recentAvatar}>
-                    <Text style={{ fontWeight: "700", color: "#323232ff" }}>{getInitials(r.accountName)}</Text>
+                    <Text style={{ fontWeight: "600", color: "#323232ff" }}>{getInitials(r.accountName)}</Text>
                   </View>
                   <View style={styles.smallFlag}>
                     <CountryFlag currencyCode={r.destCurrency} size="sm" />
@@ -1454,7 +1454,7 @@ export default function HomeScreen() {
 
                   <View style={{ marginTop: 12, alignItems: "center" }}>
                     <Text style={styles.recentEmptyTitle}>No recent recipients yet</Text>
-                    <Text style={{ marginTop: 6, color: "#9CA3AF", fontWeight: "700", fontSize: 12 }}>
+                    <Text style={{ marginTop: 6, color: "#9CA3AF", fontWeight: "600", fontSize: 12 }}>
                       Start a transfer to see them here
                     </Text>
                   </View>

@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, ScrollView, Switch, StyleSheet, StatusBar, Alert, ActivityIndicator, Linking } from "react-native";
-import AppText from "../../../AppText";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { COLORS } from "../../../../theme/colors";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StatusBar, StyleSheet, Switch, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../../../../components/ScreenHeader";
-import { RADIUS, CARD_SHADOW, GLASS_BORDER } from "../../../../theme/designSystem";
+import { COLORS } from "../../../../theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS } from "../../../../theme/designSystem";
+import AppText from "../../../AppText";
 
 const PREFS_KEY = "privacy_preferences_v1";
 
@@ -72,7 +72,7 @@ export default function PrivacySettingsScreen() {
           const saved = JSON.parse(raw) as Partial<PrivacyPrefs>;
           setPrefs({ ...DEFAULT_PREFS, ...saved });
         }
-      } catch {}
+      } catch { }
       setLoading(false);
     })();
   }, []);
@@ -179,7 +179,7 @@ export default function PrivacySettingsScreen() {
           <View style={s.divider} />
           <Pressable
             style={s.row}
-            onPress={() => Linking.openURL("https://exxsend.com/privacy-policy").catch(() => {})}
+            onPress={() => Linking.openURL("https://exxsend.com/privacy-policy").catch(() => { })}
           >
             <View style={[s.iconWrap, { backgroundColor: COLORS.primaryLight }]}>
               <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
@@ -218,11 +218,11 @@ export default function PrivacySettingsScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   body: { padding: 20, paddingBottom: 40 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.8, textTransform: "uppercase", marginTop: 20, marginBottom: 10 },
+  sectionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, letterSpacing: 0.8, textTransform: "uppercase", marginTop: 20, marginBottom: 10 },
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
   row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
   iconWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12, flexShrink: 0 },
-  rowTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  rowTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   rowSub: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderLight, marginLeft: 66 },
   infoBox: { flexDirection: "row", alignItems: "flex-start", backgroundColor: COLORS.primaryLight, borderRadius: 12, padding: 14, marginTop: 16 },

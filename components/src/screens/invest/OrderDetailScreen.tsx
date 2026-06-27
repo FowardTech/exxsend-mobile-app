@@ -102,7 +102,7 @@ export default function OrderDetailScreen() {
               syncSnapTrade(params.phone).catch(() => {});
               router.back();
             } else {
-              Alert.alert("Couldn't cancel", res.message || "Please try again.");
+              Alert.alert("Couldn't cancel", res.error?.message || "Please try again.");
             }
           } finally {
             setCancelling(false);
@@ -279,25 +279,25 @@ export default function OrderDetailScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   emptyText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
   body: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
 
   hero: { alignItems: "center", paddingVertical: SPACE.xl },
   heroIcon: { width: 64, height: 64, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center", marginBottom: SPACE.md },
-  heroAction: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  heroSymbol: { fontSize: 24, fontWeight: "700", color: COLORS.text, marginTop: 2 },
+  heroAction: { fontSize: 13, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  heroSymbol: { fontSize: 24, fontWeight: "600", color: COLORS.text, marginTop: 2 },
   statusPill: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: RADIUS.full, paddingHorizontal: SPACE.md, paddingVertical: 6, marginTop: SPACE.md },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusPillText: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
+  statusPillText: { fontSize: 12, fontWeight: "600", textTransform: "capitalize" },
   statusDescription: { fontSize: 12, color: COLORS.muted, fontWeight: "500", textAlign: "center", marginTop: SPACE.sm, maxWidth: 260, lineHeight: 17 },
 
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.lg, marginBottom: SPACE.md, ...GLASS_BORDER, ...CARD_SHADOW },
-  cardTitle: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: SPACE.md },
+  cardTitle: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: SPACE.md },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: SPACE.sm },
   rowLabel: { fontSize: 13, color: COLORS.muted, fontWeight: "500" },
-  rowValue: { fontSize: 14, color: COLORS.text, fontWeight: "700" },
+  rowValue: { fontSize: 14, color: COLORS.text, fontWeight: "600" },
   rowValueMono: { fontSize: 13, color: COLORS.text, fontWeight: "600", maxWidth: 160 },
 
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: COLORS.borderLight, marginTop: SPACE.sm, overflow: "hidden" },
@@ -305,17 +305,17 @@ const s = StyleSheet.create({
 
   actionsRow: { flexDirection: "row", gap: SPACE.sm, marginTop: SPACE.sm },
   modifyBtn: { flex: 1, alignItems: "center", paddingVertical: SPACE.lg, borderRadius: RADIUS.md, backgroundColor: COLORS.primaryLight },
-  modifyBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  modifyBtnText: { fontSize: 14, fontWeight: "600", color: COLORS.primary },
   cancelBtn: { flex: 1, alignItems: "center", paddingVertical: SPACE.lg, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.red },
-  cancelBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.red },
+  cancelBtnText: { fontSize: 14, fontWeight: "600", color: COLORS.red },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: COLORS.white, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: SPACE.xl, paddingBottom: SPACE.huge },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.lg },
-  modifyFieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.md },
+  modalTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.lg },
+  modifyFieldLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.md },
   modifyInput: { backgroundColor: COLORS.bg, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.lg, height: 46, fontSize: 14, fontWeight: "600", color: COLORS.text },
   confirmBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xl },
-  confirmBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  confirmBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
   cancelLinkModal: { alignItems: "center", paddingVertical: SPACE.md },
   cancelLinkModalText: { fontSize: 13, color: COLORS.muted, fontWeight: "600" },
 });

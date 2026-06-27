@@ -1,8 +1,8 @@
-import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
-import AppText from "./AppText";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useAppTheme } from "../theme/ThemeProvider";
+import AppText from "./AppText";
 
 interface NumericKeypadProps {
   value: string;
@@ -114,5 +114,5 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
   },
-  doneText: { fontSize: 16, fontWeight: "700" },
+  doneText: { fontSize: 16, fontWeight: "600" },
 });

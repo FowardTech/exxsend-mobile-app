@@ -28,6 +28,7 @@ import {
   isFlutterwaveCurrency,
 } from "../../../api/flutterwave";
 import { saveRecipientToDB, recordRecentRecipient } from "../../../api/sync";
+import { useDeviceTrustGate } from "../../../hooks/useDeviceTrustGate";
 import { classify403, executeCurrencyCloudWithdrawal } from "../../../api/config";
 import { toPayoutType } from "../../../api/corridors";
 import { fetchMyFeeWaivers } from "../../../api/feeWaivers";
@@ -66,6 +67,7 @@ export default function RecipientConfirmScreen() {
   const { colors } = useAppTheme();
   const styles = useStyles();
   const otherstyles = useOtherStyles();
+  const { ensureDeviceTrusted } = useDeviceTrustGate();
   const params = useLocalSearchParams<{
     destCurrency: string;
     fromWalletId: string;
@@ -239,6 +241,9 @@ export default function RecipientConfirmScreen() {
       Alert.alert("Error", "Missing recipient or user information");
       return;
     }
+
+    const trusted = await ensureDeviceTrusted(userPhone);
+    if (!trusted) return;
 
     setSending(true);
 

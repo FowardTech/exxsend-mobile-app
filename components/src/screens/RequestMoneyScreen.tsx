@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Alert, Share, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getUserWallets, lookupExxsendMember } from "@/api/config";
+import { createMoneyRequest } from "@/api/moneyRequests";
 import AppText from "@/components/AppText";
 import AppTextInput from "@/components/AppTextInput";
 import BackButton from "@/components/BackButton";
 import CurrencyPickerModal, { Wallet } from "@/components/CurrencyPickerModal";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { getUserWallets, lookupExxsendMember } from "@/api/config";
-import { createMoneyRequest } from "@/api/moneyRequests";
+import { GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RequestMoneyScreen() {
   const router = useRouter();
@@ -115,7 +115,7 @@ export default function RequestMoneyScreen() {
         message: `${foundMember ? `@${foundMember.username}` : "Hey"}, I'm requesting ${selectedWallet?.currencyCode} ${amount} on Exxsend${note.trim() ? ` for ${note.trim()}` : ""}. Pay here: ${shareUrl}`,
         url: shareUrl,
       });
-    } catch {}
+    } catch { }
   };
 
   if (shareUrl) {
@@ -239,39 +239,39 @@ export default function RequestMoneyScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   body: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
-  fieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.lg },
+  fieldLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.lg },
 
   amountBox: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, height: 56, ...GLASS_BORDER },
   currencyPill: { flexDirection: "row", alignItems: "center", gap: 4, marginRight: SPACE.md, paddingRight: SPACE.md, borderRightWidth: 1, borderRightColor: COLORS.borderLight },
-  currencySymbol: { fontSize: 15, fontWeight: "700", color: COLORS.muted },
-  amountInput: { flex: 1, fontSize: 22, fontWeight: "700", color: COLORS.text },
+  currencySymbol: { fontSize: 15, fontWeight: "600", color: COLORS.muted },
+  amountInput: { flex: 1, fontSize: 22, fontWeight: "600", color: COLORS.text },
 
   recipientRow: { flexDirection: "row", gap: SPACE.sm },
   recipientInput: { flex: 1, backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, height: 50, fontSize: 15, color: COLORS.text, ...GLASS_BORDER },
   findBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, alignItems: "center", justifyContent: "center" },
-  findBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  findBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
 
   memberCard: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: SPACE.lg, marginTop: SPACE.md, borderWidth: 1.5, borderColor: COLORS.primary, gap: SPACE.md },
   memberAvatar: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
-  memberAvatarText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
-  memberName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  memberAvatarText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  memberName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   memberUsername: { fontSize: 12, color: COLORS.muted, marginTop: 1 },
 
   noteInput: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, minHeight: 70, fontSize: 14, color: COLORS.text, textAlignVertical: "top", ...GLASS_BORDER },
 
   submitBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xxl },
-  submitBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  submitBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING * 1.5 },
   successIcon: { width: 72, height: 72, borderRadius: RADIUS.full, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center", marginBottom: SPACE.xl },
-  successTitle: { fontSize: 20, fontWeight: "700", color: COLORS.text },
+  successTitle: { fontSize: 20, fontWeight: "600", color: COLORS.text },
   successBody: { fontSize: 14, color: COLORS.muted, fontWeight: "500", textAlign: "center", marginTop: SPACE.sm, lineHeight: 21 },
   linkBox: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginTop: SPACE.xl, alignSelf: "stretch", ...GLASS_BORDER },
   linkText: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
   shareBtn: { flexDirection: "row", backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", justifyContent: "center", marginTop: SPACE.xl, alignSelf: "stretch" },
-  shareBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  shareBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
   doneBtn: { paddingVertical: SPACE.md, marginTop: SPACE.sm },
   doneBtnText: { color: COLORS.muted, fontSize: 14, fontWeight: "600" },
 });

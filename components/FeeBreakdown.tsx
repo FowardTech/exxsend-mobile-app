@@ -3,7 +3,7 @@
  * Displays transparent fee information for conversions, sends, and withdrawals
  */
 import React, { useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import AppText from "./AppText";
 
 export interface FeeInfo {
@@ -91,7 +91,7 @@ export default function FeeBreakdown({
     fee.feeAmountInBaseCurrency != null &&
     !!fee.baseCurrency &&
     String(fee.baseCurrency).toUpperCase().trim() !==
-      String(fee.feeCurrency).toUpperCase().trim();
+    String(fee.feeCurrency).toUpperCase().trim();
 
   const primaryFeeDisplay = useMemo(() => {
     if (!fee) return "";
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
   },
   compactLabelBold: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   compactValueBold: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   sectionTitle: {
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   feeWaivedText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#059669",
   },
   feeConversion: {
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   totalValue: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   rateContainer: {
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   receiveValue: {
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#059669",
   },
   noteContainer: {

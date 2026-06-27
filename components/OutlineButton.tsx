@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet } from "react-native";
-import AppText from "./AppText";
 import { COLORS } from "../theme/colors";
+import AppText from "./AppText";
 
 interface Props {
   title: string;
@@ -36,5 +36,5 @@ const s = StyleSheet.create({
     backgroundColor: "transparent",
     marginTop: 12,
   },
-  text: { fontWeight: "700", fontSize: 16 },
+  text: { fontWeight: "600", fontSize: 16 },
 });

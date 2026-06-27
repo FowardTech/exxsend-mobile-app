@@ -1,15 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, Keyboard, ActivityIndicator, Alert, StyleSheet, StatusBar, Platform, TextInput as RNTextInput } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import AppTextInput from "../../../AppTextInput";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { COLORS } from "../../../../theme/colors";
 import { checkEmailVerified, resendEmailOtp, verifyEmailOtp } from "@/api/config";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, TextInput as RNTextInput, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { COLORS } from "../../../../theme/colors";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
+import BackButton from "../../../BackButton";
 
 const CODE_LEN = 6;
 const RESEND_SECONDS = 45;
@@ -113,7 +112,7 @@ export default function CheckEmailCodeScreen() {
         <AppText style={s.title}>Check your email</AppText>
         <AppText style={s.subtitle}>
           Enter the 6-digit code sent to{"\n"}
-          <AppText style={{ color: COLORS.text, fontWeight: "700" }}>{email}</AppText>
+          <AppText style={{ color: COLORS.text, fontWeight: "600" }}>{email}</AppText>
         </AppText>
 
         {/* OTP inputs */}
@@ -171,25 +170,25 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  headerTitle: { fontSize: 17, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   progressTrack: { height: 4, backgroundColor: COLORS.borderLight, borderRadius: 99, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: COLORS.primary, borderRadius: 99 },
   helpPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.primaryLight },
-  helpText: { color: COLORS.primary, fontWeight: "700", fontSize: 12 },
+  helpText: { color: COLORS.primary, fontWeight: "600", fontSize: 12 },
   body: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
   iconRing: { width: 68, height: 68, borderRadius: 22, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginBottom: 22 },
-  title: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 10 },
+  title: { fontSize: 18, fontWeight: "600", color: COLORS.text, marginBottom: 10 },
   subtitle: { fontSize: 13, color: COLORS.muted, fontWeight: "500", lineHeight: 22 },
   otpRow: { flexDirection: "row", gap: 10, marginTop: 32 },
-  otpBox: { flex: 1, height: 56, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: COLORS.border, textAlign: "center", fontSize: 22, fontWeight: "700", color: COLORS.text },
+  otpBox: { flex: 1, height: 56, borderRadius: 14, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: COLORS.border, textAlign: "center", fontSize: 22, fontWeight: "600", color: COLORS.text },
   otpBoxActive: { borderColor: COLORS.primary, borderWidth: 2 },
   otpBoxFilled: { borderColor: COLORS.primaryMid, backgroundColor: COLORS.primaryLight },
   resendRow: { flexDirection: "row", alignItems: "center", marginTop: 24 },
   resendLabel: { fontSize: 14, color: COLORS.muted, fontWeight: "600" },
-  resendTimer: { fontSize: 14, color: COLORS.text, fontWeight: "700" },
-  resendLink: { fontSize: 14, color: COLORS.primary, fontWeight: "700" },
+  resendTimer: { fontSize: 14, color: COLORS.text, fontWeight: "600" },
+  resendLink: { fontSize: 14, color: COLORS.primary, fontWeight: "600" },
   footer: { paddingHorizontal: 24, paddingBottom: 16 },
   ctaBtn: { borderRadius: 16, overflow: "hidden", backgroundColor: COLORS.actionBg },
   ctaInner: { paddingVertical: 17, alignItems: "center", justifyContent: "center" },
-  ctaText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  ctaText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
 });

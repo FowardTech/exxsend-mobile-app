@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { View, Image, Pressable, ActivityIndicator, StyleSheet, ScrollView, Alert } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import AppText from "../../../../AppText";
-import BackButton from "../../../../BackButton";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { clearCachedPin } from "../../../../../utils/pinCache";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { getUserProfile, uploadProfilePhoto, removeProfilePhoto } from "../../../../../api/config";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getUserProfile, removeProfilePhoto, uploadProfilePhoto } from "../../../../../api/config";
 import { COLORS } from "../../../../../theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../../../theme/designSystem";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "../../../../../theme/designSystem";
+import { clearCachedPin } from "../../../../../utils/pinCache";
+import AppText from "../../../../AppText";
+import BackButton from "../../../../BackButton";
 
 interface MenuRowProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -88,7 +88,7 @@ export default function ProfileScreen() {
             else { setProfilePhotoUrl(null); AsyncStorage.removeItem("user_profile_photo_url"); }
           }
         }
-      } catch (e) {} finally { setLoading(false); }
+      } catch (e) { } finally { setLoading(false); }
     })();
   }, []);
 
@@ -179,11 +179,13 @@ export default function ProfileScreen() {
   const logout = useCallback(async () => {
     Alert.alert("Log out", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Log out", style: "destructive", onPress: async () => {
-        try { await AsyncStorage.clear(); } catch {}
-        try { await clearCachedPin(); } catch {}
-        finally { router.replace("/login"); }
-      }},
+      {
+        text: "Log out", style: "destructive", onPress: async () => {
+          try { await AsyncStorage.clear(); } catch { }
+          try { await clearCachedPin(); } catch { }
+          finally { router.replace("/login"); }
+        }
+      },
     ]);
   }, [router]);
 
@@ -279,7 +281,7 @@ export default function ProfileScreen() {
             <Ionicons name="gift-outline" size={20} color={COLORS.accentDark} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText style={{ fontWeight: "700", color: COLORS.text }}>Refer a friend</AppText>
+            <AppText style={{ fontWeight: "600", color: COLORS.text }}>Refer a friend</AppText>
             <AppText style={{ fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 2 }}>Earn 3% on their first transfer</AppText>
           </View>
           <Ionicons name="chevron-forward" size={16} color={COLORS.border} />
@@ -299,32 +301,32 @@ export default function ProfileScreen() {
 
 const s = StyleSheet.create({
   header: { paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.sm, paddingBottom: SPACE.xs + 2, flexDirection: "row", alignItems: "center" },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "600", color: COLORS.text },
   heroBanner: { height: 90, marginHorizontal: SCREEN_PADDING, borderRadius: RADIUS.lg, overflow: "hidden" },
   avatarSection: { alignItems: "center", marginTop: -40 },
   avatarRing: { width: 84, height: 84, borderRadius: RADIUS.full, backgroundColor: "#FFFFFF", padding: 3, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
   avatarCircle: { flex: 1, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
   avatarPhoto: { flex: 1, borderRadius: RADIUS.full },
-  avatarInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 26 },
+  avatarInitials: { color: "#FFFFFF", fontWeight: "600", fontSize: 26 },
   avatarEditBadge: {
     position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: 13,
     backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center",
     borderWidth: 2, borderColor: "#FFFFFF",
   },
-  profileName: { fontSize: 18, fontWeight: "700", color: COLORS.text },
-  profileHandle: { fontSize: 13, color: COLORS.primary, fontWeight: "700", marginTop: 3 },
+  profileName: { fontSize: 18, fontWeight: "600", color: COLORS.text },
+  profileHandle: { fontSize: 13, color: COLORS.primary, fontWeight: "600", marginTop: 3 },
   setUsernameRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  setUsernameText: { fontSize: 13, color: COLORS.primary, fontWeight: "700" },
+  setUsernameText: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
   profileEmail: { fontSize: 13, color: COLORS.muted, fontWeight: "600", marginTop: 4, marginBottom: SPACE.sm },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.8, paddingHorizontal: SPACE.xl, marginTop: SPACE.xl, marginBottom: SPACE.sm },
+  sectionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, letterSpacing: 0.8, paddingHorizontal: SPACE.xl, marginTop: SPACE.xl, marginBottom: SPACE.sm },
   section: { marginHorizontal: SCREEN_PADDING, backgroundColor: COLORS.white, borderRadius: RADIUS.lg, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
   menuRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.lg - 2 },
   iconWrap: { width: 40, height: 40, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center", marginRight: SPACE.md },
-  menuTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  menuTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   menuSub: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
   rightText: { fontSize: 13, fontWeight: "600", color: COLORS.primary, marginRight: 6 },
   divider: { height: 1, backgroundColor: COLORS.borderLight, marginLeft: 68 },
   referralRow: { marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg - 2, backgroundColor: COLORS.accentLight, borderRadius: RADIUS.lg, padding: SPACE.lg, flexDirection: "row", alignItems: "center" },
   logoutBtn: { marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg - 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, paddingVertical: SPACE.lg, borderRadius: RADIUS.md, backgroundColor: "rgba(239,68,68,0.08)" },
-  logoutText: { color: COLORS.red, fontWeight: "700", fontSize: 15 },
+  logoutText: { color: COLORS.red, fontWeight: "600", fontSize: 15 },
 });

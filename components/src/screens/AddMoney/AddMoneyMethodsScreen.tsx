@@ -5,14 +5,14 @@
  * For non-CAD wallets → redirects straight to /add-money/local (Flutterwave)
  * If accessed with no currencyCode → shows CAD methods as default
  */
-import React, { useEffect } from "react";
-import { View, Pressable, StyleSheet, ScrollView, StatusBar, ActivityIndicator } from "react-native";
-import AppText from "../../../AppText";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/colors";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../../../../components/ScreenHeader";
+import AppText from "../../../AppText";
 
 interface Method {
   id: string;
@@ -42,7 +42,7 @@ const CAD_METHODS: Method[] = [
   },
   {
     id: "interac",
-    icon: <AppText style={{ fontWeight: "700", fontSize: 11, color: "#8B6000" }}>INTERAC</AppText>,
+    icon: <AppText style={{ fontWeight: "600", fontSize: 11, color: "#8B6000" }}>INTERAC</AppText>,
     iconBg: "#FEF3C7",
     title: "INTERAC e-Transfer®",
     subtitle: "Canadian bank transfer — funds in minutes",
@@ -141,16 +141,16 @@ export default function AddMoneyMethodsScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   body: { padding: 20, paddingBottom: 40 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 14 },
-  card: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderLight,},
+  sectionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 14 },
+  card: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderLight, },
   iconWrap: { width: 46, height: 46, borderRadius: 14, justifyContent: "center", alignItems: "center", marginRight: 14, flexShrink: 0 },
   cardBody: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginBottom: 3 },
+  cardTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginBottom: 3 },
   cardSub: { fontSize: 12, color: COLORS.muted, fontWeight: "500", lineHeight: 17, marginBottom: 8 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaFee: { fontSize: 11, fontWeight: "700" },
-  metaEta: { fontSize: 11, fontWeight: "700", color: COLORS.green },
+  metaFee: { fontSize: 11, fontWeight: "600" },
+  metaEta: { fontSize: 11, fontWeight: "600", color: COLORS.green },
   infoBox: { flexDirection: "row", alignItems: "flex-start", backgroundColor: COLORS.primaryLight, borderRadius: 12, padding: 14, marginTop: 8 },
   infoText: { flex: 1, fontSize: 12, color: COLORS.primary, fontWeight: "600", lineHeight: 18 },
 });

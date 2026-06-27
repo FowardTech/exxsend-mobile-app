@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, Image, ScrollView, ActivityIndicator, RefreshControl, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getActivePromotionalBanners, getUserProfile, PromotionalBanner } from "@/api/config";
 import AppText from "@/components/AppText";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, SCREEN_PADDING } from "@/theme/designSystem";
-import { getActivePromotionalBanners, getUserProfile, PromotionalBanner } from "@/api/config";
+import { RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function getAccentColor(banner: PromotionalBanner): string {
   return banner.backgroundColor || COLORS.primaryLight;
@@ -34,7 +34,7 @@ export default function OffersScreen() {
       }
       const res = await getActivePromotionalBanners({ country, verified });
       if (res.success) setOffers(res.banners);
-    } catch {}
+    } catch { }
     setLoading(false);
     setRefreshing(false);
   };
@@ -97,10 +97,10 @@ export default function OffersScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.sm, paddingBottom: SPACE.lg },
-  headerTitle: { fontSize: 26, fontWeight: "700", color: COLORS.text },
+  headerTitle: { fontSize: 26, fontWeight: "600", color: COLORS.text },
   headerSubtitle: { fontSize: 13, color: COLORS.muted, fontWeight: "500", marginTop: 4 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
-  emptyText: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  emptyText: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   emptySub: { fontSize: 13, color: COLORS.muted, fontWeight: "500", marginTop: 4, textAlign: "center" },
   list: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: SPACE.lg, gap: SPACE.md },
@@ -108,6 +108,6 @@ const s = StyleSheet.create({
   thumb: { width: 52, height: 52, borderRadius: RADIUS.md },
   thumbFallback: { alignItems: "center", justifyContent: "center" },
   rowInfo: { flex: 1, minWidth: 0 },
-  rowTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+  rowTitle: { fontSize: 15, fontWeight: "600", color: COLORS.text },
   rowSubtitle: { fontSize: 13, color: COLORS.muted, fontWeight: "500", marginTop: 2, lineHeight: 18 },
 });

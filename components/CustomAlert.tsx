@@ -1,9 +1,9 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from "react";
-import { Modal, View, Pressable, StyleSheet, Animated } from "react-native";
-import AppText from "./AppText";
 import { Ionicons } from "@expo/vector-icons";
+import React, { createContext, useCallback, useContext, useRef, useState } from "react";
+import { Animated, Modal, Pressable, StyleSheet, View } from "react-native";
 import { useAppTheme } from "../theme/ThemeProvider";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER } from "../theme/designSystem";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SPACE } from "../theme/designSystem";
+import AppText from "./AppText";
 
 export interface CustomAlertButton {
   text: string;
@@ -104,7 +104,7 @@ export function CustomAlertProvider({ children }: { children: React.ReactNode })
 
       <Modal visible={state.visible} transparent animationType="none" statusBarTranslucent onRequestClose={close}>
         <Animated.View style={[s.overlay, { opacity }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => { }} />
           <Animated.View
             style={[
               s.card,
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     textAlign: "center",
   },
   message: {
@@ -215,6 +215,6 @@ const s = StyleSheet.create({
   },
   buttonText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
   },
 });

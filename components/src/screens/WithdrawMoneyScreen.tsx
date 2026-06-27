@@ -1,29 +1,28 @@
-import PinVerificationModal from "../../../components/PinVerificationModal";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { View, Pressable, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Modal, StyleSheet } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import AppTextInput from "../../AppTextInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLocalSearchParams, router } from "expo-router";
-import ScreenShell from "../../../components/ScreenShell";
-import CurrencyPill from "../../../components/CurrencyPill";
-import CurrencyPickerModal, { Wallet } from "../../../components/CurrencyPickerModal";
-import { useStyles } from "../../../theme/styles";
-import { useAppTheme } from "../../../theme/ThemeProvider";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
-  getUserWallets,
   getConversionQuote,
+  getUserWallets,
 } from "../../../api/config";
 import {
-  getNigerianBanks,
-  verifyBankAccount,
-  sendNGN,
   Bank,
+  getNigerianBanks,
+  sendNGN,
+  verifyBankAccount,
 } from "../../../api/flutterwave";
 import { checkLiquidity, isLiquidityLowResponse, LiquidityResult } from "../../../api/liquidity";
+import CurrencyPickerModal, { Wallet } from "../../../components/CurrencyPickerModal";
+import CurrencyPill from "../../../components/CurrencyPill";
 import LiquidityBanner from "../../../components/LiquidityBanner";
+import ScreenShell from "../../../components/ScreenShell";
+import { useStyles } from "../../../theme/styles";
+import { useAppTheme } from "../../../theme/ThemeProvider";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
 
 
 // ============================================================
@@ -61,7 +60,7 @@ function BankPickerModal({
         <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "70%", paddingBottom: 40 }}>
           <View style={{ padding: 20 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <AppText style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Select Bank</AppText>
+              <AppText style={{ fontSize: 18, fontWeight: "600", color: colors.text }}>Select Bank</AppText>
               <Pressable onPress={onClose}>
                 <AppText style={{ fontSize: 16, color: colors.muted }}>Cancel</AppText>
               </Pressable>
@@ -283,7 +282,7 @@ function RecipientDetailsModal({
           <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 40, maxHeight: "85%" }}>
             <View style={{ padding: 20 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.text }}>
+                <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.text }}>
                   {showNewRecipient ? "New Recipient" : "Send To"}
                 </AppText>
                 <Pressable onPress={showNewRecipient ? () => setShowNewRecipient(false) : onClose}>
@@ -294,7 +293,7 @@ function RecipientDetailsModal({
               {/* Amount Summary */}
               <View style={{ backgroundColor: colors.greenSoft, borderRadius: 12, padding: 16, marginBottom: 20 }}>
                 <AppText style={{ color: colors.greenDark, fontSize: 14 }}>Recipient gets</AppText>
-                <AppText style={{ color: colors.greenDark, fontSize: 24, fontWeight: "700" }}>
+                <AppText style={{ color: colors.greenDark, fontSize: 24, fontWeight: "600" }}>
                   {toCurrency === "NGN" ? "₦" : ""}{parseFloat(amount || "0").toLocaleString()} {toCurrency}
                 </AppText>
               </View>
@@ -322,7 +321,7 @@ function RecipientDetailsModal({
                       alignItems: "center",
                       marginRight: 12,
                     }}>
-                      <AppText style={{ color: "#fff", fontSize: 20, fontWeight: "700" }}>+</AppText>
+                      <AppText style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>+</AppText>
                     </View>
                     <View style={{ flex: 1 }}>
                       <AppText style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>New Recipient</AppText>
@@ -361,7 +360,7 @@ function RecipientDetailsModal({
                             alignItems: "center",
                             marginRight: 12,
                           }}>
-                            <AppText style={{ color: colors.primary, fontSize: 14, fontWeight: "700" }}>
+                            <AppText style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>
                               {getInitials(recipient.accountName)}
                             </AppText>
                           </View>
@@ -434,7 +433,7 @@ function RecipientDetailsModal({
                   {isVerified && accountName && (
                     <View style={{ backgroundColor: colors.greenSoft, borderRadius: 12, padding: 16, marginTop: 8, marginBottom: 12 }}>
                       <AppText style={{ color: colors.greenDark, fontSize: 12, fontWeight: "600" }}>VERIFIED ACCOUNT</AppText>
-                      <AppText style={{ color: colors.greenDark, fontSize: 18, fontWeight: "700", marginTop: 4 }}>{accountName}</AppText>
+                      <AppText style={{ color: colors.greenDark, fontSize: 18, fontWeight: "600", marginTop: 4 }}>{accountName}</AppText>
                     </View>
                   )}
 
@@ -455,7 +454,7 @@ function RecipientDetailsModal({
                         alignItems: "center",
                         marginRight: 10,
                       }}>
-                        {saveThisRecipient && <AppText style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>✓</AppText>}
+                        {saveThisRecipient && <AppText style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>✓</AppText>}
                       </View>
                       <AppText style={{ fontSize: 14, color: colors.textSecondary }}>Save this recipient for future transfers</AppText>
                     </Pressable>
@@ -475,7 +474,7 @@ function RecipientDetailsModal({
                     onPress={handleConfirmNew}
                     disabled={!canConfirm}
                   >
-                    <AppText style={{ color: canConfirm ? colors.actionText : colors.muted, fontSize: 16, fontWeight: "700" }}>
+                    <AppText style={{ color: canConfirm ? colors.actionText : colors.muted, fontSize: 16, fontWeight: "600" }}>
                       Continue
                     </AppText>
                   </Pressable>
@@ -541,7 +540,7 @@ function ConfirmationModal({
     <Modal visible={visible} animationType="fade" transparent>
       <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 20 }}>
         <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 24, width: "100%", maxWidth: 360 }}>
-          <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.text, textAlign: "center" }}>
+          <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.text, textAlign: "center" }}>
             Confirm Transfer
           </AppText>
 
@@ -549,7 +548,7 @@ function ConfirmationModal({
             {/* Amount Summary */}
             <View style={{ backgroundColor: colors.bgTertiary, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <AppText style={{ fontSize: 14, color: colors.muted, marginBottom: 4 }}>You send</AppText>
-              <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.text }}>
+              <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.text }}>
                 {parseFloat(fromAmount || "0").toLocaleString()} {fromCurrency}
               </AppText>
               {rate && (
@@ -561,7 +560,7 @@ function ConfirmationModal({
 
             <View style={{ backgroundColor: colors.greenSoft, borderRadius: 16, padding: 16 }}>
               <AppText style={{ fontSize: 14, color: colors.greenDark, marginBottom: 4 }}>Recipient gets</AppText>
-              <AppText style={{ fontSize: 24, fontWeight: "700", color: colors.greenDark }}>
+              <AppText style={{ fontSize: 24, fontWeight: "600", color: colors.greenDark }}>
                 {toCurrency === "NGN" ? "₦" : ""}{parseFloat(toAmount || "0").toLocaleString()} {toCurrency}
               </AppText>
             </View>
@@ -586,14 +585,14 @@ function ConfirmationModal({
 
           <View style={{ marginTop: 24, flexDirection: "row", gap: 12 }}>
             <Pressable
-              style={{ 
-                flex: 1, backgroundColor: colors.borderLight,  alignItems: "center",
+              style={{
+                flex: 1, backgroundColor: colors.borderLight, alignItems: "center",
                 height: 58,
                 paddingVertical: 15,
                 borderRadius: 999,
                 justifyContent: "center",
                 marginTop: 20,
-               }}
+              }}
               onPress={onClose}
               disabled={sending}
             >
@@ -601,14 +600,14 @@ function ConfirmationModal({
             </Pressable>
 
             <Pressable
-              style={[{ flex: 1 , borderRadius: 12, paddingVertical: 14, alignItems: "center" }, styles.primaryBtn, !!liquidityBlock && { opacity: 0.5 }]}
+              style={[{ flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center" }, styles.primaryBtn, !!liquidityBlock && { opacity: 0.5 }]}
               onPress={onConfirm}
               disabled={sending || !!liquidityBlock}
             >
               {sending ? (
                 <ActivityIndicator size="small" color={colors.actionText} />
               ) : (
-                <AppText style={{ fontSize: 16, fontWeight: "700", color: colors.actionText }}>Send</AppText>
+                <AppText style={{ fontSize: 16, fontWeight: "600", color: colors.actionText }}>Send</AppText>
               )}
             </Pressable>
           </View>
@@ -665,34 +664,34 @@ export default function SendMoneyScreen() {
 
   const wm = useMemo(() => StyleSheet.create({
 
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, height: 50, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
-  backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  body: { padding: 16, paddingBottom: 32 },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.borderLight,},
-  cardLabel: { fontSize: 11, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 12 },
-  amtRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  amtInput: { flex: 1, fontSize: 32, fontWeight: "700", color: colors.text, padding: 0 },
-  amtInputReadonly: { flex: 1, fontSize: 32, fontWeight: "700", color: colors.textSecondary, padding: 0 },
-  balRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
-  balText: { fontSize: 12, color: colors.muted, fontWeight: "600" },
-  errText: { fontSize: 12, color: colors.red, fontWeight: "700" },
-  quickRow: { flexDirection: "row", gap: 8, marginTop: 14 },
-  quickBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.border },
-  quickBtnDisabled: { backgroundColor: colors.borderLight, borderColor: colors.borderLight },
-  quickBtnText: { fontSize: 12, fontWeight: "700", color: colors.primary },
-  quickBtnTextDisabled: { color: colors.muted },
-  midRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-  arrowWrap: { width: 40, height: 40, borderRadius: 14, backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center" },
-  rateBox: { flex: 1, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: colors.borderLight, alignItems: "center" },
-  rateText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
-  ngnPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.greenSoft, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
-  ngnPillText: { fontSize: 14, fontWeight: "700", color: colors.greenDark },
-  continueBtn: { backgroundColor: colors.actionBg, borderRadius: 16, paddingVertical: 17, alignItems: "center", justifyContent: "center", marginTop: 8 },
-  continueBtnDisabled: { backgroundColor: colors.border },
-  continueBtnText: { color: colors.actionText, fontSize: 15, fontWeight: "700" },
-  infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 14 },
-  infoText: { fontSize: 12, color: colors.green, fontWeight: "600" },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, height: 50, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+    backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center" },
+    headerTitle: { fontSize: 17, fontWeight: "600", color: colors.text },
+    body: { padding: 16, paddingBottom: 32 },
+    card: { backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.borderLight, },
+    cardLabel: { fontSize: 11, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 12 },
+    amtRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+    amtInput: { flex: 1, fontSize: 32, fontWeight: "600", color: colors.text, padding: 0 },
+    amtInputReadonly: { flex: 1, fontSize: 32, fontWeight: "600", color: colors.textSecondary, padding: 0 },
+    balRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
+    balText: { fontSize: 12, color: colors.muted, fontWeight: "600" },
+    errText: { fontSize: 12, color: colors.red, fontWeight: "600" },
+    quickRow: { flexDirection: "row", gap: 8, marginTop: 14 },
+    quickBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.border },
+    quickBtnDisabled: { backgroundColor: colors.borderLight, borderColor: colors.borderLight },
+    quickBtnText: { fontSize: 12, fontWeight: "600", color: colors.primary },
+    quickBtnTextDisabled: { color: colors.muted },
+    midRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+    arrowWrap: { width: 40, height: 40, borderRadius: 14, backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center" },
+    rateBox: { flex: 1, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: colors.borderLight, alignItems: "center" },
+    rateText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+    ngnPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.greenSoft, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
+    ngnPillText: { fontSize: 14, fontWeight: "600", color: colors.greenDark },
+    continueBtn: { backgroundColor: colors.actionBg, borderRadius: 16, paddingVertical: 17, alignItems: "center", justifyContent: "center", marginTop: 8 },
+    continueBtnDisabled: { backgroundColor: colors.border },
+    continueBtnText: { color: colors.actionText, fontSize: 15, fontWeight: "600" },
+    infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 14 },
+    infoText: { fontSize: 12, color: colors.green, fontWeight: "600" },
   }), [colors]);
 
   const params = useLocalSearchParams();
@@ -993,7 +992,7 @@ export default function SendMoneyScreen() {
         </View>
 
         <View style={{ flex: 1, padding: 20 }}>
-          <AppText style={{ fontSize: 22, fontWeight: "700", color: "#333", marginBottom: 8 }}>
+          <AppText style={{ fontSize: 22, fontWeight: "600", color: "#333", marginBottom: 8 }}>
             Send Money
           </AppText>
           <AppText style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
@@ -1004,7 +1003,7 @@ export default function SendMoneyScreen() {
             style={{ backgroundColor: colors.actionBg, borderRadius: 12, padding: 16, alignItems: "center" }}
             onPress={() => router.push("/addaccount")}
           >
-            <AppText style={{ color: colors.actionText, fontWeight: "700", fontSize: 16 }}>
+            <AppText style={{ color: colors.actionText, fontWeight: "600", fontSize: 16 }}>
               + Add Currency
             </AppText>
           </Pressable>
@@ -1018,161 +1017,161 @@ export default function SendMoneyScreen() {
     <ScreenShell scrollable={false} padded={false}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
 
-          {/* ── Header ── */}
-          <View style={wm.header}>
-            <Pressable onPress={() => router.back()} style={wm.backBtn}>
-              <Ionicons name="arrow-back" size={18} color={colors.text} />
-            </Pressable>
-            <AppText style={wm.headerTitle}>Withdraw</AppText>
-            <View style={{ width: 34 }} />
+        {/* ── Header ── */}
+        <View style={wm.header}>
+          <Pressable onPress={() => router.back()} style={wm.backBtn}>
+            <Ionicons name="arrow-back" size={18} color={colors.text} />
+          </Pressable>
+          <AppText style={wm.headerTitle}>Withdraw</AppText>
+          <View style={{ width: 34 }} />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={wm.body} keyboardShouldPersistTaps="handled">
+
+          {/* ── FROM card ── */}
+          <View style={wm.card}>
+            <AppText style={wm.cardLabel}>You send</AppText>
+            <View style={wm.amtRow}>
+              <AppTextInput
+                value={fromAmount}
+                onChangeText={setFromAmount}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+                placeholderTextColor={colors.muted}
+                style={[wm.amtInput, balanceExceeded && { color: colors.red }]}
+              />
+              <CurrencyPill
+                flag={fromWallet?.flag || "🏳️"}
+                code={fromWallet?.currencyCode || "Select"}
+                countryCode={fromWallet?.countryCode ?? ""}
+                onPress={() => setShowFromPicker(true)}
+              />
+            </View>
+            <View style={wm.balRow}>
+              <Ionicons name="wallet-outline" size={13} color={colors.muted} />
+              <AppText style={[wm.balText, balanceExceeded && { color: colors.red }]}>
+                {" "}Balance: {fromWallet?.formattedBalance || "0.00"} {fromWallet?.currencyCode || ""}
+              </AppText>
+              {balanceExceeded && <AppText style={wm.errText}> · Insufficient</AppText>}
+            </View>
+
+            {/* Quick amounts */}
+            <View style={wm.quickRow}>
+              {[["25%", 0.25], ["50%", 0.5], ["75%", 0.75], ["MAX", 1.0]].map(([label, pct]) => (
+                <Pressable
+                  key={label as string}
+                  onPress={() => handleQuickAmount(pct as number)}
+                  disabled={!fromWallet || fromWallet.balance <= 0}
+                  style={({ pressed }) => [wm.quickBtn, (!fromWallet || fromWallet.balance <= 0) && wm.quickBtnDisabled, pressed && { opacity: 0.7 }]}
+                >
+                  <AppText style={[wm.quickBtnText, (!fromWallet || fromWallet.balance <= 0) && wm.quickBtnTextDisabled]}>{label as string}</AppText>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={wm.body} keyboardShouldPersistTaps="handled">
+          {/* ── Rate row ── */}
+          <View style={wm.midRow}>
+            <View style={wm.arrowWrap}>
+              <Ionicons name="arrow-down-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={wm.rateBox}>
+              {quoteLoading
+                ? <ActivityIndicator size="small" color={colors.primary} />
+                : rate
+                  ? <AppText style={wm.rateText}>1 {fromWallet?.currencyCode} = {rate.toFixed(4)} NGN</AppText>
+                  : fromWallet?.currencyCode === "NGN"
+                    ? <AppText style={wm.rateText}>No conversion needed</AppText>
+                    : <AppText style={wm.rateText}>Enter amount to see rate</AppText>
+              }
+            </View>
+          </View>
 
-            {/* ── FROM card ── */}
-            <View style={wm.card}>
-              <AppText style={wm.cardLabel}>You send</AppText>
-              <View style={wm.amtRow}>
-                <AppTextInput
-                  value={fromAmount}
-                  onChangeText={setFromAmount}
-                  placeholder="0.00"
-                  keyboardType="decimal-pad"
-                  placeholderTextColor={colors.muted}
-                  style={[wm.amtInput, balanceExceeded && { color: colors.red }]}
-                />
-                <CurrencyPill
-                  flag={fromWallet?.flag || "🏳️"}
-                  code={fromWallet?.currencyCode || "Select"}
-                  countryCode={fromWallet?.countryCode ?? ""}
-                  onPress={() => setShowFromPicker(true)}
-                />
-              </View>
-              <View style={wm.balRow}>
-                <Ionicons name="wallet-outline" size={13} color={colors.muted} />
-                <AppText style={[wm.balText, balanceExceeded && { color: colors.red }]}>
-                  {" "}Balance: {fromWallet?.formattedBalance || "0.00"} {fromWallet?.currencyCode || ""}
-                </AppText>
-                {balanceExceeded && <AppText style={wm.errText}> · Insufficient</AppText>}
-              </View>
-
-              {/* Quick amounts */}
-              <View style={wm.quickRow}>
-                {[["25%", 0.25], ["50%", 0.5], ["75%", 0.75], ["MAX", 1.0]].map(([label, pct]) => (
-                  <Pressable
-                    key={label as string}
-                    onPress={() => handleQuickAmount(pct as number)}
-                    disabled={!fromWallet || fromWallet.balance <= 0}
-                    style={({ pressed }) => [wm.quickBtn, (!fromWallet || fromWallet.balance <= 0) && wm.quickBtnDisabled, pressed && { opacity: 0.7 }]}
-                  >
-                    <AppText style={[wm.quickBtnText, (!fromWallet || fromWallet.balance <= 0) && wm.quickBtnTextDisabled]}>{label as string}</AppText>
-                  </Pressable>
-                ))}
+          {/* ── TO card (always NGN) ── */}
+          <View style={wm.card}>
+            <AppText style={wm.cardLabel}>Recipient gets</AppText>
+            <View style={wm.amtRow}>
+              <AppTextInput
+                value={quoteLoading ? "..." : toAmount}
+                editable={false}
+                placeholder="0.00"
+                placeholderTextColor={colors.muted}
+                style={wm.amtInputReadonly}
+              />
+              <View style={wm.ngnPill}>
+                <AppText style={{ fontSize: 16 }}>🇳🇬</AppText>
+                <AppText style={wm.ngnPillText}>NGN</AppText>
               </View>
             </View>
-
-            {/* ── Rate row ── */}
-            <View style={wm.midRow}>
-              <View style={wm.arrowWrap}>
-                <Ionicons name="arrow-down-outline" size={18} color={colors.primary} />
-              </View>
-              <View style={wm.rateBox}>
-                {quoteLoading
-                  ? <ActivityIndicator size="small" color={colors.primary} />
-                  : rate
-                    ? <AppText style={wm.rateText}>1 {fromWallet?.currencyCode} = {rate.toFixed(4)} NGN</AppText>
-                    : fromWallet?.currencyCode === "NGN"
-                      ? <AppText style={wm.rateText}>No conversion needed</AppText>
-                      : <AppText style={wm.rateText}>Enter amount to see rate</AppText>
-                }
-              </View>
+            <View style={wm.balRow}>
+              <Ionicons name="business-outline" size={13} color={colors.muted} />
+              <AppText style={wm.balText}> Sending to Nigerian Bank Account</AppText>
             </View>
+          </View>
 
-            {/* ── TO card (always NGN) ── */}
-            <View style={wm.card}>
-              <AppText style={wm.cardLabel}>Recipient gets</AppText>
-              <View style={wm.amtRow}>
-                <AppTextInput
-                  value={quoteLoading ? "..." : toAmount}
-                  editable={false}
-                  placeholder="0.00"
-                  placeholderTextColor={colors.muted}
-                  style={wm.amtInputReadonly}
-                />
-                <View style={wm.ngnPill}>
-                  <AppText style={{ fontSize: 16 }}>🇳🇬</AppText>
-                  <AppText style={wm.ngnPillText}>NGN</AppText>
-                </View>
-              </View>
-              <View style={wm.balRow}>
-                <Ionicons name="business-outline" size={13} color={colors.muted} />
-                <AppText style={wm.balText}> Sending to Nigerian Bank Account</AppText>
-              </View>
-            </View>
-
-            {/* ── Liquidity banner ── */}
-            <LiquidityBanner
-              result={liquidityBlock}
-              retrying={liquidityChecking}
-              onRetry={runLiquidityCheck}
-            />
-
-            {/* ── Continue button ── */}
-            <Pressable
-              onPress={handleContinue}
-              disabled={!canContinue || sending}
-              style={({ pressed }) => [wm.continueBtn, (!canContinue || sending) && wm.continueBtnDisabled, pressed && { opacity: 0.85 }]}
-            >
-              <AppText style={wm.continueBtnText}>Continue</AppText>
-            </Pressable>
-
-            {/* ── Info ── */}
-            <View style={wm.infoRow}>
-              <Ionicons name="time-outline" size={13} color={colors.green} />
-              <AppText style={wm.infoText}> Same-day delivery · Secured transfer</AppText>
-            </View>
-
-          </ScrollView>
-
-          {/* Currency Picker Modal - Source wallet only */}
-          <CurrencyPickerModal
-            visible={showFromPicker}
-            onClose={() => setShowFromPicker(false)}
-            wallets={wallets}
-            selected={fromWallet}
-            onSelect={setFromWallet}
-            title="Send From"
+          {/* ── Liquidity banner ── */}
+          <LiquidityBanner
+            result={liquidityBlock}
+            retrying={liquidityChecking}
+            onRetry={runLiquidityCheck}
           />
 
-          {/* Recipient Details Modal - Always NGN destination */}
-          <RecipientDetailsModal
-            visible={showRecipientDetails}
-            onClose={() => setShowRecipientDetails(false)}
-            onConfirm={handleRecipientConfirmed}
-            banks={banks}
-            banksLoading={banksLoading}
-            amount={toAmount}
-            toCurrency="NGN"
-          />
+          {/* ── Continue button ── */}
+          <Pressable
+            onPress={handleContinue}
+            disabled={!canContinue || sending}
+            style={({ pressed }) => [wm.continueBtn, (!canContinue || sending) && wm.continueBtnDisabled, pressed && { opacity: 0.85 }]}
+          >
+            <AppText style={wm.continueBtnText}>Continue</AppText>
+          </Pressable>
 
-          {/* Confirmation Modal */}
-          <ConfirmationModal
-            visible={showConfirmation}
-            onClose={() => setShowConfirmation(false)}
-            onConfirm={handleConfirmSend}
-            fromAmount={fromAmount}
-            fromCurrency={fromWallet?.currencyCode || ""}
-            toAmount={toAmount}
-            toCurrency="NGN"
-            rate={rate}
-            accountName={recipientAccountName}
-            accountNumber={recipientAccountNumber}
-            bankName={recipientBank?.name || ""}
-            sending={sending}
-            liquidityBlock={liquidityBlock}
-            liquidityChecking={liquidityChecking}
-            onRetryLiquidity={runLiquidityCheck}
-          />
+          {/* ── Info ── */}
+          <View style={wm.infoRow}>
+            <Ionicons name="time-outline" size={13} color={colors.green} />
+            <AppText style={wm.infoText}> Same-day delivery · Secured transfer</AppText>
+          </View>
+
+        </ScrollView>
+
+        {/* Currency Picker Modal - Source wallet only */}
+        <CurrencyPickerModal
+          visible={showFromPicker}
+          onClose={() => setShowFromPicker(false)}
+          wallets={wallets}
+          selected={fromWallet}
+          onSelect={setFromWallet}
+          title="Send From"
+        />
+
+        {/* Recipient Details Modal - Always NGN destination */}
+        <RecipientDetailsModal
+          visible={showRecipientDetails}
+          onClose={() => setShowRecipientDetails(false)}
+          onConfirm={handleRecipientConfirmed}
+          banks={banks}
+          banksLoading={banksLoading}
+          amount={toAmount}
+          toCurrency="NGN"
+        />
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          visible={showConfirmation}
+          onClose={() => setShowConfirmation(false)}
+          onConfirm={handleConfirmSend}
+          fromAmount={fromAmount}
+          fromCurrency={fromWallet?.currencyCode || ""}
+          toAmount={toAmount}
+          toCurrency="NGN"
+          rate={rate}
+          accountName={recipientAccountName}
+          accountNumber={recipientAccountNumber}
+          bankName={recipientBank?.name || ""}
+          sending={sending}
+          liquidityBlock={liquidityBlock}
+          liquidityChecking={liquidityChecking}
+          onRetryLiquidity={runLiquidityCheck}
+        />
       </KeyboardAvoidingView>
     </ScreenShell>
   );

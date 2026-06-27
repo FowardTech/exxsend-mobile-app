@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import { View, Pressable } from "react-native";
-import AppText from "../../AppText";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
+import { Pressable, View } from "react-native";
 import { COLORS } from "../../../theme/colors";
 import { styles } from "../../../theme/styles";
+import AppText from "../../AppText";
 
 function Header() {
   return (
@@ -35,16 +35,16 @@ export default function ReviewDetailsScreen() {
           <View style={styles.reviewFlagCircle}>
             <AppText>🇳🇬</AppText>
           </View>
-          <AppText style={{ fontWeight: "700", marginHorizontal: 10 }}>→</AppText>
+          <AppText style={{ fontWeight: "600", marginHorizontal: 10 }}>→</AppText>
           <View style={styles.reviewAvatarSmall}>
-            <AppText style={{ color: "#fff", fontWeight: "700" }}>AB</AppText>
+            <AppText style={{ color: "#fff", fontWeight: "600" }}>AB</AppText>
           </View>
         </View>
 
         <AppText style={styles.reviewSmall}>You're sending</AppText>
         <AppText style={styles.reviewBig}>1,000.00 NGN</AppText>
         <AppText style={styles.reviewTo}>
-          to <AppText style={{ fontWeight: "700" }}>{name || "Ayotunde Kehinde Balogun"}</AppText>
+          to <AppText style={{ fontWeight: "600" }}>{name || "Ayotunde Kehinde Balogun"}</AppText>
         </AppText>
 
         <View style={styles.hr} />
@@ -54,13 +54,13 @@ export default function ReviewDetailsScreen() {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <AppText style={styles.flag}>🇳🇬</AppText>
             <View style={{ marginLeft: 10 }}>
-              <AppText style={{ fontWeight: "700" }}>NGN balance</AppText>
+              <AppText style={{ fontWeight: "600" }}>NGN balance</AppText>
               <AppText style={styles.muted}>11,795.00 NGN available</AppText>
             </View>
           </View>
 
           <View style={styles.changeBtn}>
-            <AppText style={{ color: "#fff", fontWeight: "700" }}>Change</AppText>
+            <AppText style={{ color: "#fff", fontWeight: "600" }}>Change</AppText>
           </View>
         </View>
 
@@ -106,7 +106,7 @@ export default function ReviewDetailsScreen() {
         </View>
 
         <View style={styles.deliveryPill}>
-          <AppText style={{ color: "#2A2A2A", fontWeight: "700" }}>
+          <AppText style={{ color: "#2A2A2A", fontWeight: "600" }}>
             ⚡ Typically delivered within 1 minute
           </AppText>
         </View>

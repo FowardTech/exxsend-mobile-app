@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Image, RefreshControl, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getMyReferrals, getReferralLeaderboard, MyReferralRecord, MyReferralsStats, ReferralLeaderboardEntry, ReferralLeaderboardMe } from "@/api/config";
 import AppText from "@/components/AppText";
 import BackButton from "@/components/BackButton";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { getReferralLeaderboard, ReferralLeaderboardEntry, ReferralLeaderboardMe, getMyReferrals, MyReferralRecord } from "@/api/config";
+import { GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Period = "all" | "month" | "week";
 
@@ -41,6 +41,7 @@ export default function ReferralLeaderboardScreen() {
   const [leaders, setLeaders] = useState<ReferralLeaderboardEntry[]>([]);
   const [me, setMe] = useState<ReferralLeaderboardMe | null>(null);
   const [myReferrals, setMyReferrals] = useState<MyReferralRecord[]>([]);
+  const [myStats, setMyStats] = useState<MyReferralsStats | null>(null);
   const [myReferralsLoading, setMyReferralsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,7 +66,10 @@ export default function ReferralLeaderboardScreen() {
     const phone = (await AsyncStorage.getItem("user_phone")) || "";
     if (!phone) { setMyReferralsLoading(false); return; }
     const res = await getMyReferrals(phone);
-    if (res.success) setMyReferrals(res.referrals);
+    if (res.success) {
+      setMyReferrals(res.referrals);
+      setMyStats(res.stats);
+    }
     setMyReferralsLoading(false);
   }, []);
 
@@ -95,21 +99,43 @@ export default function ReferralLeaderboardScreen() {
         ))}
       </View>
 
+      {!myReferralsLoading && !!myStats && (myStats.totalReferred > 0) && (
+        <View style={s.statsCard}>
+          <View style={s.statsRow}>
+            <View style={s.statBlock}>
+              <AppText style={s.statValue}>{myStats.totalEarned.toFixed(2)} {myStats.earnedCurrency}</AppText>
+              <AppText style={s.statLabel}>Total Earned</AppText>
+            </View>
+            <View style={s.statDivider} />
+            <View style={s.statBlock}>
+              <AppText style={[s.statValue, { color: "#D97706" }]}>{myStats.pendingBonus.toFixed(2)} {myStats.earnedCurrency}</AppText>
+              <AppText style={s.statLabel}>Pending</AppText>
+            </View>
+          </View>
+          <View style={s.statsFooterRow}>
+            <AppText style={s.statsFooterText}>
+              {myStats.qualifiedReferrals} qualified · {myStats.totalReferred} total referred
+            </AppText>
+          </View>
+        </View>
+      )}
+
       {!myReferralsLoading && myReferrals.length > 0 && (
         <View style={s.myReferralsSection}>
           <AppText style={s.myReferralsTitle}>Your Referrals</AppText>
           {myReferrals.map((r) => {
-            const statusLower = (r.status || "").toLowerCase();
-            const isRewarded = statusLower.includes("reward") || statusLower.includes("paid") || statusLower.includes("complet");
-            const statusColor = isRewarded ? "#059669" : statusLower.includes("pend") || statusLower.includes("qualif") ? "#D97706" : COLORS.muted;
+            const status = (r.status || "pending").toLowerCase();
+            const isRewarded = status === "rewarded";
+            const isQualified = status === "qualified";
+            const statusColor = isRewarded ? "#059669" : isQualified ? "#D97706" : COLORS.muted;
             return (
               <View key={r.id} style={s.myReferralRow}>
                 <View style={{ flex: 1 }}>
-                  <AppText style={s.myReferralName} numberOfLines={1}>{r.referredName || r.referredPhone || "Referral"}</AppText>
+                  <AppText style={s.myReferralName} numberOfLines={1}>{r.refereeName || r.refereePhone || "Referral"}</AppText>
                   <AppText style={[s.myReferralStatus, { color: statusColor }]}>{r.status}</AppText>
                 </View>
-                {isRewarded && r.rewardAmount != null && (
-                  <AppText style={s.myReferralReward}>+{r.rewardAmount} {r.rewardCurrency || ""}</AppText>
+                {isRewarded && r.bonusAmount != null && (
+                  <AppText style={s.myReferralReward}>+{r.bonusAmount} {r.bonusCurrency || ""}</AppText>
                 )}
               </View>
             );
@@ -174,34 +200,43 @@ export default function ReferralLeaderboardScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   emptyText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
 
   tabsRow: { flexDirection: "row", paddingHorizontal: SCREEN_PADDING, gap: SPACE.sm, marginBottom: SPACE.md },
   tab: { flex: 1, alignItems: "center", paddingVertical: SPACE.sm + 2, borderRadius: RADIUS.full, backgroundColor: COLORS.white, ...GLASS_BORDER },
   tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  tabText: { fontSize: 12.5, fontWeight: "700", color: COLORS.muted },
+  tabText: { fontSize: 12.5, fontWeight: "600", color: COLORS.muted },
   tabTextActive: { color: "#FFFFFF" },
 
   myReferralsSection: { paddingHorizontal: SCREEN_PADDING, marginBottom: SPACE.lg },
-  myReferralsTitle: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: SPACE.sm },
+  myReferralsTitle: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: SPACE.sm },
+
+  statsCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.lg, marginHorizontal: SCREEN_PADDING, marginBottom: SPACE.lg, ...GLASS_BORDER },
+  statsRow: { flexDirection: "row", alignItems: "center" },
+  statBlock: { flex: 1, alignItems: "center" },
+  statDivider: { width: StyleSheet.hairlineWidth, height: 36, backgroundColor: COLORS.borderLight },
+  statValue: { fontSize: 17, fontWeight: "600", color: "#059669" },
+  statLabel: { fontSize: 11.5, color: COLORS.muted, fontWeight: "600", marginTop: 3 },
+  statsFooterRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.borderLight, marginTop: SPACE.md, paddingTop: SPACE.sm, alignItems: "center" },
+  statsFooterText: { fontSize: 12, color: COLORS.muted, fontWeight: "600" },
   myReferralRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, marginBottom: SPACE.xs, ...GLASS_BORDER },
-  myReferralName: { fontSize: 13, fontWeight: "700", color: COLORS.text },
-  myReferralStatus: { fontSize: 11.5, fontWeight: "700", marginTop: 2, textTransform: "capitalize" },
-  myReferralReward: { fontSize: 14, fontWeight: "700", color: "#059669" },
+  myReferralName: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  myReferralStatus: { fontSize: 11.5, fontWeight: "600", marginTop: 2, textTransform: "capitalize" },
+  myReferralReward: { fontSize: 14, fontWeight: "600", color: "#059669" },
 
   list: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: SPACE.md, paddingHorizontal: SPACE.md, borderRadius: RADIUS.md, marginBottom: SPACE.xs },
   rowMe: { backgroundColor: COLORS.primaryLight },
   rankWrap: { width: 28, alignItems: "center" },
-  rankText: { fontSize: 14, fontWeight: "700", color: COLORS.muted },
-  rowName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  rankText: { fontSize: 14, fontWeight: "600", color: COLORS.muted },
+  rowName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   rowUsername: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 1 },
-  rowCount: { fontSize: 15, fontWeight: "700", color: COLORS.primary },
+  rowCount: { fontSize: 15, fontWeight: "600", color: COLORS.primary },
 
   avatarFallback: { backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center" },
-  avatarFallbackText: { fontWeight: "700", color: COLORS.primary },
+  avatarFallbackText: { fontWeight: "600", color: COLORS.primary },
 
   meFooter: { flexDirection: "row", alignItems: "center", paddingVertical: SPACE.md, paddingHorizontal: SCREEN_PADDING, backgroundColor: COLORS.white, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.borderLight },
 });

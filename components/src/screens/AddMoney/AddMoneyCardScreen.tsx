@@ -1,16 +1,17 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, StatusBar, KeyboardAvoidingView, Platform } from "react-native";
-import AppText from "../../../AppText";
-import AppTextInput from "../../../AppTextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { COLORS } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { fundWithCard } from "../../../../api/paysafe";
-import { userScopedKey } from "../../../../utils/cacheKeys";
 import ScreenHeader from "../../../../components/ScreenHeader";
-import { COLORS } from "@/theme/colors";
+import { useDeviceTrustGate } from "../../../../hooks/useDeviceTrustGate";
+import { userScopedKey } from "../../../../utils/cacheKeys";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
 
 const SAVED_KEY = "saved_cards_v1";
 
@@ -57,29 +58,30 @@ const cv = StyleSheet.create({
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   chip: { width: 36, height: 28, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.3)", justifyContent: "center", padding: 4 },
   chipLine: { height: 1, backgroundColor: "rgba(255,255,255,0.5)", marginVertical: 3 },
-  brand: { color: "rgba(255,255,255,0.85)", fontWeight: "700", fontSize: 14, letterSpacing: 1 },
+  brand: { color: "rgba(255,255,255,0.85)", fontWeight: "600", fontSize: 14, letterSpacing: 1 },
   number: { color: "#FFFFFF", fontSize: 18, fontWeight: "600", letterSpacing: 3, marginTop: 16 },
   bottom: { flexDirection: "row", justifyContent: "space-between" },
   smallLabel: { color: "rgba(255,255,255,0.6)", fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
-  smallValue: { color: "#FFFFFF", fontWeight: "700", fontSize: 14, marginTop: 2 },
+  smallValue: { color: "#FFFFFF", fontWeight: "600", fontSize: 14, marginTop: 2 },
 });
 
 export default function AddMoneyCardScreen() {
   const params = useLocalSearchParams<{ currencyCode?: string }>();
   const ccy = params.currencyCode || "CAD";
+  const { ensureDeviceTrusted } = useDeviceTrustGate();
 
-  const [amount, setAmount]   = useState("");
-  const [num, setNum]         = useState("");
-  const [month, setMonth]     = useState("");
-  const [year, setYear]       = useState("");
-  const [cvv, setCvv]         = useState("");
-  const [name, setName]       = useState("");
-  const [save, setSave]       = useState(false);
+  const [amount, setAmount] = useState("");
+  const [num, setNum] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [name, setName] = useState("");
+  const [save, setSave] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [phone, setPhone]     = useState("");
-  const [email, setEmail]     = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
 
   const brand = detectBrand(num);
   const expiry = month && year ? `${month} / ${year}` : "";
@@ -88,7 +90,7 @@ export default function AddMoneyCardScreen() {
     (async () => {
       const [p, u] = await Promise.all([AsyncStorage.getItem("user_phone"), AsyncStorage.getItem("user_info")]);
       if (p) setPhone(p);
-      if (u) { try { const info = JSON.parse(u); setEmail(info.email || ""); const n = [info.firstName || info.first_name, info.lastName || info.last_name].filter(Boolean).join(" ").trim(); if (n) setName(n); } catch {} }
+      if (u) { try { const info = JSON.parse(u); setEmail(info.email || ""); const n = [info.firstName || info.first_name, info.lastName || info.last_name].filter(Boolean).join(" ").trim(); if (n) setName(n); } catch { } }
       if (p) {
         const raw = await AsyncStorage.getItem(userScopedKey(SAVED_KEY, p)).catch(() => null);
         if (raw) setSavedCards(JSON.parse(raw));
@@ -120,6 +122,10 @@ export default function AddMoneyCardScreen() {
     if (!month || !year) { Alert.alert("Expiry required", "Please enter the card expiry date."); return; }
     if (cvv.length < 3) { Alert.alert("CVV required", "Please enter the 3 or 4 digit CVV."); return; }
     if (!name.trim()) { Alert.alert("Name required", "Please enter the cardholder name."); return; }
+
+    const trusted = await ensureDeviceTrusted(phone);
+    if (!trusted) return;
+
     setLoading(true);
     try {
       const result = await fundWithCard({ amount: parseFloat(amount), cardNumber: rawNum, expiryMonth: parseInt(month), expiryYear: parseInt(year), cvv, cardholderName: name.trim(), phone, email: email || undefined });
@@ -267,16 +273,16 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   body: { padding: 20, paddingBottom: 40 },
   section: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.borderLight },
-  sectionTitle: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 14 },
+  sectionTitle: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 14 },
   confirmHint: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: -8, marginBottom: 14, lineHeight: 17 },
   amtRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  ccy: { fontSize: 16, fontWeight: "700", color: COLORS.muted },
-  amtInput: { flex: 1, fontSize: 32, fontWeight: "700", color: COLORS.text, padding: 0 },
+  ccy: { fontSize: 16, fontWeight: "600", color: COLORS.muted },
+  amtInput: { flex: 1, fontSize: 32, fontWeight: "600", color: COLORS.text, padding: 0 },
   inputRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.bg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 50 },
   input: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text, padding: 0 },
   inputPlain: { backgroundColor: COLORS.bg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 50, fontSize: 15, fontWeight: "600", color: COLORS.text },
   inputLocked: { backgroundColor: COLORS.borderLight, color: COLORS.muted },
-  fieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+  fieldLabel: { fontSize: 12, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
   saveRow: { flexDirection: "row", alignItems: "center", marginTop: 16, gap: 10 },
   checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },
   checkboxOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
@@ -284,13 +290,13 @@ const s = StyleSheet.create({
   savedRow: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: COLORS.borderLight, marginBottom: 10 },
   savedRowActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
   savedIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.bg, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  savedName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  savedName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   savedMeta: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
   useNewBtn: { paddingTop: 8, alignItems: "center" },
-  useNewText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
+  useNewText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
   payBtn: { borderRadius: 16, overflow: "hidden", marginBottom: 14, backgroundColor: COLORS.actionBg },
   payInner: { paddingVertical: 17, alignItems: "center", justifyContent: "center" },
-  payText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
+  payText: { color: COLORS.actionText, fontSize: 15, fontWeight: "600" },
   secureRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   secureText: { fontSize: 12, color: COLORS.muted, fontWeight: "600" },
 });

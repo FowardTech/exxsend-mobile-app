@@ -148,31 +148,31 @@ function SummaryItem({ label, value, sym, positive }: { label: string; value: nu
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
   body: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
 
   yearRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xl, marginBottom: SPACE.lg },
   yearBtn: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.white, alignItems: "center", justifyContent: "center", ...GLASS_BORDER, ...CARD_SHADOW },
-  yearText: { fontSize: 18, fontWeight: "700", color: COLORS.text, minWidth: 60, textAlign: "center" },
+  yearText: { fontSize: 18, fontWeight: "600", color: COLORS.text, minWidth: 60, textAlign: "center" },
 
   summaryCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.xl, ...GLASS_BORDER, ...CARD_SHADOW },
   summaryRow: { flexDirection: "row" },
-  summaryLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4 },
-  summaryValue: { fontSize: 18, fontWeight: "700", marginTop: 4 },
+  summaryLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4 },
+  summaryValue: { fontSize: 18, fontWeight: "600", marginTop: 4 },
   summaryDivider: { height: 1, backgroundColor: COLORS.borderLight, marginVertical: SPACE.lg },
-  netLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4 },
-  netValue: { fontSize: 26, fontWeight: "700", marginTop: 4 },
+  netLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4 },
+  netValue: { fontSize: 26, fontWeight: "600", marginTop: 4 },
 
   disclaimer: { fontSize: 11, color: COLORS.muted, textAlign: "center", marginTop: SPACE.md, lineHeight: 16, paddingHorizontal: SPACE.md },
 
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginTop: SPACE.xxl, marginBottom: SPACE.md },
+  sectionTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginTop: SPACE.xxl, marginBottom: SPACE.md },
   emptyCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.xxxl, alignItems: "center", gap: SPACE.md, ...GLASS_BORDER, ...CARD_SHADOW },
   emptyText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
 
   lotRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: SPACE.lg, marginBottom: SPACE.sm, ...GLASS_BORDER, ...CARD_SHADOW },
-  lotSymbol: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  lotSymbol: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   lotDate: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
-  lotGain: { fontSize: 14, fontWeight: "700" },
+  lotGain: { fontSize: 14, fontWeight: "600" },
   lotDetail: { fontSize: 11, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
 });

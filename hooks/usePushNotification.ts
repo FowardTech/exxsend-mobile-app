@@ -59,6 +59,8 @@ export function usePushNotifications() {
       } as any);
     } else if (data?.type === 'kyc_approved') {
       router.push('/profile');
+    } else if (data?.type === 'new_device_signin') {
+      router.push('/managedevices' as any);
     }
   };
 

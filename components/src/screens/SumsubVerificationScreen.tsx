@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Pressable, ActivityIndicator, Alert, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { getSumsubAccessToken, getSumsubVerificationStatus, SumsubVerificationStatus } from "@/api/config";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AppText from "../../AppText";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../../../theme/colors";
-import { SPACE, RADIUS, SCREEN_PADDING } from "../../../theme/designSystem";
-import { getSumsubAccessToken, getSumsubVerificationStatus, SumsubVerificationStatus } from "@/api/config";
+import { RADIUS, SCREEN_PADDING, SPACE } from "../../../theme/designSystem";
+import AppText from "../../AppText";
 
 // @sumsub/react-native-mobilesdk-module is a native module — it must be
 // installed (`npx expo install @sumsub/react-native-mobilesdk-module`) and
@@ -55,7 +55,7 @@ export default function SumsubVerificationScreen() {
         await AsyncStorage.setItem("user_info", JSON.stringify(userInfo));
       }
       if (status.kycStatus) await AsyncStorage.setItem("user_kyc_status", status.kycStatus);
-    } catch {}
+    } catch { }
 
     if (status.moderationComment) setModerationComment(status.moderationComment);
 
@@ -78,7 +78,7 @@ export default function SumsubVerificationScreen() {
         const res = await getSumsubVerificationStatus({ userId: applicantIdRef.current });
         const settled = res.success ? await applyStatus(res) : false;
         if (settled) return;
-      } catch {}
+      } catch { }
       if (pollCount.current < MAX_POLLS) {
         pollStatus();
       } else {
@@ -252,10 +252,10 @@ const s = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING * 1.5 },
   statusText: { fontSize: 14, color: COLORS.muted, fontWeight: "600", marginTop: SPACE.lg },
   iconCircle: { width: 72, height: 72, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center", marginBottom: SPACE.xl },
-  title: { fontSize: 20, fontWeight: "700", color: COLORS.text, textAlign: "center" },
+  title: { fontSize: 20, fontWeight: "600", color: COLORS.text, textAlign: "center" },
   body: { fontSize: 14, color: COLORS.muted, fontWeight: "500", textAlign: "center", marginTop: SPACE.sm, lineHeight: 21 },
   primaryBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.xxxl, marginTop: SPACE.xxl, alignSelf: "stretch", alignItems: "center" },
-  primaryBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  primaryBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
   secondaryBtn: { paddingVertical: SPACE.md, marginTop: SPACE.sm },
   secondaryBtnText: { color: COLORS.muted, fontSize: 13, fontWeight: "600" },
 });

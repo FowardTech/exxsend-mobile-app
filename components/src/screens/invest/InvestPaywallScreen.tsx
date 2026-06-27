@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
-import { useCustomAlert } from "@/components/CustomAlert";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { StripeProvider, CardField, useConfirmPayment } from "@stripe/stripe-react-native";
+import { getUserProfile } from "@/api/config";
+import { getCurrencySymbol } from "@/api/flutterwave";
+import { createSubscriptionPaymentIntent, getSubscriptionPlans, getWalletOptions, SubscriptionPlan, WalletOption } from "@/api/investments";
 import AppText from "@/components/AppText";
 import BackButton from "@/components/BackButton";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCustomAlert } from "@/components/CustomAlert";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { getCurrencySymbol } from "@/api/flutterwave";
-import { getUserProfile } from "@/api/config";
-import { getSubscriptionPlans, createSubscriptionPaymentIntent, getWalletOptions, SubscriptionPlan, WalletOption } from "@/api/investments";
-import WalletPinModal from "./WalletPinModal";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CardField, StripeProvider, useConfirmPayment } from "@stripe/stripe-react-native";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import WalletOptionsSheet from "./WalletOptionsSheet";
+import WalletPinModal from "./WalletPinModal";
 
 export default function InvestPaywallScreen({
   embedded = false,
@@ -68,7 +68,7 @@ export default function InvestPaywallScreen({
         if (res.success && res.plans.length > 0) {
           setPlan(res.plans[0]);
         }
-      } catch {}
+      } catch { }
       setLoading(false);
     })();
   }, []);
@@ -480,13 +480,13 @@ const s = StyleSheet.create({
   body: { paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.lg, paddingBottom: SPACE.huge, alignItems: "center" },
   centeredFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   heroIcon: { width: 72, height: 72, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center", marginBottom: SPACE.lg },
-  title: { fontSize: 22, fontWeight: "700", color: COLORS.text, textAlign: "center" },
+  title: { fontSize: 22, fontWeight: "600", color: COLORS.text, textAlign: "center" },
   subtitle: { fontSize: 14, color: COLORS.muted, textAlign: "center", marginTop: SPACE.sm, lineHeight: 20, paddingHorizontal: SPACE.lg },
   planCard: { width: "100%", backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.xxl, marginTop: SPACE.xxl, alignItems: "center", ...GLASS_BORDER, ...CARD_SHADOW },
   cardFormCard: { width: "100%", backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACE.xl, marginTop: SPACE.xxl, ...GLASS_BORDER, ...CARD_SHADOW },
-  planLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.6 },
+  planLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.6 },
   priceRow: { flexDirection: "row", alignItems: "flex-end", marginTop: SPACE.sm },
-  priceBig: { fontSize: 40, fontWeight: "700", color: COLORS.text, letterSpacing: -1 },
+  priceBig: { fontSize: 40, fontWeight: "600", color: COLORS.text, letterSpacing: -1 },
   priceSuffix: { fontSize: 16, fontWeight: "600", color: COLORS.muted, marginBottom: 6, marginLeft: 4 },
   priceSmall: { fontSize: 13, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
   featureList: { width: "100%", marginTop: SPACE.xl, gap: SPACE.md },
@@ -497,7 +497,7 @@ const s = StyleSheet.create({
   buttonsWrap: { width: "100%", marginTop: SPACE.xxl, gap: SPACE.md },
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: RADIUS.md, paddingVertical: SPACE.lg },
   btnPrimary: { backgroundColor: COLORS.actionBg },
-  btnPrimaryText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
+  btnPrimaryText: { color: COLORS.actionText, fontSize: 15, fontWeight: "600" },
   btnSecondary: { backgroundColor: COLORS.primaryLight },
-  btnSecondaryText: { color: COLORS.primary, fontSize: 15, fontWeight: "700" },
+  btnSecondaryText: { color: COLORS.primary, fontSize: 15, fontWeight: "600" },
 });

@@ -3,29 +3,31 @@
  * Uses api/corridors.ts as single source of truth.
  * Does NOT pre-save recipient — RecipientConfirmScreen persists after successful payout.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Alert, StyleSheet, Modal, FlatList, StatusBar, KeyboardAvoidingView, Platform } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import AppTextInput from "../../../AppTextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAppTheme } from "@/theme/ThemeProvider";
+import { CARD_SHADOW, GLASS_BORDER, GLASS_BORDER_SUBTLE, RADIUS, SCREEN_PADDING, SPACE, TYPE } from "@/theme/designSystem";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getConversionQuote, getUserWallets } from "../../../../api/config";
 import {
   Corridor, CorridorMethod, MomoNetwork,
-  getCorridorOrFallback, validateCorridorFields,
-  toPayoutType, getRoutingValue,
+  getCorridorOrFallback,
+  getRoutingValue,
+  toPayoutType,
+  validateCorridorFields,
 } from "../../../../api/corridors";
-import { getBanksByCountry, verifyBankAccount, Bank } from "../../../../api/flutterwave";
-import { getUserWallets, getConversionQuote } from "../../../../api/config";
-import { useAppTheme } from "@/theme/ThemeProvider";
-import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER, GLASS_BORDER_SUBTLE, SCREEN_PADDING } from "@/theme/designSystem";
-import CountryFlag from "../../../CountryFlag";
-import CurrencyPickerModal, { Wallet } from "../../../CurrencyPickerModal";
-import BeneficiaryPickerModal from "../../../BeneficiaryPickerModal";
+import { Bank, getBanksByCountry, verifyBankAccount } from "../../../../api/flutterwave";
 import { RecentRecipientFromDB } from "../../../../api/sync";
 import RecipientAvatar from "../../../../components/RecipientAvatar";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
+import BackButton from "../../../BackButton";
+import BeneficiaryPickerModal from "../../../BeneficiaryPickerModal";
+import CountryFlag from "../../../CountryFlag";
+import CurrencyPickerModal, { Wallet } from "../../../CurrencyPickerModal";
 
 function getInitialValues(method: CorridorMethod): Record<string, string> {
   return Object.fromEntries(method.fields.map((f) => [f.key, ""]));
@@ -218,7 +220,7 @@ export default function RecipientNewScreen() {
         const directMatch = active.find((w: Wallet) => w.currencyCode?.toUpperCase() === destCurrency);
         setFromWallet(directMatch || active[0] || null);
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, [needsAmountEntry, userPhone, destCurrency]);
 
   const fetchManualQuote = useCallback(async () => {
@@ -579,7 +581,7 @@ export default function RecipientNewScreen() {
         </View>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.muted} />
-          <AppText style={{ fontSize: 16, fontWeight: "700", color: colors.text, marginTop: 12 }}>{destCurrency} not yet supported</AppText>
+          <AppText style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginTop: 12 }}>{destCurrency} not yet supported</AppText>
           <AppText style={{ fontSize: 13, color: colors.muted, textAlign: "center", marginTop: 8 }}>We are working on adding more corridors.</AppText>
           <Pressable onPress={() => router.back()} style={[s.continueBtn, { marginTop: 24 }]}><AppText style={s.continueBtnText}>Go Back</AppText></Pressable>
         </View>
@@ -662,102 +664,102 @@ export default function RecipientNewScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}>
         <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {prefilled ? (
-          <View style={s.beneficiaryCard}>
-            <RecipientAvatar
-              name={prefilled.accountName || "?"}
-              currencyCode={destCurrency}
-              countryCode={prefilled.countryCode || corridor.countryCode}
-              isExxsend={prefilled.payoutMethod === "exxsend" || prefilled.bankCode === "EXXSEND"}
-              photoUrl={prefilled.avatarUrl}
-              size={46}
-            />
-            <View style={{ flex: 1 }}>
-              <AppText style={s.beneficiaryName}>{prefilled.accountName}</AppText>
-              <AppText style={s.beneficiaryMeta}>
-                {prefilled.bankName || "Bank"}
-                {prefilled.accountNumber ? ` · •••• ${prefilled.accountNumber.slice(-4)}` : ""}
-              </AppText>
-            </View>
-          </View>
-        ) : isCurrencyCloud && useSavedBeneficiary ? (
-          selectedBeneficiary ? (
-            <Pressable style={s.beneficiaryCard} onPress={() => setBeneficiaryPickerOpen(true)}>
+            <View style={s.beneficiaryCard}>
               <RecipientAvatar
-                name={selectedBeneficiary.accountName || "?"}
+                name={prefilled.accountName || "?"}
                 currencyCode={destCurrency}
-                countryCode={selectedBeneficiary.countryCode || corridor.countryCode}
+                countryCode={prefilled.countryCode || corridor.countryCode}
+                isExxsend={prefilled.payoutMethod === "exxsend" || prefilled.bankCode === "EXXSEND"}
+                photoUrl={prefilled.avatarUrl}
                 size={46}
               />
               <View style={{ flex: 1 }}>
-                <AppText style={s.beneficiaryName}>{selectedBeneficiary.accountName}</AppText>
+                <AppText style={s.beneficiaryName}>{prefilled.accountName}</AppText>
                 <AppText style={s.beneficiaryMeta}>
-                  {selectedBeneficiary.bankName || "Bank"}
-                  {selectedBeneficiary.accountNumber ? ` · •••• ${selectedBeneficiary.accountNumber.slice(-4)}` : ""}
+                  {prefilled.bankName || "Bank"}
+                  {prefilled.accountNumber ? ` · •••• ${prefilled.accountNumber.slice(-4)}` : ""}
                 </AppText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-            </Pressable>
+            </View>
+          ) : isCurrencyCloud && useSavedBeneficiary ? (
+            selectedBeneficiary ? (
+              <Pressable style={s.beneficiaryCard} onPress={() => setBeneficiaryPickerOpen(true)}>
+                <RecipientAvatar
+                  name={selectedBeneficiary.accountName || "?"}
+                  currencyCode={destCurrency}
+                  countryCode={selectedBeneficiary.countryCode || corridor.countryCode}
+                  size={46}
+                />
+                <View style={{ flex: 1 }}>
+                  <AppText style={s.beneficiaryName}>{selectedBeneficiary.accountName}</AppText>
+                  <AppText style={s.beneficiaryMeta}>
+                    {selectedBeneficiary.bankName || "Bank"}
+                    {selectedBeneficiary.accountNumber ? ` · •••• ${selectedBeneficiary.accountNumber.slice(-4)}` : ""}
+                  </AppText>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+              </Pressable>
+            ) : (
+              <Pressable style={s.beneficiaryEmptyCard} onPress={() => setBeneficiaryPickerOpen(true)}>
+                <Ionicons name="people-outline" size={20} color={colors.primary} />
+                <AppText style={s.beneficiaryEmptyText}>Choose a saved beneficiary</AppText>
+                <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+              </Pressable>
+            )
           ) : (
-            <Pressable style={s.beneficiaryEmptyCard} onPress={() => setBeneficiaryPickerOpen(true)}>
-              <Ionicons name="people-outline" size={20} color={colors.primary} />
-              <AppText style={s.beneficiaryEmptyText}>Choose a saved beneficiary</AppText>
-              <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-            </Pressable>
-          )
-        ) : (
-        <>
-        {activeMethod.fields.map((field) => {
-          if (field.key === "bankCode") {
-            return (
-              <View key={field.key} style={s.fieldWrap}>
-                <AppText style={s.fieldLabel}>{field.label}</AppText>
-                <Pressable onPress={() => setBankPickerOpen(true)} style={[s.inputBox, !!errors.bankCode && s.inputBoxErr]}>
-                  <AppText style={[s.input, !selectedBank && { color: colors.muted }]}>{selectedBank?.name || field.placeholder}</AppText>
-                  {banksLoading ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-down" size={16} color={colors.muted} />}
-                </Pressable>
-                {!!errors.bankCode && <AppText style={s.fieldError}>{errors.bankCode}</AppText>}
-              </View>
-            );
-          }
-          if (field.key === "networkCode") {
-            return (
-              <View key={field.key} style={s.fieldWrap}>
-                <AppText style={s.fieldLabel}>{field.label}</AppText>
-                <Pressable onPress={() => setNetworkPickerOpen(true)} style={[s.inputBox, !!errors.networkCode && s.inputBoxErr]}>
-                  <AppText style={[s.input, !selectedNetwork && { color: colors.muted }]}>{selectedNetwork?.name || field.placeholder}</AppText>
-                  <Ionicons name="chevron-down" size={16} color={colors.muted} />
-                </Pressable>
-                {!!errors.networkCode && <AppText style={s.fieldError}>{errors.networkCode}</AppText>}
-              </View>
-            );
-          }
-          if (field.key === "accountNumber") {
-            return (
-              <FieldInput key={field.key} field={field} value={values.accountNumber || ""} onChange={handleAccountChange} onBlur={() => onBlur("accountNumber")} error={touched.accountNumber ? errors.accountNumber : undefined} loading={verifying} />
-            );
-          }
-          if (field.key === "accountName") {
-            return (
-              <View key={field.key}>
-                <FieldInput field={field} value={values.accountName || ""} onChange={(v) => setField("accountName", v)} onBlur={() => onBlur("accountName")} error={touched.accountName ? errors.accountName : undefined} editable={isNameEditable} loading={verifying && activeMethod.canVerify} />
-                {nameVerified && (
-                  <View style={s.verifiedBadge}><Ionicons name="checkmark-circle" size={14} color={colors.green} /><AppText style={s.verifiedText}>Name verified by bank</AppText></View>
-                )}
-                {nameVerifyAttempted && !nameVerified && !verifying && activeMethod.canVerify && (
-                  <View style={s.manualBadge}><Ionicons name="information-circle-outline" size={14} color={colors.muted} /><AppText style={s.manualText}>Auto-verify unavailable — enter name manually</AppText></View>
-                )}
-              </View>
-            );
-          }
-          return <FieldInput key={field.key} field={field} value={values[field.key] || ""} onChange={(v) => setField(field.key, v)} onBlur={() => onBlur(field.key)} error={touched[field.key] ? errors[field.key] : undefined} />;
-        })}
-        </>
-        )}
-        <Pressable onPress={handleContinue} style={({ pressed }) => [s.continueBtn, pressed && { opacity: 0.85 }]}>
-          <Ionicons name="arrow-forward" size={16} color={colors.actionText} style={{ marginRight: 6 }} />
-          <AppText style={s.continueBtnText}>Continue</AppText>
-        </Pressable>
-        <View style={{ height: 24 }} />
+            <>
+              {activeMethod.fields.map((field) => {
+                if (field.key === "bankCode") {
+                  return (
+                    <View key={field.key} style={s.fieldWrap}>
+                      <AppText style={s.fieldLabel}>{field.label}</AppText>
+                      <Pressable onPress={() => setBankPickerOpen(true)} style={[s.inputBox, !!errors.bankCode && s.inputBoxErr]}>
+                        <AppText style={[s.input, !selectedBank && { color: colors.muted }]}>{selectedBank?.name || field.placeholder}</AppText>
+                        {banksLoading ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-down" size={16} color={colors.muted} />}
+                      </Pressable>
+                      {!!errors.bankCode && <AppText style={s.fieldError}>{errors.bankCode}</AppText>}
+                    </View>
+                  );
+                }
+                if (field.key === "networkCode") {
+                  return (
+                    <View key={field.key} style={s.fieldWrap}>
+                      <AppText style={s.fieldLabel}>{field.label}</AppText>
+                      <Pressable onPress={() => setNetworkPickerOpen(true)} style={[s.inputBox, !!errors.networkCode && s.inputBoxErr]}>
+                        <AppText style={[s.input, !selectedNetwork && { color: colors.muted }]}>{selectedNetwork?.name || field.placeholder}</AppText>
+                        <Ionicons name="chevron-down" size={16} color={colors.muted} />
+                      </Pressable>
+                      {!!errors.networkCode && <AppText style={s.fieldError}>{errors.networkCode}</AppText>}
+                    </View>
+                  );
+                }
+                if (field.key === "accountNumber") {
+                  return (
+                    <FieldInput key={field.key} field={field} value={values.accountNumber || ""} onChange={handleAccountChange} onBlur={() => onBlur("accountNumber")} error={touched.accountNumber ? errors.accountNumber : undefined} loading={verifying} />
+                  );
+                }
+                if (field.key === "accountName") {
+                  return (
+                    <View key={field.key}>
+                      <FieldInput field={field} value={values.accountName || ""} onChange={(v) => setField("accountName", v)} onBlur={() => onBlur("accountName")} error={touched.accountName ? errors.accountName : undefined} editable={isNameEditable} loading={verifying && activeMethod.canVerify} />
+                      {nameVerified && (
+                        <View style={s.verifiedBadge}><Ionicons name="checkmark-circle" size={14} color={colors.green} /><AppText style={s.verifiedText}>Name verified by bank</AppText></View>
+                      )}
+                      {nameVerifyAttempted && !nameVerified && !verifying && activeMethod.canVerify && (
+                        <View style={s.manualBadge}><Ionicons name="information-circle-outline" size={14} color={colors.muted} /><AppText style={s.manualText}>Auto-verify unavailable — enter name manually</AppText></View>
+                      )}
+                    </View>
+                  );
+                }
+                return <FieldInput key={field.key} field={field} value={values[field.key] || ""} onChange={(v) => setField(field.key, v)} onBlur={() => onBlur(field.key)} error={touched[field.key] ? errors[field.key] : undefined} />;
+              })}
+            </>
+          )}
+          <Pressable onPress={handleContinue} style={({ pressed }) => [s.continueBtn, pressed && { opacity: 0.85 }]}>
+            <Ionicons name="arrow-forward" size={16} color={colors.actionText} style={{ marginRight: 6 }} />
+            <AppText style={s.continueBtnText}>Continue</AppText>
+          </Pressable>
+          <View style={{ height: 24 }} />
         </ScrollView>
       </KeyboardAvoidingView>
       <BankPicker visible={bankPickerOpen} banks={banks} loading={banksLoading} searchQuery={bankSearch} onSearch={setBankSearch} onSelect={handleBankSelect} onClose={() => setBankPickerOpen(false)} selected={selectedBank} />
@@ -788,62 +790,62 @@ export default function RecipientNewScreen() {
 function makeLocalStyles(colors: any) {
   return StyleSheet.create({
 
-  root: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm },
-  headerTitle: { ...TYPE.subtitle, color: colors.text },
-  summaryBar: { backgroundColor: colors.primaryLight, paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.md - 2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  summaryLabel: { fontSize: 12, color: colors.primaryDark, fontWeight: "600" },
-  summaryAmount: { fontSize: 16, fontWeight: "700", color: colors.primaryDark },
-  amountCard: { backgroundColor: colors.card, marginHorizontal: SPACE.lg, marginTop: SPACE.md, borderRadius: RADIUS.md, padding: SPACE.lg, ...GLASS_BORDER, ...CARD_SHADOW },
-  amountCardLabel: { fontSize: 12, color: colors.muted, fontWeight: "600", marginBottom: SPACE.sm },
-  amountRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  amountInput: { flex: 1, fontSize: 24, fontWeight: "700", color: colors.text, paddingVertical: 4 },
-  amountReceiveText: { fontSize: 20, fontWeight: "700", color: colors.primaryDark },
-  walletPill: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2, backgroundColor: colors.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
-  walletPillText: { fontSize: 14, fontWeight: "700", color: colors.primary },
-  amountCardBalance: { fontSize: 12, color: colors.muted, fontWeight: "500", marginTop: SPACE.sm },
-  amountDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginVertical: SPACE.lg - 2 },
-  tabsRow: { flexDirection: "row", padding: SPACE.md, gap: SPACE.sm, backgroundColor: colors.card },
-  ccToggleRow: { flexDirection: "row", gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md, paddingBottom: SPACE.xs, backgroundColor: colors.card },
-  ccToggleBtn: { flex: 1, paddingVertical: SPACE.sm + 2, borderRadius: RADIUS.sm, alignItems: "center", backgroundColor: colors.bgTertiary },
-  ccToggleBtnActive: { backgroundColor: colors.primaryLight },
-  ccToggleText: { fontSize: 13, fontWeight: "600", color: colors.muted },
-  ccToggleTextActive: { color: colors.primary, fontWeight: "700" },
-  beneficiaryCard: { flexDirection: "row", alignItems: "center", gap: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, padding: SPACE.lg, marginTop: SPACE.lg, ...GLASS_BORDER, ...CARD_SHADOW },
-  beneficiaryEmptyCard: { flexDirection: "row", alignItems: "center", gap: SPACE.sm + 2, backgroundColor: colors.primaryLight, borderRadius: RADIUS.md, padding: SPACE.lg, marginTop: SPACE.lg },
-  beneficiaryEmptyText: { flex: 1, fontSize: 14, fontWeight: "700", color: colors.primary },
-  avatar: { width: 46, height: 46, borderRadius: RADIUS.full, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  avatarText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
-  beneficiaryName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  beneficiaryMeta: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: SPACE.sm + 2, borderRadius: RADIUS.sm, backgroundColor: colors.bgTertiary },
-  tabActive: { backgroundColor: colors.primary },
-  tabText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
-  tabTextActive: { color: "#FFFFFF", fontWeight: "700" },
-  body: { padding: SCREEN_PADDING, paddingBottom: SPACE.huge },
-  fieldWrap: { marginBottom: SPACE.lg },
-  fieldLabel: { fontSize: 13, fontWeight: "700", color: colors.text, marginBottom: SPACE.sm },
-  inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, ...CARD_SHADOW, borderRadius: RADIUS.sm + 2, paddingHorizontal: SPACE.md + 2, height: 52 },
-  inputBoxErr: { borderWidth: 1.5, borderColor: colors.red },
-  inputBoxDisabled: { backgroundColor: colors.primaryLight },
-  input: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.text, padding: 0 },
-  fieldError: { fontSize: 12, color: colors.red, fontWeight: "600", marginTop: 5 },
-  verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5, paddingHorizontal: SPACE.md, paddingVertical: 5, backgroundColor: colors.greenSoft, borderRadius: RADIUS.xs, alignSelf: "flex-start" },
-  verifiedText: { fontSize: 12, color: colors.green, fontWeight: "700" },
-  manualBadge: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5 },
-  manualText: { fontSize: 12, color: colors.muted, fontWeight: "600" },
-  continueBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: colors.actionBg, borderRadius: RADIUS.md, paddingVertical: SPACE.lg + 1, marginTop: SPACE.xs },
-  continueBtnText: { color: colors.actionText, fontSize: 15, fontWeight: "700" },
-  sheet: { backgroundColor: colors.card, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingBottom: SPACE.xxxl, overflow: "hidden" },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginTop: SPACE.md - 2 },
-  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.md + 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
-  sheetTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
-  sheetClose: { width: 30, height: 30, borderRadius: RADIUS.full, backgroundColor: colors.bgTertiary, alignItems: "center", justifyContent: "center" },
-  sheetSearch: { flexDirection: "row", alignItems: "center", marginHorizontal: SPACE.lg, marginVertical: SPACE.sm + 2, backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, ...CARD_SHADOW, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, height: 42 },
-  bankRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
-  bankRowSelected: { backgroundColor: colors.primaryLight },
-  bankName: { fontSize: 15, fontWeight: "600", color: colors.text, flex: 1 },
+    root: { flex: 1, backgroundColor: colors.bg },
+    header: { flexDirection: "row", alignItems: "center", paddingHorizontal: SCREEN_PADDING, height: 54 },
+    headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm },
+    headerTitle: { ...TYPE.subtitle, color: colors.text },
+    summaryBar: { backgroundColor: colors.primaryLight, paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.md - 2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    summaryLabel: { fontSize: 12, color: colors.primaryDark, fontWeight: "600" },
+    summaryAmount: { fontSize: 16, fontWeight: "600", color: colors.primaryDark },
+    amountCard: { backgroundColor: colors.card, marginHorizontal: SPACE.lg, marginTop: SPACE.md, borderRadius: RADIUS.md, padding: SPACE.lg, ...GLASS_BORDER, ...CARD_SHADOW },
+    amountCardLabel: { fontSize: 12, color: colors.muted, fontWeight: "600", marginBottom: SPACE.sm },
+    amountRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    amountInput: { flex: 1, fontSize: 24, fontWeight: "600", color: colors.text, paddingVertical: 4 },
+    amountReceiveText: { fontSize: 20, fontWeight: "600", color: colors.primaryDark },
+    walletPill: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2, backgroundColor: colors.primaryLight, borderRadius: RADIUS.full, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
+    walletPillText: { fontSize: 14, fontWeight: "600", color: colors.primary },
+    amountCardBalance: { fontSize: 12, color: colors.muted, fontWeight: "500", marginTop: SPACE.sm },
+    amountDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginVertical: SPACE.lg - 2 },
+    tabsRow: { flexDirection: "row", padding: SPACE.md, gap: SPACE.sm, backgroundColor: colors.card },
+    ccToggleRow: { flexDirection: "row", gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md, paddingBottom: SPACE.xs, backgroundColor: colors.card },
+    ccToggleBtn: { flex: 1, paddingVertical: SPACE.sm + 2, borderRadius: RADIUS.sm, alignItems: "center", backgroundColor: colors.bgTertiary },
+    ccToggleBtnActive: { backgroundColor: colors.primaryLight },
+    ccToggleText: { fontSize: 13, fontWeight: "600", color: colors.muted },
+    ccToggleTextActive: { color: colors.primary, fontWeight: "600" },
+    beneficiaryCard: { flexDirection: "row", alignItems: "center", gap: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, padding: SPACE.lg, marginTop: SPACE.lg, ...GLASS_BORDER, ...CARD_SHADOW },
+    beneficiaryEmptyCard: { flexDirection: "row", alignItems: "center", gap: SPACE.sm + 2, backgroundColor: colors.primaryLight, borderRadius: RADIUS.md, padding: SPACE.lg, marginTop: SPACE.lg },
+    beneficiaryEmptyText: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.primary },
+    avatar: { width: 46, height: 46, borderRadius: RADIUS.full, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+    avatarText: { fontSize: 14, fontWeight: "600", color: "#FFFFFF" },
+    beneficiaryName: { fontSize: 15, fontWeight: "600", color: colors.text },
+    beneficiaryMeta: { fontSize: 13, color: colors.muted, marginTop: 2 },
+    tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: SPACE.sm + 2, borderRadius: RADIUS.sm, backgroundColor: colors.bgTertiary },
+    tabActive: { backgroundColor: colors.primary },
+    tabText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+    tabTextActive: { color: "#FFFFFF", fontWeight: "600" },
+    body: { padding: SCREEN_PADDING, paddingBottom: SPACE.huge },
+    fieldWrap: { marginBottom: SPACE.lg },
+    fieldLabel: { fontSize: 13, fontWeight: "600", color: colors.text, marginBottom: SPACE.sm },
+    inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, ...CARD_SHADOW, borderRadius: RADIUS.sm + 2, paddingHorizontal: SPACE.md + 2, height: 52 },
+    inputBoxErr: { borderWidth: 1.5, borderColor: colors.red },
+    inputBoxDisabled: { backgroundColor: colors.primaryLight },
+    input: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.text, padding: 0 },
+    fieldError: { fontSize: 12, color: colors.red, fontWeight: "600", marginTop: 5 },
+    verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5, paddingHorizontal: SPACE.md, paddingVertical: 5, backgroundColor: colors.greenSoft, borderRadius: RADIUS.xs, alignSelf: "flex-start" },
+    verifiedText: { fontSize: 12, color: colors.green, fontWeight: "600" },
+    manualBadge: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5 },
+    manualText: { fontSize: 12, color: colors.muted, fontWeight: "600" },
+    continueBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: colors.actionBg, borderRadius: RADIUS.md, paddingVertical: SPACE.lg + 1, marginTop: SPACE.xs },
+    continueBtnText: { color: colors.actionText, fontSize: 15, fontWeight: "600" },
+    sheet: { backgroundColor: colors.card, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingBottom: SPACE.xxxl, overflow: "hidden" },
+    sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginTop: SPACE.md - 2 },
+    sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.md + 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+    sheetTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
+    sheetClose: { width: 30, height: 30, borderRadius: RADIUS.full, backgroundColor: colors.bgTertiary, alignItems: "center", justifyContent: "center" },
+    sheetSearch: { flexDirection: "row", alignItems: "center", marginHorizontal: SPACE.lg, marginVertical: SPACE.sm + 2, backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, ...CARD_SHADOW, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, height: 42 },
+    bankRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+    bankRowSelected: { backgroundColor: colors.primaryLight },
+    bankName: { fontSize: 15, fontWeight: "600", color: colors.text, flex: 1 },
   });
 }
 

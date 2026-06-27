@@ -168,7 +168,7 @@ export default function LoginScreen() {
               {legalMeta.effectiveDate && <AppText style={{ fontSize: 12, color: COLORS.muted, marginBottom: 16 }}>Effective: {legalMeta.effectiveDate}</AppText>}
               {legalSections.map((sec: any, i: number) => (
                 <View key={sec.id || i} style={{ marginBottom: 20 }}>
-                  <AppText style={{ fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 6 }}>{sec.title}</AppText>
+                  <AppText style={{ fontSize: 15, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>{sec.title}</AppText>
                   <AppText style={{ fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 }}>{replacePlaceholders(sec.content)}</AppText>
                 </View>
               ))}
@@ -184,10 +184,10 @@ export default function LoginScreen() {
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: "rgba(239,68,68,0.10)", justifyContent: "center", alignItems: "center", marginBottom: 14 }}>
               <Ionicons name="close-circle-outline" size={28} color={COLORS.red} />
             </View>
-            <AppText style={{ fontSize: 18, fontWeight: "700", color: COLORS.text, textAlign: "center", marginBottom: 10 }}>Account Suspended</AppText>
+            <AppText style={{ fontSize: 18, fontWeight: "600", color: COLORS.text, textAlign: "center", marginBottom: 10 }}>Account Suspended</AppText>
             <AppText style={{ fontSize: 14, color: COLORS.muted, textAlign: "center", lineHeight: 22, marginBottom: 22 }}>Your account has been suspended. Please contact support for assistance.</AppText>
             <Pressable onPress={() => setSuspendedModalVisible(false)} style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 14, width: "100%", alignItems: "center" }}>
-              <AppText style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>OK</AppText>
+              <AppText style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 15 }}>OK</AppText>
             </Pressable>
           </View>
         </View>
@@ -236,7 +236,7 @@ export default function LoginScreen() {
               <AppText style={s.loginSub}>Please enter your registered phone and password</AppText>
             </View>
             <Pressable onPress={() => router.push("/getstarted")}>
-              <AppText style={{ fontSize: 14, fontWeight: "700", color: COLORS.primary }}>Sign up</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: "600", color: COLORS.primary }}>Sign up</AppText>
             </Pressable>
           </View>
         </View>
@@ -261,15 +261,15 @@ export default function LoginScreen() {
           </View>
 
           <Pressable onPress={() => router.push("/reset-password")} style={{ alignSelf: "flex-end", marginTop: 10 }}>
-            <AppText style={{ fontSize: 13, fontWeight: "700", color: COLORS.primary }}>Forgot password?</AppText>
+            <AppText style={{ fontSize: 13, fontWeight: "600", color: COLORS.primary }}>Forgot password?</AppText>
           </Pressable>
 
           {/* Terms */}
           <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginTop: 16 }}>
             <AppText style={{ fontSize: 12, color: COLORS.muted }}>By logging in you agree to our </AppText>
-            <Pressable onPress={() => showLegalDocument("terms")}><AppText style={{ fontSize: 12, color: COLORS.primary, fontWeight: "700" }}>Terms</AppText></Pressable>
+            <Pressable onPress={() => showLegalDocument("terms")}><AppText style={{ fontSize: 12, color: COLORS.primary, fontWeight: "600" }}>Terms</AppText></Pressable>
             <AppText style={{ fontSize: 12, color: COLORS.muted }}> and </AppText>
-            <Pressable onPress={() => showLegalDocument("privacy")}><AppText style={{ fontSize: 12, color: COLORS.primary, fontWeight: "700" }}>Privacy Policy</AppText></Pressable>
+            <Pressable onPress={() => showLegalDocument("privacy")}><AppText style={{ fontSize: 12, color: COLORS.primary, fontWeight: "600" }}>Privacy Policy</AppText></Pressable>
           </View>
 
           {/* Login CTA */}
@@ -299,36 +299,36 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   titleBlock: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 },
-  loginTitle: { fontSize: 24, fontWeight: "700", color: COLORS.text },
+  loginTitle: { fontSize: 24, fontWeight: "600", color: COLORS.text },
   loginSub: { fontSize: 13, color: COLORS.muted, fontWeight: "500", marginTop: 4, maxWidth: 220 },
   form: { padding: 24, paddingTop: 28 },
-  fieldLabel: { fontSize: 13, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
   phoneRow: { flexDirection: "row", gap: 10 },
   phoneBox: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
-  dialCode: { fontWeight: "700", color: COLORS.text, marginRight: 8 },
+  dialCode: { fontWeight: "600", color: COLORS.text, marginRight: 8 },
   phoneInput: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
   passwordBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
   passwordInput: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
   eyeBtn: { paddingLeft: 10, paddingVertical: 10 },
   loginBtn: { marginTop: 20, borderRadius: 16, overflow: "hidden", backgroundColor: COLORS.actionBg },
   loginBtnInner: { paddingVertical: 17, alignItems: "center", justifyContent: "center" },
-  loginBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  loginBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
   bioBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.primaryLight },
-  bioBtnText: { color: COLORS.primary, fontWeight: "700", fontSize: 14 },
+  bioBtnText: { color: COLORS.primary, fontWeight: "600", fontSize: 14 },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
   modalClose: { width: 36, height: 36, borderRadius: 12, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center" },
-  modalTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  modalTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   suspendedOverlay: { flex: 1, backgroundColor: "rgba(12,26,46,0.50)", justifyContent: "center", alignItems: "center", padding: 32 },
   suspendedCard: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 28, alignItems: "center", width: "100%" },
   brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center", marginTop: 15 },
   brandBarText: { color: COLORS.text, fontSize: 20, fontWeight: "600" },
   bioScreen: { flex: 1, paddingHorizontal: 24, paddingTop: 36 },
-  welcomeTitle: { fontSize: 24, fontWeight: "700", color: COLORS.text, lineHeight: 32, marginBottom: 32 },
+  welcomeTitle: { fontSize: 24, fontWeight: "600", color: COLORS.text, lineHeight: 32, marginBottom: 32 },
   bioCard: { backgroundColor: COLORS.bgTertiary, borderRadius: 18, paddingVertical: 36, alignItems: "center", marginBottom: 28 },
-  bioCardLabel: { fontSize: 14, fontWeight: "700", color: COLORS.textSecondary, marginBottom: 20 },
+  bioCardLabel: { fontSize: 14, fontWeight: "600", color: COLORS.textSecondary, marginBottom: 20 },
   bioIconCircle: { width: 84, height: 84, borderRadius: 42, borderWidth: 2, borderColor: COLORS.primary, borderStyle: "dashed", alignItems: "center", justifyContent: "center" },
   bioPrimaryBtn: { backgroundColor: COLORS.actionBg, borderRadius: 16, paddingVertical: 17, alignItems: "center", marginBottom: 14 },
-  bioPrimaryBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  bioPrimaryBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
   usePasswordBtn: { alignItems: "center", paddingVertical: 10 },
-  usePasswordBtnText: { color: COLORS.primary, fontSize: 15, fontWeight: "700" },
+  usePasswordBtnText: { color: COLORS.primary, fontSize: 15, fontWeight: "600" },
 });

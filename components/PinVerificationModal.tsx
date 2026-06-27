@@ -18,15 +18,15 @@
  * fails, is cancelled, or isn't available/enabled, this falls back to the
  * manual PIN pad exactly as before.
  */
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { View, Pressable, Modal, ActivityIndicator } from "react-native";
-import AppText from "./AppText";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
-import { Ionicons } from "@expo/vector-icons";
-import { useAppTheme } from "../theme/ThemeProvider";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, View } from "react-native";
 import { verifyPin } from "../api/config";
+import { useAppTheme } from "../theme/ThemeProvider";
 import { cachePinIfBiometricEnabled, getCachedPin } from "../utils/pinCache";
+import AppText from "./AppText";
 
 interface PinVerificationModalProps {
   visible: boolean;
@@ -271,7 +271,7 @@ export default function PinVerificationModal({
               >
                 <Ionicons name="shield-checkmark-outline" size={28} color={colors.primary} />
               </View>
-              <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.text }}>
+              <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.text }}>
                 {title}
               </AppText>
               <AppText

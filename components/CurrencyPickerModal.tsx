@@ -3,10 +3,9 @@
  * Supports search filtering and disabled wallet display
  */
 import React, { useState } from "react";
-import { View, Pressable, Modal, FlatList, StyleSheet } from "react-native";
+import { FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
 import AppText from "./AppText";
 import AppTextInput from "./AppTextInput";
-import { COLORS } from "../theme/colors";
 import CountryFlag from "./CountryFlag";
 
 export interface Wallet {
@@ -60,7 +59,7 @@ export default function CurrencyPickerModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={styles.sheet} onPress={() => { }}>
           <View style={styles.header}>
             <Pressable onPress={onClose} style={styles.closeBtn}>
               <AppText style={styles.closeText}>✕</AppText>
@@ -89,11 +88,11 @@ export default function CurrencyPickerModal({
                 ]}
                 onPress={() => handleSelect(item)}
               >
-                <CountryFlag 
-                  countryCode={item.countryCode} 
-                  currencyCode={item.currencyCode} 
-                  fallbackEmoji={item.flag} 
-                  size="md" 
+                <CountryFlag
+                  countryCode={item.countryCode}
+                  currencyCode={item.currencyCode}
+                  fallbackEmoji={item.flag}
+                  size="md"
                 />
                 <View style={styles.itemInfo}>
                   <AppText style={styles.itemName}>
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   searchInput: {
@@ -193,7 +192,7 @@ const styles = StyleSheet.create({
   checkmark: {
     fontSize: 18,
     color: "#059669",
-    fontWeight: "700",
+    fontWeight: "600",
   },
   emptyText: {
     textAlign: "center",

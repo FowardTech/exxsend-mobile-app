@@ -1,16 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, ActivityIndicator, RefreshControl } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import AppTextInput from "../../AppTextInput";
-import { ScrollView } from "react-native";
+import { getCountries, getExchangeRates, getUserAccounts } from "@/api/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import ScreenShell from "../../ScreenShell";
-import { styles } from "../../../theme/styles";
-import { COLORS } from "../../../theme/colors";
-import { getCountries, getExchangeRates, getUserAccounts } from "@/api/config";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import CountryFlag from "../../../components/CountryFlag";
+import { COLORS } from "../../../theme/colors";
+import { styles } from "../../../theme/styles";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
+import ScreenShell from "../../ScreenShell";
 
 type Country = {
   code: string;
@@ -295,148 +294,148 @@ export default function ExchangeRatesScreen() {
           <BackButton onPress={() => router.back()} />
 
           <View style={{ flex: 1 }}>
-              <AppText style={styles.headerTitle}>Exchange Rates</AppText>
-              
-            </View>
+            <AppText style={styles.headerTitle}>Exchange Rates</AppText>
 
-            <View style={styles.helpCircle}>
-              <AppText style={styles.helpCircleText} onPress={() => router.push('/chatsupport')}>?</AppText>
-            </View>
           </View>
 
-          {/* Search */}
-          <View style={styles.searchWrap}>
-            <AppText style={styles.searchIcon}>⌕</AppText>
-            <AppTextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search currency pair (e.g. USD, USD→NGN)"
-              placeholderTextColor="#9CA3AF"
-              
-              autoCapitalize="characters"
-            />
+          <View style={styles.helpCircle}>
+            <AppText style={styles.helpCircleText} onPress={() => router.push('/chatsupport')}>?</AppText>
           </View>
+        </View>
 
-          {/* Base currency pills */}
-          {baseCurrencies.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 10 }}
-            >
-              {baseCurrencies.map((c) => {
-                const active = c === baseCurrency;
-                return (
-                  <Pressable
-                    key={c}
-                    onPress={() => setBaseCurrency(c)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 999,
-                      marginRight: 10,
-                      backgroundColor: active ? "rgba(14,165,233,0.12)" : "#ffffff",
-                      borderWidth: 1,
-                      borderColor: active ? "rgba(14,165,233,0.25)" : "#E5E7EB",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <CountryFlag currencyCode={c} size="sm" style={{ marginRight: 6 }} />
-                    <AppText style={{ fontWeight: "700", color: active ? COLORS.primary : "#111827", fontSize: 12 }}>
-                      {c}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          )}
+        {/* Search */}
+        <View style={styles.searchWrap}>
+          <AppText style={styles.searchIcon}>⌕</AppText>
+          <AppTextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search currency pair (e.g. USD, USD→NGN)"
+            placeholderTextColor="#9CA3AF"
 
-          {/* Rates Card */}
-          <View style={[styles.fxCard, { marginTop: 14 }]}>
-            
-            <View style={styles.fxHeader}>
-              <View>
-                <AppText style={styles.fxTitle}>All rates</AppText>
-                <AppText style={styles.fxSubtitle}>
-                  Showing {visibleRates.length} pair{visibleRates.length === 1 ? "" : "s"}
-                </AppText>
-                <AppText style={styles.subtitle}>Mid-market • updates frequently</AppText>
-              </View>
+            autoCapitalize="characters"
+          />
+        </View>
 
-              <Pressable onPress={onRefresh} disabled={refreshing}>
-                <AppText style={styles.fxSeeAll}>{refreshing ? "Refreshing..." : "Refresh"}</AppText>
-              </Pressable>
+        {/* Base currency pills */}
+        {baseCurrencies.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 10 }}
+          >
+            {baseCurrencies.map((c) => {
+              const active = c === baseCurrency;
+              return (
+                <Pressable
+                  key={c}
+                  onPress={() => setBaseCurrency(c)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 999,
+                    marginRight: 10,
+                    backgroundColor: active ? "rgba(14,165,233,0.12)" : "#ffffff",
+                    borderWidth: 1,
+                    borderColor: active ? "rgba(14,165,233,0.25)" : "#E5E7EB",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <CountryFlag currencyCode={c} size="sm" style={{ marginRight: 6 }} />
+                  <AppText style={{ fontWeight: "600", color: active ? COLORS.primary : "#111827", fontSize: 12 }}>
+                    {c}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        {/* Rates Card */}
+        <View style={[styles.fxCard, { marginTop: 14 }]}>
+
+          <View style={styles.fxHeader}>
+            <View>
+              <AppText style={styles.fxTitle}>All rates</AppText>
+              <AppText style={styles.fxSubtitle}>
+                Showing {visibleRates.length} pair{visibleRates.length === 1 ? "" : "s"}
+              </AppText>
+              <AppText style={styles.subtitle}>Mid-market • updates frequently</AppText>
             </View>
 
-            <View style={styles.fxDivider} />
-
-            {initialLoading ? (
-              <View style={{ padding: 20, alignItems: "center" }}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <AppText style={{ marginTop: 10, color: "#9CA3AF", fontWeight: "700" }}>Loading rates…</AppText>
-              </View>
-            ) : accounts.length < 2 ? (
-              <View style={{ padding: 20, alignItems: "center" }}>
-                <AppText style={{ color: "#888", fontSize: 14, textAlign: "center" }}>
-                  Add at least two currency accounts to see exchange rates between them.
-                </AppText>
-              </View>
-            ) : visibleRates.length === 0 ? (
-              <View style={{ padding: 20, alignItems: "center" }}>
-                <AppText style={{ color: "#9CA3AF", fontWeight: "700" }}>No matching rates</AppText>
-              </View>
-            ) : (
-              visibleRates.map((x, idx) => {
-                const isPositive = String(x.change || "").trim().startsWith("+");
-                return (
-                  <Pressable
-                    key={`${x.from}-${x.to}-${idx}`}
-                    style={[styles.fxRow, idx === visibleRates.length - 1 ? { paddingBottom: 14 } : null]}
-                    onPress={() => router.push(`/convert?from=${x.from}&to=${x.to}`)}
-                  >
-                    <View style={styles.fxLeft}>
-                      <View style={styles.fxFlags}>
-                        <CountryFlag currencyCode={x.from} size="md" />
-                        <CountryFlag currencyCode={x.to} size="md" style={{ marginLeft: -8, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: 999 }} />
-                      </View>
-
-                      <View>
-                        <AppText style={styles.fxPair}>
-                          {x.from} → {x.to}
-                        </AppText>
-                        <AppText style={styles.fxPairSub}>
-                          1 {x.from} = {x.rate} {x.to}
-                        </AppText>
-                      </View>
-                    </View>
-
-                    <View style={styles.fxRight}>
-                      <View style={[styles.fxChangePill, isPositive ? styles.fxUp : styles.fxDown]}>
-                        <AppText style={[styles.fxChangeText, isPositive ? styles.fxUpText : styles.fxDownText]}>
-                          {x.change || "+0.0%"}
-                        </AppText>
-                      </View>
-                      <AppText style={styles.fxChevron}>›</AppText>
-                    </View>
-                  </Pressable>
-                );
-              })
-            )}
-
-            {!initialLoading && (
-              <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
-                <AppText style={styles.fxFooterText}>Last updated: just now</AppText>
-              </View>
-            )}
-          </View>
-
-          {/* Quick action */}
-          <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
-            <Pressable onPress={() => router.push("/convert")} style={[styles.primaryBtn]}>
-              <AppText style={{ color: COLORS.white, fontWeight: "700", fontSize: 16 }}>Convert currency</AppText>
+            <Pressable onPress={onRefresh} disabled={refreshing}>
+              <AppText style={styles.fxSeeAll}>{refreshing ? "Refreshing..." : "Refresh"}</AppText>
             </Pressable>
           </View>
+
+          <View style={styles.fxDivider} />
+
+          {initialLoading ? (
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <AppText style={{ marginTop: 10, color: "#9CA3AF", fontWeight: "600" }}>Loading rates…</AppText>
+            </View>
+          ) : accounts.length < 2 ? (
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <AppText style={{ color: "#888", fontSize: 14, textAlign: "center" }}>
+                Add at least two currency accounts to see exchange rates between them.
+              </AppText>
+            </View>
+          ) : visibleRates.length === 0 ? (
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <AppText style={{ color: "#9CA3AF", fontWeight: "600" }}>No matching rates</AppText>
+            </View>
+          ) : (
+            visibleRates.map((x, idx) => {
+              const isPositive = String(x.change || "").trim().startsWith("+");
+              return (
+                <Pressable
+                  key={`${x.from}-${x.to}-${idx}`}
+                  style={[styles.fxRow, idx === visibleRates.length - 1 ? { paddingBottom: 14 } : null]}
+                  onPress={() => router.push(`/convert?from=${x.from}&to=${x.to}`)}
+                >
+                  <View style={styles.fxLeft}>
+                    <View style={styles.fxFlags}>
+                      <CountryFlag currencyCode={x.from} size="md" />
+                      <CountryFlag currencyCode={x.to} size="md" style={{ marginLeft: -8, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: 999 }} />
+                    </View>
+
+                    <View>
+                      <AppText style={styles.fxPair}>
+                        {x.from} → {x.to}
+                      </AppText>
+                      <AppText style={styles.fxPairSub}>
+                        1 {x.from} = {x.rate} {x.to}
+                      </AppText>
+                    </View>
+                  </View>
+
+                  <View style={styles.fxRight}>
+                    <View style={[styles.fxChangePill, isPositive ? styles.fxUp : styles.fxDown]}>
+                      <AppText style={[styles.fxChangeText, isPositive ? styles.fxUpText : styles.fxDownText]}>
+                        {x.change || "+0.0%"}
+                      </AppText>
+                    </View>
+                    <AppText style={styles.fxChevron}>›</AppText>
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
+
+          {!initialLoading && (
+            <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
+              <AppText style={styles.fxFooterText}>Last updated: just now</AppText>
+            </View>
+          )}
+        </View>
+
+        {/* Quick action */}
+        <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
+          <Pressable onPress={() => router.push("/convert")} style={[styles.primaryBtn]}>
+            <AppText style={{ color: COLORS.white, fontWeight: "600", fontSize: 16 }}>Convert currency</AppText>
+          </Pressable>
+        </View>
       </ScrollView>
     </ScreenShell>
   );

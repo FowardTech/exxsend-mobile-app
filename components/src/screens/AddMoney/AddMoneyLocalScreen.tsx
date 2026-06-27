@@ -9,30 +9,34 @@
  *
  * Entry point: push /add-money/local?currency=NGN (or KES, GHS, …)
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Alert, StyleSheet, StatusBar, Linking, RefreshControl, Animated, Easing, KeyboardAvoidingView, Platform } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import AppTextInput from "../../../AppTextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Clipboard from "expo-clipboard";
-import {
-  getVirtualAccount, createVirtualAccount, chargeMobileMoney,
-  chargeCard, recommendedDepositMethod, submitIdentityNumber,
-  VirtualAccount, DepositMethod,
-} from "../../../../api/flutterwave";
-import { getCurrencySymbol } from "../../../../api/flutterwave";
-import { getCorridorByCurrency } from "../../../../api/corridors";
-import { getStripeConfig, createStripePaymentIntent, confirmStripePayment, getSavedStripeCards, chargeWithSavedStripeCard, SavedStripeCard } from "../../../../api/stripe";
-import { StripeProvider, CardField, useConfirmPayment } from "@stripe/stripe-react-native";
 import { COLORS } from "@/theme/colors";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CardField, StripeProvider, useConfirmPayment } from "@stripe/stripe-react-native";
+import * as Clipboard from "expo-clipboard";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Animated, Easing, KeyboardAvoidingView, Linking, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getCorridorByCurrency } from "../../../../api/corridors";
+import {
+  chargeCard,
+  chargeMobileMoney,
+  createVirtualAccount,
+  DepositMethod,
+  getCurrencySymbol,
+  getVirtualAccount,
+  recommendedDepositMethod, submitIdentityNumber,
+  VirtualAccount,
+} from "../../../../api/flutterwave";
+import { chargeWithSavedStripeCard, confirmStripePayment, createStripePaymentIntent, getSavedStripeCards, getStripeConfig, SavedStripeCard } from "../../../../api/stripe";
+import { useDeviceTrustGate } from "../../../../hooks/useDeviceTrustGate";
+import { CARD_SHADOW, GLASS_BORDER, GLASS_BORDER_SUBTLE, RADIUS, SCREEN_PADDING, SPACE, TYPE } from "../../../../theme/designSystem";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
+import BackButton from "../../../BackButton";
 import CountryFlag from "../../../CountryFlag";
-import ScreenHeader from "../../../../components/ScreenHeader";
-import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER_SUBTLE, SCREEN_PADDING, GLASS_BORDER } from "../../../../theme/designSystem";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -337,7 +341,7 @@ function VirtualAccountView({ phone, currency }: { phone: string; currency: stri
       <View style={s.warnBox}>
         <Ionicons name="information-circle" size={16} color="#B45309" style={{ marginRight: 8, marginTop: 1 }} />
         <AppText style={s.warnText}>
-          <AppText style={{ fontWeight: "700" }}>Use this account number only for NGN deposits.</AppText>{" "}
+          <AppText style={{ fontWeight: "600" }}>Use this account number only for NGN deposits.</AppText>{" "}
           Transfers from outside Nigeria or in other currencies will be rejected.
         </AppText>
       </View>
@@ -446,7 +450,7 @@ function MobileMoneyView({ phone, currency, userEmail, userName }: { phone: stri
         setStatus(res.status === "successful" ? "success" : "pending");
         if (res.redirectUrl) {
           Alert.alert("Authorize Payment", "You'll be redirected to authorize this mobile money charge.", [
-            { text: "Continue", onPress: () => Linking.openURL(res.redirectUrl!).catch(() => {}) },
+            { text: "Continue", onPress: () => Linking.openURL(res.redirectUrl!).catch(() => { }) },
           ]);
         }
       } else {
@@ -485,80 +489,80 @@ function MobileMoneyView({ phone, currency, userEmail, userName }: { phone: stri
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
-      {/* Hero */}
-      <LinearGradient colors={[COLORS.primaryLight, COLORS.primaryLight]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroCard}>
-        <View style={{ position: "absolute", right: -20, top: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(255,255,255,0.06)" }} />
-        <View style={s.heroIconWrap}><Ionicons name="phone-portrait-outline" size={22} color={COLORS.primaryDark} /></View>
-        <View style={{ flex: 1 }}>
-          <AppText style={s.heroTitle}>Mobile Money Deposit</AppText>
-          <AppText style={s.heroSub}>Deposit {currency} directly from your mobile money wallet. Funds arrive instantly.</AppText>
-        </View>
-      </LinearGradient>
-
-      {/* Form */}
-      <View style={s.formCard}>
-        <AppText style={s.formLabel}>AMOUNT ({currency})</AppText>
-        <View style={s.amtRow}>
-          <AppText style={s.amtSym}>{sym}</AppText>
-          <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={COLORS.muted} style={s.amtInput} />
-        </View>
-      </View>
-
-      <View style={s.formCard}>
-        <AppText style={s.formLabel}>MOBILE NETWORK</AppText>
-        {networks.length === 1 ? (
-          <View style={[s.inputBox, { backgroundColor: COLORS.bg }]}>
-            <Ionicons name="phone-portrait-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
-            <AppText style={[s.inputText, { color: COLORS.text }]}>{networks[0].name}</AppText>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+        {/* Hero */}
+        <LinearGradient colors={[COLORS.primaryLight, COLORS.primaryLight]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroCard}>
+          <View style={{ position: "absolute", right: -20, top: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(255,255,255,0.06)" }} />
+          <View style={s.heroIconWrap}><Ionicons name="phone-portrait-outline" size={22} color={COLORS.primaryDark} /></View>
+          <View style={{ flex: 1 }}>
+            <AppText style={s.heroTitle}>Mobile Money Deposit</AppText>
+            <AppText style={s.heroSub}>Deposit {currency} directly from your mobile money wallet. Funds arrive instantly.</AppText>
           </View>
-        ) : (
-          <Pressable onPress={() => setNetworkOpen(true)} style={s.inputBox}>
-            <Ionicons name="phone-portrait-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
-            <AppText style={[s.inputText, !network && { color: COLORS.muted }]}>{network?.name || "Select network"}</AppText>
-            <Ionicons name="chevron-down" size={16} color={COLORS.muted} />
-          </Pressable>
-        )}
-      </View>
+        </LinearGradient>
 
-      <View style={s.formCard}>
-        <AppText style={s.formLabel}>MOBILE NUMBER</AppText>
-        <View style={s.inputBox}>
-          <Ionicons name="call-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
-          <AppTextInput value={mobileNumber} onChangeText={setMobileNumber} keyboardType="phone-pad" placeholder="e.g. 0712XXXXXX" placeholderTextColor={COLORS.muted} style={s.input} maxLength={15} />
+        {/* Form */}
+        <View style={s.formCard}>
+          <AppText style={s.formLabel}>AMOUNT ({currency})</AppText>
+          <View style={s.amtRow}>
+            <AppText style={s.amtSym}>{sym}</AppText>
+            <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={COLORS.muted} style={s.amtInput} />
+          </View>
         </View>
-        <AppText style={s.fieldHint}>Enter the mobile number registered to your {network?.name || "mobile money"} account.</AppText>
-      </View>
 
-      {/* Fee + ETA */}
-      <View style={s.feeRow}>
-        <View style={s.feeChip}><Ionicons name="flash-outline" size={12} color={COLORS.green} /><AppText style={s.feeChipText}>No fee</AppText></View>
-        <View style={s.feeChip}><Ionicons name="time-outline" size={12} color={COLORS.primary} /><AppText style={s.feeChipText}>Instant</AppText></View>
-        <View style={s.feeChip}><Ionicons name="shield-checkmark-outline" size={12} color={COLORS.primary} /><AppText style={s.feeChipText}>Secured</AppText></View>
-      </View>
-
-      <Pressable onPress={handleCharge} disabled={!canCharge || loading} style={({ pressed }) => [s.cta, (!canCharge || loading) && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}>
-        <View style={s.ctaInner}>
-          {loading ? <ActivityIndicator color={COLORS.actionText} /> : <><Ionicons name="phone-portrait-outline" size={16} color={COLORS.actionText} style={{ marginRight: 6 }} /><AppText style={s.ctaText}>Deposit via {network?.name || "Mobile Money"}</AppText></>}
+        <View style={s.formCard}>
+          <AppText style={s.formLabel}>MOBILE NETWORK</AppText>
+          {networks.length === 1 ? (
+            <View style={[s.inputBox, { backgroundColor: COLORS.bg }]}>
+              <Ionicons name="phone-portrait-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
+              <AppText style={[s.inputText, { color: COLORS.text }]}>{networks[0].name}</AppText>
+            </View>
+          ) : (
+            <Pressable onPress={() => setNetworkOpen(true)} style={s.inputBox}>
+              <Ionicons name="phone-portrait-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
+              <AppText style={[s.inputText, !network && { color: COLORS.muted }]}>{network?.name || "Select network"}</AppText>
+              <Ionicons name="chevron-down" size={16} color={COLORS.muted} />
+            </Pressable>
+          )}
         </View>
-      </Pressable>
 
-      {/* Network picker modal */}
-      {networkOpen && (
-        <Pressable style={s.modalOverlay} onPress={() => setNetworkOpen(false)}>
-          <View style={s.networkSheet}>
-            <View style={s.sheetHandle} />
-            <AppText style={s.sheetTitle}>Select Network</AppText>
-            {networks.map(n => (
-              <Pressable key={n.code} onPress={() => { setNetwork(n); setNetworkOpen(false); }} style={[s.networkRow, network?.code === n.code && s.networkRowSelected]}>
-                <AppText style={s.networkName}>{n.name}</AppText>
-                {network?.code === n.code && <Ionicons name="checkmark-circle" size={18} color={COLORS.primary} />}
-              </Pressable>
-            ))}
+        <View style={s.formCard}>
+          <AppText style={s.formLabel}>MOBILE NUMBER</AppText>
+          <View style={s.inputBox}>
+            <Ionicons name="call-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
+            <AppTextInput value={mobileNumber} onChangeText={setMobileNumber} keyboardType="phone-pad" placeholder="e.g. 0712XXXXXX" placeholderTextColor={COLORS.muted} style={s.input} maxLength={15} />
+          </View>
+          <AppText style={s.fieldHint}>Enter the mobile number registered to your {network?.name || "mobile money"} account.</AppText>
+        </View>
+
+        {/* Fee + ETA */}
+        <View style={s.feeRow}>
+          <View style={s.feeChip}><Ionicons name="flash-outline" size={12} color={COLORS.green} /><AppText style={s.feeChipText}>No fee</AppText></View>
+          <View style={s.feeChip}><Ionicons name="time-outline" size={12} color={COLORS.primary} /><AppText style={s.feeChipText}>Instant</AppText></View>
+          <View style={s.feeChip}><Ionicons name="shield-checkmark-outline" size={12} color={COLORS.primary} /><AppText style={s.feeChipText}>Secured</AppText></View>
+        </View>
+
+        <Pressable onPress={handleCharge} disabled={!canCharge || loading} style={({ pressed }) => [s.cta, (!canCharge || loading) && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}>
+          <View style={s.ctaInner}>
+            {loading ? <ActivityIndicator color={COLORS.actionText} /> : <><Ionicons name="phone-portrait-outline" size={16} color={COLORS.actionText} style={{ marginRight: 6 }} /><AppText style={s.ctaText}>Deposit via {network?.name || "Mobile Money"}</AppText></>}
           </View>
         </Pressable>
-      )}
-    </ScrollView>
+
+        {/* Network picker modal */}
+        {networkOpen && (
+          <Pressable style={s.modalOverlay} onPress={() => setNetworkOpen(false)}>
+            <View style={s.networkSheet}>
+              <View style={s.sheetHandle} />
+              <AppText style={s.sheetTitle}>Select Network</AppText>
+              {networks.map(n => (
+                <Pressable key={n.code} onPress={() => { setNetwork(n); setNetworkOpen(false); }} style={[s.networkRow, network?.code === n.code && s.networkRowSelected]}>
+                  <AppText style={s.networkName}>{n.name}</AppText>
+                  {network?.code === n.code && <Ionicons name="checkmark-circle" size={18} color={COLORS.primary} />}
+                </Pressable>
+              ))}
+            </View>
+          </Pressable>
+        )}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -566,6 +570,7 @@ function MobileMoneyView({ phone, currency, userEmail, userName }: { phone: stri
 // ─── Card Checkout UI ─────────────────────────────────────────────────────────
 
 function StripeCardTopUpView({ phone, currency }: { phone: string; currency: string }) {
+  const { ensureDeviceTrusted } = useDeviceTrustGate();
   const { confirmPayment, loading: confirming } = useConfirmPayment();
   const sym = getCurrencySymbol(currency);
 
@@ -624,6 +629,9 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
       Alert.alert("Error", "Could not find your account phone number. Please try logging in again.");
       return;
     }
+
+    const trusted = await ensureDeviceTrusted(phone);
+    if (!trusted) return;
 
     // ── Paying with a saved card — handled entirely server-side, no
     // CardField/confirmPayment involvement since there's no new card data
@@ -740,114 +748,114 @@ function StripeCardTopUpView({ phone, currency }: { phone: string; currency: str
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
-      <LinearGradient colors={[COLORS.primaryLight, COLORS.primaryLight]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroCard}>
-        <View style={s.heroIconWrap}><Ionicons name="card-outline" size={50} color={COLORS.primaryDark} /></View>
-        <View style={{ flex: 1 }}>
-          <AppText style={s.heroTitle}>Card Deposit</AppText>
-          <AppText style={s.heroSub}>Deposit {currency} using your debit or credit card.</AppText>
-        </View>
-      </LinearGradient>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+        <LinearGradient colors={[COLORS.primaryLight, COLORS.primaryLight]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroCard}>
+          <View style={s.heroIconWrap}><Ionicons name="card-outline" size={50} color={COLORS.primaryDark} /></View>
+          <View style={{ flex: 1 }}>
+            <AppText style={s.heroTitle}>Card Deposit</AppText>
+            <AppText style={s.heroSub}>Deposit {currency} using your debit or credit card.</AppText>
+          </View>
+        </LinearGradient>
 
-      <View style={s.formCard}>
-        <AppText style={s.formLabel}>AMOUNT ({currency})</AppText>
-        <View style={s.amtRow}>
-          <AppText style={s.amtSym}>{sym}</AppText>
-          <AppTextInput
-            value={amount}
-            onChangeText={(v) => { setAmount(v); setQuote(null); }}
-            keyboardType="decimal-pad"
-            placeholder="0.00"
-            placeholderTextColor={COLORS.muted}
-            style={s.amtInput}
-          />
-        </View>
-      </View>
-
-      {savedCards.length > 0 && (
         <View style={s.formCard}>
-          <AppText style={s.formLabel}>SAVED CARDS</AppText>
-          {savedCards.map((card) => (
-            <Pressable
-              key={card.id}
-              onPress={() => setSelectedCardId(selectedCardId === card.id ? null : card.id)}
-              style={[s.savedCardRow, selectedCardId === card.id && s.savedCardRowActive]}
-            >
-              <Ionicons name="card-outline" size={18} color={selectedCardId === card.id ? COLORS.primary : COLORS.muted} style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <AppText style={s.savedCardName}>{card.brand} •••• {card.last4}</AppText>
-                <AppText style={s.savedCardMeta}>Expires {String(card.expMonth).padStart(2, "0")}/{String(card.expYear).slice(-2)}</AppText>
-              </View>
-              {selectedCardId === card.id && <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />}
-            </Pressable>
-          ))}
+          <AppText style={s.formLabel}>AMOUNT ({currency})</AppText>
+          <View style={s.amtRow}>
+            <AppText style={s.amtSym}>{sym}</AppText>
+            <AppTextInput
+              value={amount}
+              onChangeText={(v) => { setAmount(v); setQuote(null); }}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              placeholderTextColor={COLORS.muted}
+              style={s.amtInput}
+            />
+          </View>
         </View>
-      )}
 
-      {!selectedCardId && (
-        <View style={s.formCard}>
-          <AppText style={s.formLabel}>CARD DETAILS</AppText>
-          <CardField
-            postalCodeEnabled={false}
-            placeholders={{ number: "4242 4242 4242 4242" }}
-            cardStyle={{
-              backgroundColor: "#FFFFFF",
-              // NOTE: Stripe's CardField forwards this string straight to
-              // Android's native Color.parseColor(), which only understands
-              // hex (#RRGGBB / #AARRGGBB) or a few named colors — NOT CSS
-              // rgba(...) syntax. An rgba() string here crashes the app on
-              // real Android devices with "Unknown color" (it doesn't crash
-              // on iOS or in Expo Go, which is why it can slip through).
-              // #59B4C3E1 = rgba(180,195,225,0.35) in #AARRGGBB hex.
-              borderColor: "#59B4C3E1",
-              borderWidth: 1,
-              textColor: COLORS.text,
-              placeholderColor: COLORS.muted,
-              borderRadius: 10,
-              fontSize: 15,
-            }}
-            style={{ width: "100%", height: 50, marginTop: 4 }}
-            onCardChange={(details) => setCardDetails({ complete: details.complete })}
-          />
-          <Pressable onPress={() => setSaveNewCard((v) => !v)} style={s.saveCardRow}>
-            <View style={[s.saveCardCheckbox, saveNewCard && s.saveCardCheckboxOn]}>
-              {saveNewCard && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
-            </View>
-            <AppText style={s.saveCardText}>Save this card for future deposits</AppText>
-          </Pressable>
-        </View>
-      )}
-
-      <View style={s.feeRow}>
-        {surchargePercent > 0 && (
-          <View style={s.feeChip}>
-            <Ionicons name="pricetag-outline" size={12} color={COLORS.muted} />
-            <AppText style={s.feeChipText}>{surchargePercent}% fee</AppText>
+        {savedCards.length > 0 && (
+          <View style={s.formCard}>
+            <AppText style={s.formLabel}>SAVED CARDS</AppText>
+            {savedCards.map((card) => (
+              <Pressable
+                key={card.id}
+                onPress={() => setSelectedCardId(selectedCardId === card.id ? null : card.id)}
+                style={[s.savedCardRow, selectedCardId === card.id && s.savedCardRowActive]}
+              >
+                <Ionicons name="card-outline" size={18} color={selectedCardId === card.id ? COLORS.primary : COLORS.muted} style={{ marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <AppText style={s.savedCardName}>{card.brand} •••• {card.last4}</AppText>
+                  <AppText style={s.savedCardMeta}>Expires {String(card.expMonth).padStart(2, "0")}/{String(card.expYear).slice(-2)}</AppText>
+                </View>
+                {selectedCardId === card.id && <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />}
+              </Pressable>
+            ))}
           </View>
         )}
-        <View style={s.feeChip}>
-          <Ionicons name="time-outline" size={12} color={COLORS.primary} />
-          <AppText style={s.feeChipText}>{holdHours > 0 ? `Available in ${holdHours}h` : "Instant"}</AppText>
-        </View>
-      </View>
 
-      {quote && (
-        <View style={[s.warnBox, { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary }]}>
-          <Ionicons name="information-circle-outline" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <AppText style={[s.warnText, { color: COLORS.primary }]}>
-            You'll be charged {sym}{quote.totalCharged.toFixed(2)} {currency} total
-            {quote.surchargeAmount > 0 ? ` (includes ${sym}${quote.surchargeAmount.toFixed(2)} fee)` : ""}.
-          </AppText>
-        </View>
-      )}
+        {!selectedCardId && (
+          <View style={s.formCard}>
+            <AppText style={s.formLabel}>CARD DETAILS</AppText>
+            <CardField
+              postalCodeEnabled={false}
+              placeholders={{ number: "4242 4242 4242 4242" }}
+              cardStyle={{
+                backgroundColor: "#FFFFFF",
+                // NOTE: Stripe's CardField forwards this string straight to
+                // Android's native Color.parseColor(), which only understands
+                // hex (#RRGGBB / #AARRGGBB) or a few named colors — NOT CSS
+                // rgba(...) syntax. An rgba() string here crashes the app on
+                // real Android devices with "Unknown color" (it doesn't crash
+                // on iOS or in Expo Go, which is why it can slip through).
+                // #59B4C3E1 = rgba(180,195,225,0.35) in #AARRGGBB hex.
+                borderColor: "#59B4C3E1",
+                borderWidth: 1,
+                textColor: COLORS.text,
+                placeholderColor: COLORS.muted,
+                borderRadius: 10,
+                fontSize: 15,
+              }}
+              style={{ width: "100%", height: 50, marginTop: 4 }}
+              onCardChange={(details) => setCardDetails({ complete: details.complete })}
+            />
+            <Pressable onPress={() => setSaveNewCard((v) => !v)} style={s.saveCardRow}>
+              <View style={[s.saveCardCheckbox, saveNewCard && s.saveCardCheckboxOn]}>
+                {saveNewCard && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+              </View>
+              <AppText style={s.saveCardText}>Save this card for future deposits</AppText>
+            </Pressable>
+          </View>
+        )}
 
-      <Pressable onPress={handlePay} disabled={!canPay} style={({ pressed }) => [s.cta, !canPay && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
-        <View style={s.ctaInner}>
-          {(loading || confirming) ? <ActivityIndicator color={COLORS.actionText} /> : <><Ionicons name="lock-closed" size={15} color={COLORS.actionText} style={{ marginRight: 6 }} /><AppText style={s.ctaText}>Pay {amountValid ? `${sym}${parsedAmount.toFixed(2)}` : ""}</AppText></>}
+        <View style={s.feeRow}>
+          {surchargePercent > 0 && (
+            <View style={s.feeChip}>
+              <Ionicons name="pricetag-outline" size={12} color={COLORS.muted} />
+              <AppText style={s.feeChipText}>{surchargePercent}% fee</AppText>
+            </View>
+          )}
+          <View style={s.feeChip}>
+            <Ionicons name="time-outline" size={12} color={COLORS.primary} />
+            <AppText style={s.feeChipText}>{holdHours > 0 ? `Available in ${holdHours}h` : "Instant"}</AppText>
+          </View>
         </View>
-      </Pressable>
-      <AppText style={s.checkoutNote}>Your card details are encrypted and sent directly to Stripe — they never pass through our servers.</AppText>
-    </ScrollView>
+
+        {quote && (
+          <View style={[s.warnBox, { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary }]}>
+            <Ionicons name="information-circle-outline" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
+            <AppText style={[s.warnText, { color: COLORS.primary }]}>
+              You'll be charged {sym}{quote.totalCharged.toFixed(2)} {currency} total
+              {quote.surchargeAmount > 0 ? ` (includes ${sym}${quote.surchargeAmount.toFixed(2)} fee)` : ""}.
+            </AppText>
+          </View>
+        )}
+
+        <Pressable onPress={handlePay} disabled={!canPay} style={({ pressed }) => [s.cta, !canPay && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
+          <View style={s.ctaInner}>
+            {(loading || confirming) ? <ActivityIndicator color={COLORS.actionText} /> : <><Ionicons name="lock-closed" size={15} color={COLORS.actionText} style={{ marginRight: 6 }} /><AppText style={s.ctaText}>Pay {amountValid ? `${sym}${parsedAmount.toFixed(2)}` : ""}</AppText></>}
+          </View>
+        </Pressable>
+        <AppText style={s.checkoutNote}>Your card details are encrypted and sent directly to Stripe — they never pass through our servers.</AppText>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -870,7 +878,8 @@ function CardCheckoutView({ phone, currency, userEmail, userName }: { phone: str
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Something went wrong");
     } finally {
-      setLoading(false); }
+      setLoading(false);
+    }
   };
 
   return (
@@ -935,7 +944,7 @@ export default function AddMoneyLocalScreen() {
           const u = JSON.parse(storedUser);
           setUserEmail(u.email || "");
           setUserName([u.firstName || u.first_name, u.lastName || u.last_name].filter(Boolean).join(" ").trim());
-        } catch {}
+        } catch { }
       }
       const upperCurrency = currency.toUpperCase();
 
@@ -978,7 +987,7 @@ export default function AddMoneyLocalScreen() {
   }, [currency]);
 
   const title = method === "virtual_account" ? "Add NGN Funds"
-              : `Add ${currency} Funds`;
+    : `Add ${currency} Funds`;
 
   return (
     <SafeAreaView style={s.root}>
@@ -1035,7 +1044,7 @@ const s = StyleSheet.create({
   // Hero
   heroCard: { borderRadius: RADIUS.lg, padding: SPACE.xl, flexDirection: "row", alignItems: "center", gap: SPACE.lg, marginBottom: SPACE.lg, overflow: "hidden", borderWidth: 1, borderColor: COLORS.primary },
   heroIconWrap: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.55)", justifyContent: "center", alignItems: "center" },
-  heroTitle: { fontSize: 14, fontWeight: "700", color: COLORS.primaryDark, marginBottom: 4 },
+  heroTitle: { fontSize: 14, fontWeight: "600", color: COLORS.primaryDark, marginBottom: 4 },
   heroSub: { fontSize: 12, color: COLORS.primaryDark, fontWeight: "500", lineHeight: 18, opacity: 0.85 },
   // Warning
   warnBox: { flexDirection: "row", alignItems: "flex-start", backgroundColor: COLORS.accentLight, borderRadius: RADIUS.sm, padding: SPACE.md + 2, marginBottom: SPACE.md + 2 },
@@ -1048,12 +1057,12 @@ const s = StyleSheet.create({
   refreshBtn: { width: 32, height: 32, borderRadius: RADIUS.full, backgroundColor: COLORS.bgTertiary, justifyContent: "center", alignItems: "center" },
   copyAllBtn: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.sm + 2, paddingVertical: SPACE.xs + 2 },
   copyAllBtnDone: { backgroundColor: COLORS.greenSoft },
-  copyAllText: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
+  copyAllText: { fontSize: 11, fontWeight: "600", color: COLORS.primary },
   // Copy field
   copyField: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 2 },
   copyFieldLabel: { ...TYPE.micro, letterSpacing: 0.5, color: COLORS.muted, marginBottom: SPACE.xs + 1 },
   copyFieldRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  copyFieldValue: { flex: 1, fontSize: 14, fontWeight: "700", color: COLORS.text },
+  copyFieldValue: { flex: 1, fontSize: 14, fontWeight: "600", color: COLORS.text },
   copyFieldValueLg: { fontSize: 18, letterSpacing: 0.5 },
   copyBtn: { width: 32, height: 32, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
   copyBtnDone: { backgroundColor: COLORS.greenSoft },
@@ -1077,15 +1086,15 @@ const s = StyleSheet.create({
   formLabel: { ...TYPE.eyebrow, color: COLORS.muted, marginBottom: SPACE.md },
   savedCardRow: { flexDirection: "row", alignItems: "center", padding: SPACE.md, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.borderLight, marginBottom: SPACE.sm },
   savedCardRowActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
-  savedCardName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  savedCardName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   savedCardMeta: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
   saveCardRow: { flexDirection: "row", alignItems: "center", marginTop: SPACE.lg, gap: 10 },
   saveCardCheckbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },
   saveCardCheckboxOn: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   saveCardText: { fontSize: 13, color: COLORS.muted, fontWeight: "500" },
   amtRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  amtSym: { fontSize: 26, fontWeight: "700", color: COLORS.muted },
-  amtInput: { flex: 1, fontSize: 36, fontWeight: "700", color: COLORS.text, padding: 0 },
+  amtSym: { fontSize: 26, fontWeight: "600", color: COLORS.muted },
+  amtInput: { flex: 1, fontSize: 36, fontWeight: "600", color: COLORS.text, padding: 0 },
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, ...CARD_SHADOW, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md + 2, height: 48 },
   inputText: { flex: 1, fontSize: 15, fontWeight: "600" },
   input: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
@@ -1096,16 +1105,16 @@ const s = StyleSheet.create({
   // CTA
   cta: { borderRadius: RADIUS.md, overflow: "hidden", marginBottom: SPACE.md, backgroundColor: COLORS.actionBg },
   ctaInner: { paddingVertical: SPACE.lg + 1, flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  ctaText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
+  ctaText: { color: COLORS.actionText, fontSize: 15, fontWeight: "600" },
   checkoutNote: { fontSize: 12, color: COLORS.muted, textAlign: "center", lineHeight: 18, fontWeight: "500" },
   // Error / status
   errorIcon: { width: 72, height: 72, borderRadius: RADIUS.full, backgroundColor: COLORS.errorLight, justifyContent: "center", alignItems: "center", marginBottom: SPACE.md + 2 },
-  errorTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, textAlign: "center" },
+  errorTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, textAlign: "center" },
   errorSub: { fontSize: 13, color: COLORS.muted, textAlign: "center", marginTop: SPACE.sm, lineHeight: 20 },
   retryBtn: { flexDirection: "row", alignItems: "center", marginTop: SPACE.xl, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md },
-  retryText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  retryText: { fontSize: 14, fontWeight: "600", color: COLORS.primary },
   statusIcon: { width: 80, height: 80, borderRadius: RADIUS.full, justifyContent: "center", alignItems: "center", marginBottom: SPACE.lg },
-  statusTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text, textAlign: "center" },
+  statusTitle: { fontSize: 18, fontWeight: "600", color: COLORS.text, textAlign: "center" },
   statusSub: { fontSize: 13, color: COLORS.muted, textAlign: "center", marginTop: SPACE.sm, lineHeight: 20 },
   txRef: { fontSize: 11, color: COLORS.muted, fontWeight: "600", marginTop: SPACE.md, fontFamily: "monospace" },
   // Network picker
@@ -1115,21 +1124,21 @@ const s = StyleSheet.create({
   idSheet: { backgroundColor: COLORS.card, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingHorizontal: SPACE.xl, paddingTop: SPACE.sm, paddingBottom: SPACE.xxxl },
   idSheetHeader: { alignItems: "center", marginTop: SPACE.sm, marginBottom: SPACE.xl },
   idSheetIcon: { width: 48, height: 48, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginBottom: SPACE.md },
-  idSheetTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.sm },
+  idSheetTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.sm },
   idSheetSub: { fontSize: 13, color: COLORS.muted, fontWeight: "500", textAlign: "center", lineHeight: 19, paddingHorizontal: SPACE.sm },
   idModeRow: { flexDirection: "row", backgroundColor: COLORS.bgTertiary, borderRadius: RADIUS.sm, padding: SPACE.xs, marginBottom: SPACE.xl - 2 },
   idModeBtn: { flex: 1, paddingVertical: SPACE.sm + 2, borderRadius: RADIUS.xs + 1, alignItems: "center" },
   idModeBtnActive: { backgroundColor: COLORS.card, ...GLASS_BORDER, ...CARD_SHADOW },
-  idModeText: { fontSize: 13, fontWeight: "700", color: COLORS.muted },
+  idModeText: { fontSize: 13, fontWeight: "600", color: COLORS.muted },
   idModeTextActive: { color: COLORS.primary },
-  idFieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.sm },
+  idFieldLabel: { fontSize: 12, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.sm },
   idFieldError: { fontSize: 12, color: COLORS.red, fontWeight: "600", marginTop: SPACE.xs + 2 },
   idPrivacyRow: { flexDirection: "row", alignItems: "flex-start", marginTop: SPACE.md + 2, marginBottom: SPACE.xl },
   idPrivacyText: { flex: 1, fontSize: 11, color: COLORS.muted, fontWeight: "500", lineHeight: 16 },
-  idCancelText: { fontSize: 13, fontWeight: "700", color: COLORS.muted },
+  idCancelText: { fontSize: 13, fontWeight: "600", color: COLORS.muted },
   networkSheet: { backgroundColor: COLORS.card, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, paddingBottom: SPACE.xxxl },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginTop: SPACE.md - 2, marginBottom: SPACE.sm },
-  sheetTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, paddingHorizontal: SPACE.xl, paddingBottom: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.borderLight },
+  sheetTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, paddingHorizontal: SPACE.xl, paddingBottom: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.borderLight },
   networkRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACE.xl, paddingVertical: SPACE.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.borderLight },
   networkRowSelected: { backgroundColor: COLORS.primaryLight },
   networkName: { fontSize: 15, fontWeight: "600", color: COLORS.text },

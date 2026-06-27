@@ -1,9 +1,9 @@
-import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
-import AppText from "../../AppText";
+import { COLORS } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { COLORS } from "@/theme/colors";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import AppText from "../../AppText";
 
 interface Props {
   onPress: () => void;
@@ -63,14 +63,14 @@ const s = StyleSheet.create({
   wrap: { paddingHorizontal: 20, paddingTop: 10 },
   card: { borderRadius: 12, padding: 7, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: COLORS.primaryMid },
   left: { flex: 1, flexDirection: "row", alignItems: "center" },
-  iconCircle: { width: 30, height: 30, borderRadius: 14, backgroundColor: "transparent", justifyContent: "center", alignItems: "center", marginRight: 12,},
+  iconCircle: { width: 30, height: 30, borderRadius: 14, backgroundColor: "transparent", justifyContent: "center", alignItems: "center", marginRight: 12, },
   textCol: { flex: 1 },
   labelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  label: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8 },
-  title: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
+  label: { fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.8 },
+  title: { fontSize: 12, fontWeight: "600", color: COLORS.primary },
   sub: { fontSize: 12, color: COLORS.text, fontWeight: "500", marginTop: 2 },
   btn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "transparent", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 },
   btnDisabled: { opacity: 0.6 },
-  btnText: { fontSize: 12, fontWeight: "700" },
+  btnText: { fontSize: 12, fontWeight: "600" },
 });

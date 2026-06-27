@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getInvestContent } from "@/api/investments";
 import AppText from "@/components/AppText";
 import SimpleMarkdown from "@/components/SimpleMarkdown";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, SCREEN_PADDING } from "@/theme/designSystem";
-import { getInvestContent } from "@/api/investments";
+import { RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export function ackKey(phone: string): string {
   return `stock_info_acknowledged:${phone.replace(/[^a-zA-Z0-9]/g, "")}`;
@@ -48,7 +48,7 @@ export default function InvestInfoScreen({ phone, onAcknowledge }: Props) {
   const handleAcknowledge = async () => {
     try {
       await AsyncStorage.setItem(ackKey(phone), "true");
-    } catch {}
+    } catch { }
     onAcknowledge();
   };
 
@@ -83,8 +83,8 @@ const s = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   errorText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
   body: { paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.xl, paddingBottom: SPACE.huge },
-  title: { fontSize: 24, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.lg },
+  title: { fontSize: 24, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.lg },
   footer: { paddingHorizontal: SCREEN_PADDING, paddingVertical: SPACE.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.borderLight, backgroundColor: COLORS.bg },
   btn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center" },
-  btnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  btnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 });

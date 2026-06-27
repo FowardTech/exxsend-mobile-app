@@ -1,14 +1,14 @@
-import React, { useMemo, useRef, useState } from "react";
-import { View, Pressable, Alert, ActivityIndicator, StyleSheet, StatusBar } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { cachePinIfBiometricEnabled } from "../../../utils/pinCache";
+import { useRouter } from "expo-router";
+import React, { useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, StatusBar, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "../../../theme/colors";
 import { createPin } from "../../../api/config";
+import { COLORS } from "../../../theme/colors";
+import { cachePinIfBiometricEnabled } from "../../../utils/pinCache";
+import AppText from "../../AppText";
+import BackButton from "../../BackButton";
 
 function DotRow({ count }: { count: number }) {
   return (
@@ -35,7 +35,7 @@ export default function VerifyPinScreen() {
   const [error, setError] = useState("");
   const submittingRef = useRef(false);
 
-  const keys = useMemo(() => [["1","2","3"],["4","5","6"],["7","8","9"],["","0","del"]], []);
+  const keys = useMemo(() => [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "del"]], []);
 
   async function handlePinComplete(confirmPin: string) {
     if (submittingRef.current) return;
@@ -146,12 +146,12 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  headerTitle: { fontSize: 17, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   progressTrack: { height: 4, backgroundColor: COLORS.borderLight, borderRadius: 99, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: COLORS.primary, borderRadius: 99 },
   body: { flex: 1, alignItems: "center", paddingTop: 32, paddingHorizontal: 24 },
   iconRing: { width: 68, height: 68, borderRadius: 22, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginBottom: 20 },
-  title: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+  title: { fontSize: 18, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
   subtitle: { fontSize: 14, color: COLORS.muted, fontWeight: "500", textAlign: "center", lineHeight: 22, marginBottom: 32 },
   dotsRow: { flexDirection: "row", gap: 16 },
   dot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.border, backgroundColor: "transparent" },
@@ -159,7 +159,7 @@ const s = StyleSheet.create({
   error: { marginTop: 14, color: COLORS.red, fontWeight: "600", fontSize: 13, textAlign: "center" },
   pad: { paddingHorizontal: 32, paddingBottom: 32 },
   keyRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  key: { width: KEY_SIZE, height: KEY_SIZE, borderRadius: KEY_SIZE / 2, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: COLORS.borderLight, justifyContent: "center", alignItems: "center",},
-  keyEmpty: { backgroundColor: "transparent", borderColor: "transparent",},
+  key: { width: KEY_SIZE, height: KEY_SIZE, borderRadius: KEY_SIZE / 2, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: COLORS.borderLight, justifyContent: "center", alignItems: "center", },
+  keyEmpty: { backgroundColor: "transparent", borderColor: "transparent", },
   keyText: { fontSize: 22, fontWeight: "600", color: COLORS.text },
 });

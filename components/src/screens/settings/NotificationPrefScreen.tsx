@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, ScrollView, Switch, StyleSheet, StatusBar, Alert, ActivityIndicator, Platform } from "react-native";
-import AppText from "../../../AppText";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
-import { COLORS } from "../../../../theme/colors";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Platform, ScrollView, StatusBar, StyleSheet, Switch, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../../../../components/ScreenHeader";
-import { RADIUS, CARD_SHADOW, GLASS_BORDER } from "../../../../theme/designSystem";
+import { COLORS } from "../../../../theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS } from "../../../../theme/designSystem";
+import AppText from "../../../AppText";
 
 const PREFS_KEY = "notification_preferences_v1";
 
@@ -45,11 +45,11 @@ interface PrefItem {
 
 const ITEMS: PrefItem[] = [
   { key: "transfers", icon: "arrow-forward-circle-outline", iconBg: COLORS.primaryLight, title: "Transfer updates", subtitle: "Sent, received and pending transfers" },
-  { key: "rates",     icon: "trending-up-outline",          iconBg: "#FEF3C7", iconColor: COLORS.accentDark, title: "Rate alerts", subtitle: "When your target exchange rate is reached" },
-  { key: "security",  icon: "shield-checkmark-outline",     iconBg: "#FEE2E2", iconColor: COLORS.red,  title: "Security alerts", subtitle: "Login attempts and unusual activity" },
-  { key: "promotions",icon: "gift-outline",                 iconBg: COLORS.greenSoft, iconColor: COLORS.green, title: "Promotions & offers", subtitle: "Referral bonuses and special deals" },
-  { key: "news",      icon: "newspaper-outline",            iconBg: "rgba(99,102,241,0.10)", iconColor: "#6366F1", title: "Product news", subtitle: "New features and improvements" },
-  { key: "account",   icon: "person-circle-outline",        iconBg: COLORS.primaryLight, title: "Account updates", subtitle: "Profile and verification changes" },
+  { key: "rates", icon: "trending-up-outline", iconBg: "#FEF3C7", iconColor: COLORS.accentDark, title: "Rate alerts", subtitle: "When your target exchange rate is reached" },
+  { key: "security", icon: "shield-checkmark-outline", iconBg: "#FEE2E2", iconColor: COLORS.red, title: "Security alerts", subtitle: "Login attempts and unusual activity" },
+  { key: "promotions", icon: "gift-outline", iconBg: COLORS.greenSoft, iconColor: COLORS.green, title: "Promotions & offers", subtitle: "Referral bonuses and special deals" },
+  { key: "news", icon: "newspaper-outline", iconBg: "rgba(99,102,241,0.10)", iconColor: "#6366F1", title: "Product news", subtitle: "New features and improvements" },
+  { key: "account", icon: "person-circle-outline", iconBg: COLORS.primaryLight, title: "Account updates", subtitle: "Profile and verification changes" },
 ];
 
 async function requestPushPermission(): Promise<boolean> {
@@ -66,9 +66,9 @@ async function requestPushPermission(): Promise<boolean> {
 
 export default function NotificationPrefScreen() {
   const router = useRouter();
-  const [prefs, setPrefs]     = useState<Prefs>(DEFAULT_PREFS);
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Load saved prefs on mount
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function NotificationPrefScreen() {
           const saved = JSON.parse(raw) as Partial<Prefs>;
           setPrefs({ ...DEFAULT_PREFS, ...saved });
         }
-      } catch {}
+      } catch { }
       setLoading(false);
     })();
   }, []);
@@ -231,11 +231,11 @@ export default function NotificationPrefScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   body: { padding: 20, paddingBottom: 40 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.8, textTransform: "uppercase", marginTop: 20, marginBottom: 10 },
+  sectionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, letterSpacing: 0.8, textTransform: "uppercase", marginTop: 20, marginBottom: 10 },
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
   row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
   iconWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12, flexShrink: 0 },
-  rowTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  rowTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   rowSub: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderLight, marginLeft: 66 },
   infoBox: { flexDirection: "row", alignItems: "flex-start", backgroundColor: COLORS.primaryLight, borderRadius: 12, padding: 14, marginTop: 16 },

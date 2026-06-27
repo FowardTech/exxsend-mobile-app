@@ -1,24 +1,23 @@
-import React, { useState, useRef, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { View, FlatList, Pressable, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator, Image, Alert, Linking } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import AppTextInput from "../../../AppTextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { COLORS } from "../../../../theme/colors";
-import { RADIUS, CARD_SHADOW, GLASS_BORDER } from "../../../../theme/designSystem";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../../../../api/config";
 import {
-  getUserPhone,
   getOrCreateConversation,
   getUserMessages,
-  sendUserMessage,
+  getUserPhone,
   sendUserAttachment,
+  sendUserMessage,
 } from "../../../../api/supportchat";
+import { COLORS } from "../../../../theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS } from "../../../../theme/designSystem";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
+import BackButton from "../../../BackButton";
 
 const POLL_INTERVAL = 3000;
 
@@ -66,7 +65,7 @@ export default function CustomerSupportChat() {
   const isImageFile = (name?: string) =>
     !!name && /\.(png|jpe?g|gif|webp)$/i.test(name);
 
-const mapApiMessage = (msg: any): UIMessage => {
+  const mapApiMessage = (msg: any): UIMessage => {
     const fileUrl = normalizeUrl(
       msg.fileUrl || msg.file_url || msg.attachmentUrl
     );
@@ -441,7 +440,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  headerTitle: { fontSize: 16, fontWeight: "600", color: "#111827" },
   headerSubtitle: { fontSize: 12, fontWeight: "600", color: COLORS.primary },
   loaderWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
   messageRow: { marginBottom: 12, flexDirection: "row" },

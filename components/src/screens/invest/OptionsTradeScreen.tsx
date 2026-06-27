@@ -293,40 +293,40 @@ export default function OptionsTradeScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   emptyText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
   body: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
 
   accountPill: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, alignSelf: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.full, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, marginBottom: SPACE.md, ...GLASS_BORDER },
-  accountPillText: { fontSize: 12, fontWeight: "700", color: COLORS.text, maxWidth: 200 },
+  accountPillText: { fontSize: 12, fontWeight: "600", color: COLORS.text, maxWidth: 200 },
 
   noticeBox: { flexDirection: "row", backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, padding: SPACE.md, marginBottom: SPACE.md },
   noticeText: { flex: 1, fontSize: 12, color: COLORS.primary, fontWeight: "500", lineHeight: 17 },
 
-  fieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.lg },
+  fieldLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.lg },
 
   legCard: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: SPACE.lg, marginBottom: SPACE.md, ...GLASS_BORDER },
   legHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACE.sm },
-  legHeaderText: { fontSize: 12, fontWeight: "700", color: COLORS.muted },
+  legHeaderText: { fontSize: 12, fontWeight: "600", color: COLORS.muted },
   legInput: { backgroundColor: COLORS.bg, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, height: 44, fontSize: 14, fontWeight: "600", color: COLORS.text },
 
   addLegBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: SPACE.md, marginBottom: SPACE.md },
-  addLegBtnText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
+  addLegBtnText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
 
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
   chip: { paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm, borderRadius: RADIUS.full, backgroundColor: COLORS.white, ...GLASS_BORDER },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipText: { fontSize: 12, fontWeight: "700", color: COLORS.text },
+  chipText: { fontSize: 12, fontWeight: "600", color: COLORS.text },
   chipTextActive: { color: "#FFFFFF" },
 
   submitBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xxl },
-  submitBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  submitBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: COLORS.white, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: SPACE.xl, paddingBottom: SPACE.huge },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.lg },
+  modalTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.lg },
   modalRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.md },
-  modalRowTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  modalRowTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   modalRowSub: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
 });

@@ -1,16 +1,16 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { View, Pressable, ActivityIndicator, ScrollView, Alert, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Print from "expo-print";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
+import { getTransactionByReference, WalletTransaction } from "../../../api/transactions";
 import { EXXSEND_LOGO_BASE64 } from "../../../assets/exxsendLogoBase64";
 import ScreenShell from "../../../components/ScreenShell";
-import { styles } from "../../../theme/styles";
 import { COLORS } from "../../../theme/colors";
-import { getTransactionByReference, WalletTransaction } from "../../../api/transactions";
+import { styles } from "../../../theme/styles";
+import AppText from "../../AppText";
+import BackButton from "../../BackButton";
 
 export default function TransactionDetailScreen() {
   const router = useRouter();
@@ -332,7 +332,7 @@ ${tx.feeAmount && tx.feeAmount > 0 ? `
         </View>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
           <Ionicons name="close-circle-outline" size={48} color={COLORS.error} style={{ marginBottom: 12 }} />
-          <AppText style={{ color: COLORS.error, fontWeight: "700", fontSize: 16 }}>
+          <AppText style={{ color: COLORS.error, fontWeight: "600", fontSize: 16 }}>
             {error || "Transaction not found"}
           </AppText>
           <Pressable
@@ -345,7 +345,7 @@ ${tx.feeAmount && tx.feeAmount > 0 ? `
               borderRadius: 8,
             }}
           >
-            <AppText style={{ color: "#fff", fontWeight: "700" }}>Go Back</AppText>
+            <AppText style={{ color: "#fff", fontWeight: "600" }}>Go Back</AppText>
           </Pressable>
         </View>
       </ScreenShell>
@@ -361,118 +361,118 @@ ${tx.feeAmount && tx.feeAmount > 0 ? `
         <View style={styles.headerRow}>
           <BackButton onPress={() => router.back()} />
           <AppText style={styles.headerTitle}>Transaction Details</AppText>
-          </View>
+        </View>
 
-          {/* Amount Card */}
-          <View style={styles.amountCard}>
-            <AppText style={styles.typeLabel}>
-              {getTransactionTypeLabel(transaction.transactionType)}
-            </AppText>
+        {/* Amount Card */}
+        <View style={styles.amountCard}>
+          <AppText style={styles.typeLabel}>
+            {getTransactionTypeLabel(transaction.transactionType)}
+          </AppText>
+          <AppText
+            style={[
+              styles.amount,
+              { color: isOutgoing ? COLORS.error : COLORS.green },
+            ]}
+          >
+            {isOutgoing ? "-" : "+"}
+            {formatAmount(transaction.amount, transaction.currency)}
+          </AppText>
+
+          {/* Status Badge */}
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getStatusBgColor(transaction.status) },
+            ]}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: getStatusColor(transaction.status),
+              }}
+            />
             <AppText
               style={[
-                styles.amount,
-                { color: isOutgoing ? COLORS.error : COLORS.green },
+                styles.statusText,
+                { color: getStatusColor(transaction.status) },
               ]}
             >
-              {isOutgoing ? "-" : "+"}
-              {formatAmount(transaction.amount, transaction.currency)}
+              {transaction.status}
             </AppText>
-
-            {/* Status Badge */}
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusBgColor(transaction.status) },
-              ]}
-            >
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: getStatusColor(transaction.status),
-                }}
-              />
-              <AppText
-                style={[
-                  styles.statusText,
-                  { color: getStatusColor(transaction.status) },
-                ]}
-              >
-                {transaction.status}
-              </AppText>
-            </View>
           </View>
+        </View>
 
-          {/* Conversion Details */}
-          {transaction.transactionType === "conversion" &&
-            transaction.fromCurrency &&
-            transaction.toCurrency && (
-              <View style={styles.section}>
-                <AppText style={styles.sectionTitle}>Conversion Details</AppText>
-                <View style={styles.conversionRow}>
-                  <View style={styles.conversionBox}>
-                    <AppText style={styles.conversionLabel}>From</AppText>
-                    <AppText style={styles.conversionAmount}>
-                      {transaction.fromAmount?.toLocaleString()} {transaction.fromCurrency}
-                    </AppText>
-                  </View>
-                  <AppText style={styles.conversionArrow}>→</AppText>
-                  <View style={styles.conversionBox}>
-                    <AppText style={styles.conversionLabel}>To</AppText>
-                    <AppText style={styles.conversionAmount}>
-                      {transaction.toAmount?.toLocaleString()} {transaction.toCurrency}
-                    </AppText>
-                  </View>
-                </View>
-                {transaction.exchangeRate && (
-                  <View style={styles.detailRow}>
-                    <AppText style={styles.detailLabel}>Exchange Rate</AppText>
-                    <AppText style={styles.detailValue}>
-                      1 {transaction.fromCurrency} = {transaction.exchangeRate.toFixed(6)} {transaction.toCurrency}
-                    </AppText>
-                  </View>
-                )}
-              </View>
-            )}
-
-          {/* Recipient Details */}
-          {transaction.counterpartyName && (
+        {/* Conversion Details */}
+        {transaction.transactionType === "conversion" &&
+          transaction.fromCurrency &&
+          transaction.toCurrency && (
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>
-                {isOutgoing ? "Recipient" : "Sender"}
-              </AppText>
-              <View style={styles.detailRow}>
-                <AppText style={styles.detailLabel}>Name</AppText>
-                <AppText style={styles.detailValue}>{transaction.counterpartyName}</AppText>
-              </View>
-              {transaction.counterpartyBank && (
-                <View style={styles.detailRow}>
-                  <AppText style={styles.detailLabel}>Bank</AppText>
-                  <AppText style={styles.detailValue}>{transaction.counterpartyBank}</AppText>
+              <AppText style={styles.sectionTitle}>Conversion Details</AppText>
+              <View style={styles.conversionRow}>
+                <View style={styles.conversionBox}>
+                  <AppText style={styles.conversionLabel}>From</AppText>
+                  <AppText style={styles.conversionAmount}>
+                    {transaction.fromAmount?.toLocaleString()} {transaction.fromCurrency}
+                  </AppText>
                 </View>
-              )}
-              {transaction.counterpartyAccount && (
+                <AppText style={styles.conversionArrow}>→</AppText>
+                <View style={styles.conversionBox}>
+                  <AppText style={styles.conversionLabel}>To</AppText>
+                  <AppText style={styles.conversionAmount}>
+                    {transaction.toAmount?.toLocaleString()} {transaction.toCurrency}
+                  </AppText>
+                </View>
+              </View>
+              {transaction.exchangeRate && (
                 <View style={styles.detailRow}>
-                  <AppText style={styles.detailLabel}>Account</AppText>
+                  <AppText style={styles.detailLabel}>Exchange Rate</AppText>
                   <AppText style={styles.detailValue}>
-                    •••• {transaction.counterpartyAccount.slice(-4)}
+                    1 {transaction.fromCurrency} = {transaction.exchangeRate.toFixed(6)} {transaction.toCurrency}
                   </AppText>
                 </View>
               )}
             </View>
           )}
 
-          {/* Transaction Info */}
+        {/* Recipient Details */}
+        {transaction.counterpartyName && (
           <View style={styles.section}>
-            <AppText style={styles.sectionTitle}>Transaction Info</AppText>
+            <AppText style={styles.sectionTitle}>
+              {isOutgoing ? "Recipient" : "Sender"}
+            </AppText>
             <View style={styles.detailRow}>
-              <AppText style={styles.detailLabel}>Reference</AppText>
-              <AppText style={[styles.detailValue, { fontFamily: "monospace" }]}>
-                {transaction.reference}
-              </AppText>
+              <AppText style={styles.detailLabel}>Name</AppText>
+              <AppText style={styles.detailValue}>{transaction.counterpartyName}</AppText>
             </View>
-            {/* {transaction.externalReference && (
+            {transaction.counterpartyBank && (
+              <View style={styles.detailRow}>
+                <AppText style={styles.detailLabel}>Bank</AppText>
+                <AppText style={styles.detailValue}>{transaction.counterpartyBank}</AppText>
+              </View>
+            )}
+            {transaction.counterpartyAccount && (
+              <View style={styles.detailRow}>
+                <AppText style={styles.detailLabel}>Account</AppText>
+                <AppText style={styles.detailValue}>
+                  •••• {transaction.counterpartyAccount.slice(-4)}
+                </AppText>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Transaction Info */}
+        <View style={styles.section}>
+          <AppText style={styles.sectionTitle}>Transaction Info</AppText>
+          <View style={styles.detailRow}>
+            <AppText style={styles.detailLabel}>Reference</AppText>
+            <AppText style={[styles.detailValue, { fontFamily: "monospace" }]}>
+              {transaction.reference}
+            </AppText>
+          </View>
+          {/* {transaction.externalReference && (
               <View style={styles.detailRow}>
                 <AppText style={styles.detailLabel}>Provider Ref</AppText>
                 <AppText style={[styles.detailValue, { fontFamily: "monospace" }]}>
@@ -480,115 +480,115 @@ ${tx.feeAmount && tx.feeAmount > 0 ? `
                 </AppText>
               </View>
             )} */}
-            {/* {transaction.provider && (
+          {/* {transaction.provider && (
               <View style={styles.detailRow}>
                 <AppText style={styles.detailLabel}>Provider</AppText>
                 <AppText style={styles.detailValue}>{transaction.provider}</AppText>
               </View>
             )} */}
-            <View style={styles.detailRow}>
-              <AppText style={styles.detailLabel}>Date</AppText>
-              <AppText style={styles.detailValue}>{formatDate(transaction.createdAt)}</AppText>
-            </View>
-            <View style={styles.detailRow}>
-              <AppText style={styles.detailLabel}>Time</AppText>
-              <AppText style={styles.detailValue}>{formatTime(transaction.createdAt)}</AppText>
-            </View>
-            {transaction.completedAt && (
-              <View style={styles.detailRow}>
-                <AppText style={styles.detailLabel}>Completed</AppText>
-                <AppText style={styles.detailValue}>
-                  {formatDate(transaction.completedAt)} at {formatTime(transaction.completedAt)}
-                </AppText>
-              </View>
-            )}
+          <View style={styles.detailRow}>
+            <AppText style={styles.detailLabel}>Date</AppText>
+            <AppText style={styles.detailValue}>{formatDate(transaction.createdAt)}</AppText>
           </View>
+          <View style={styles.detailRow}>
+            <AppText style={styles.detailLabel}>Time</AppText>
+            <AppText style={styles.detailValue}>{formatTime(transaction.createdAt)}</AppText>
+          </View>
+          {transaction.completedAt && (
+            <View style={styles.detailRow}>
+              <AppText style={styles.detailLabel}>Completed</AppText>
+              <AppText style={styles.detailValue}>
+                {formatDate(transaction.completedAt)} at {formatTime(transaction.completedAt)}
+              </AppText>
+            </View>
+          )}
+        </View>
 
-          {/* Fees & Charges Section */}
-          {transaction.feeAmount && transaction.feeAmount > 0 && (
-            <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>Fees & Charges</AppText>
-              <View style={styles.detailRow}>
-                <AppText style={styles.detailLabel}>Transaction Amount</AppText>
-                <AppText style={styles.detailValue}>
-                  {formatAmount(Math.abs(transaction.amount), transaction.currency)}
-                </AppText>
-              </View>
-              <View style={styles.detailRow}>
-                <AppText style={styles.detailLabel}>Transaction Fee</AppText>
-                <View style={{ alignItems: 'flex-end' }}>
-                  {transaction.feeAmountInBaseCurrency && transaction.baseCurrency && 
-                   transaction.baseCurrency !== (transaction.feeCurrency || transaction.currency) ? (
-                    <>
-                      <AppText style={[styles.detailValue, { color: COLORS.error }]}>
-                        -{transaction.baseCurrencySymbol || ''}{transaction.feeAmountInBaseCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </AppText>
-                      <AppText style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                        ≈ {formatAmount(transaction.feeAmount, transaction.feeCurrency || transaction.currency)}
-                      </AppText>
-                    </>
-                  ) : (
+        {/* Fees & Charges Section */}
+        {transaction.feeAmount && transaction.feeAmount > 0 && (
+          <View style={styles.section}>
+            <AppText style={styles.sectionTitle}>Fees & Charges</AppText>
+            <View style={styles.detailRow}>
+              <AppText style={styles.detailLabel}>Transaction Amount</AppText>
+              <AppText style={styles.detailValue}>
+                {formatAmount(Math.abs(transaction.amount), transaction.currency)}
+              </AppText>
+            </View>
+            <View style={styles.detailRow}>
+              <AppText style={styles.detailLabel}>Transaction Fee</AppText>
+              <View style={{ alignItems: 'flex-end' }}>
+                {transaction.feeAmountInBaseCurrency && transaction.baseCurrency &&
+                  transaction.baseCurrency !== (transaction.feeCurrency || transaction.currency) ? (
+                  <>
                     <AppText style={[styles.detailValue, { color: COLORS.error }]}>
-                      -{formatAmount(transaction.feeAmount, transaction.feeCurrency || transaction.currency)}
+                      -{transaction.baseCurrencySymbol || ''}{transaction.feeAmountInBaseCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </AppText>
-                  )}
-                </View>
-              </View>
-              <View style={{ 
-                borderTopWidth: 1, 
-                borderTopColor: COLORS.border, 
-                borderStyle: 'dashed',
-                marginVertical: 8 
-              }} />
-              <View style={styles.detailRow}>
-                <AppText style={[styles.detailLabel, { fontWeight: "700" }]}>Total Charged</AppText>
-                <AppText style={[styles.detailValue, { fontWeight: "700" }]}>
-                  {formatAmount(Math.abs(transaction.amount) + transaction.feeAmount, transaction.currency)}
-                </AppText>
+                    <AppText style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                      ≈ {formatAmount(transaction.feeAmount, transaction.feeCurrency || transaction.currency)}
+                    </AppText>
+                  </>
+                ) : (
+                  <AppText style={[styles.detailValue, { color: COLORS.error }]}>
+                    -{formatAmount(transaction.feeAmount, transaction.feeCurrency || transaction.currency)}
+                  </AppText>
+                )}
               </View>
             </View>
-          )}
-
-          {/* Description */}
-          {transaction.description && (
-            <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>Description</AppText>
-              <AppText style={styles.description}>{transaction.description}</AppText>
+            <View style={{
+              borderTopWidth: 1,
+              borderTopColor: COLORS.border,
+              borderStyle: 'dashed',
+              marginVertical: 8
+            }} />
+            <View style={styles.detailRow}>
+              <AppText style={[styles.detailLabel, { fontWeight: "600" }]}>Total Charged</AppText>
+              <AppText style={[styles.detailValue, { fontWeight: "600" }]}>
+                {formatAmount(Math.abs(transaction.amount) + transaction.feeAmount, transaction.currency)}
+              </AppText>
             </View>
-          )}
-
-          {/* Download & Share Buttons */}
-          <View style={{ paddingHorizontal: 16, marginTop: 24, gap: 12 }}>
-            <Pressable
-              onPress={handleDownloadReceipt}
-              disabled={generatingPdf}
-              style={styles.outlineBtn}
-            >
-              <AppText style={{ color: COLORS.text, fontWeight: "700", fontSize: 16 }}>
-                Download Receipt
-              </AppText>
-            </Pressable>
-
-            <Pressable
-              onPress={handleShareReceipt}
-              disabled={generatingPdf}
-              style={styles.primaryBtn}
-            >
-              <AppText style={{ color: COLORS.white, fontWeight: "700", fontSize: 16 }}>
-                Share Receipt
-              </AppText>
-            </Pressable>
           </View>
+        )}
 
-          {/* Help Button */}
-          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            <Pressable
-              onPress={() => {}}
-              style={styles.helpButton}
-            >
-              <AppText style={styles.helpButtonText} onPress={() => router.push('/support')}>Need help with this transaction?</AppText>
-            </Pressable>
+        {/* Description */}
+        {transaction.description && (
+          <View style={styles.section}>
+            <AppText style={styles.sectionTitle}>Description</AppText>
+            <AppText style={styles.description}>{transaction.description}</AppText>
           </View>
+        )}
+
+        {/* Download & Share Buttons */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24, gap: 12 }}>
+          <Pressable
+            onPress={handleDownloadReceipt}
+            disabled={generatingPdf}
+            style={styles.outlineBtn}
+          >
+            <AppText style={{ color: COLORS.text, fontWeight: "600", fontSize: 16 }}>
+              Download Receipt
+            </AppText>
+          </Pressable>
+
+          <Pressable
+            onPress={handleShareReceipt}
+            disabled={generatingPdf}
+            style={styles.primaryBtn}
+          >
+            <AppText style={{ color: COLORS.white, fontWeight: "600", fontSize: 16 }}>
+              Share Receipt
+            </AppText>
+          </Pressable>
+        </View>
+
+        {/* Help Button */}
+        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+          <Pressable
+            onPress={() => { }}
+            style={styles.helpButton}
+          >
+            <AppText style={styles.helpButtonText} onPress={() => router.push('/support')}>Need help with this transaction?</AppText>
+          </Pressable>
+        </View>
       </ScrollView>
     </ScreenShell>
   );

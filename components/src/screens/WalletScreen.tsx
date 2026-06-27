@@ -1,23 +1,21 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useAutoPolling } from "../../../hooks/useAutoPolling";
-import { View, Pressable, ScrollView, Alert, Animated, Easing, StyleSheet } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ScreenShell from "../../ScreenShell";
-import WalletAction from "../../WalletAction";
-import DetailRow from "../../DetailRow";
 import { LinearGradient } from "expo-linear-gradient";
-import { useStyles } from "../../../theme/styles";
-import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../theme/designSystem";
-import { useAppTheme } from "../../../theme/ThemeProvider";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import * as apiConfig from "../../../api/config";
-import { getLocalBalance, getFlutterwaveTransactions, getVirtualAccount, createVirtualAccount, VirtualAccount } from "../../../api/flutterwave";
+import { getFlutterwaveTransactions, getLocalBalance, getVirtualAccount, VirtualAccount } from "../../../api/flutterwave";
 import { getUserTransactions, WalletTransaction } from "../../../api/transactions";
 import { usePendingSettlements } from "../../../hooks/usePendingSettlements";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE, TYPE } from "../../../theme/designSystem";
+import { useStyles } from "../../../theme/styles";
+import { useAppTheme } from "../../../theme/ThemeProvider";
+import AppText from "../../AppText";
+import BackButton from "../../BackButton";
 import CountryFlag from "../../CountryFlag";
+import DetailRow from "../../DetailRow";
+import ScreenShell from "../../ScreenShell";
 
 const CACHED_ACCOUNTS_KEY = "cached_accounts_v1";
 const CACHED_WALLET_BALANCE_PREFIX = "cached_wallet_balance_";
@@ -263,39 +261,39 @@ export default function WalletScreen() {
   const styles = useStyles();
   const ws = useMemo(() => StyleSheet.create({
 
-  plainHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.md, paddingBottom: SPACE.sm },
-  plainHeaderTitle: { ...TYPE.subtitle, color: colors.text },
-  plainRefreshBtn: { width: 40, height: 40, borderRadius: RADIUS.sm, backgroundColor: colors.card, justifyContent: "center", alignItems: "center", ...GLASS_BORDER, ...CARD_SHADOW },
-  offlineBanner: { flexDirection: "row", alignItems: "center", backgroundColor: colors.accentLight, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.md },
-  offlineText: { ...TYPE.caption, color: colors.accentDark },
-  balanceCard: {
-    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.sm, marginBottom: SPACE.sm,
-    borderRadius: RADIUS.xl, padding: SPACE.xxl,
-    shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.45,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  heroCenter: { alignItems: "center", marginBottom: SPACE.xxl },
-  balCardLabel: { ...TYPE.eyebrow, color: "#FFFFFF", opacity: 0.8, marginTop: SPACE.md, marginBottom: SPACE.sm },
-  balCardAmount: { ...TYPE.heroNumber, fontSize: 34, color: "#FFFFFF" },
-  balSkel: { width: 160, height: 30, borderRadius: RADIUS.xs, marginTop: SPACE.xs },
-  actionRow: { flexDirection: "row", justifyContent: "space-around" },
-  balCardActionIcon: { width: 50, height: 50, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center" },
-  actionLabel: { ...TYPE.caption, color: "#FFFFFF", marginTop: SPACE.xs },
-  tabs: { flexDirection: "row", backgroundColor: colors.card, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
-  tab: { flex: 1, paddingVertical: SPACE.md + 1, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
-  tabActive: { borderBottomColor: colors.primary },
-  tabText: { ...TYPE.caption, color: colors.muted },
-  tabTextActive: { color: colors.primary, fontWeight: "700" as const },
-  limitsPill: { flexDirection: "row", alignItems: "center", alignSelf: "center", gap: SPACE.xs, marginTop: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, backgroundColor: colors.primaryLight, borderRadius: RADIUS.full },
-  limitsPillText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary },
-  detailCard: { backgroundColor: colors.card, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
-  detailHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
-  detailHeaderTitle: { ...TYPE.eyebrow, color: colors.muted },
-  copyAllBtn: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, backgroundColor: colors.primaryLight, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.sm + 2, paddingVertical: SPACE.xs + 2 },
-  copyAllText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary },
+    plainHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.md, paddingBottom: SPACE.sm },
+    plainHeaderTitle: { ...TYPE.subtitle, color: colors.text },
+    plainRefreshBtn: { width: 40, height: 40, borderRadius: RADIUS.sm, backgroundColor: colors.card, justifyContent: "center", alignItems: "center", ...GLASS_BORDER, ...CARD_SHADOW },
+    offlineBanner: { flexDirection: "row", alignItems: "center", backgroundColor: colors.accentLight, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.md },
+    offlineText: { ...TYPE.caption, color: colors.accentDark },
+    balanceCard: {
+      marginHorizontal: SCREEN_PADDING, marginTop: SPACE.sm, marginBottom: SPACE.sm,
+      borderRadius: RADIUS.xl, padding: SPACE.xxl,
+      shadowColor: colors.primaryDark,
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.45,
+      shadowRadius: 24,
+      elevation: 16,
+    },
+    heroCenter: { alignItems: "center", marginBottom: SPACE.xxl },
+    balCardLabel: { ...TYPE.eyebrow, color: "#FFFFFF", opacity: 0.8, marginTop: SPACE.md, marginBottom: SPACE.sm },
+    balCardAmount: { ...TYPE.heroNumber, fontSize: 34, color: "#FFFFFF" },
+    balSkel: { width: 160, height: 30, borderRadius: RADIUS.xs, marginTop: SPACE.xs },
+    actionRow: { flexDirection: "row", justifyContent: "space-around" },
+    balCardActionIcon: { width: 50, height: 50, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center" },
+    actionLabel: { ...TYPE.caption, color: "#FFFFFF", marginTop: SPACE.xs },
+    tabs: { flexDirection: "row", backgroundColor: colors.card, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+    tab: { flex: 1, paddingVertical: SPACE.md + 1, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
+    tabActive: { borderBottomColor: colors.primary },
+    tabText: { ...TYPE.caption, color: colors.muted },
+    tabTextActive: { color: colors.primary, fontWeight: "600" as const },
+    limitsPill: { flexDirection: "row", alignItems: "center", alignSelf: "center", gap: SPACE.xs, marginTop: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, backgroundColor: colors.primaryLight, borderRadius: RADIUS.full },
+    limitsPillText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary },
+    detailCard: { backgroundColor: colors.card, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
+    detailHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+    detailHeaderTitle: { ...TYPE.eyebrow, color: colors.muted },
+    copyAllBtn: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, backgroundColor: colors.primaryLight, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.sm + 2, paddingVertical: SPACE.xs + 2 },
+    copyAllText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary },
   }), [colors]);
 
   const [tab, setTab] = useState("Transactions");
@@ -415,8 +413,8 @@ export default function WalletScreen() {
           typeof rawBalance === "number"
             ? rawBalance
             : typeof rawBalance === "string" && rawBalance.trim() !== ""
-            ? Number(rawBalance)
-            : NaN;
+              ? Number(rawBalance)
+              : NaN;
 
         let initialBalance = Number.isFinite(balanceNum) ? balanceNum : null;
         const ccy = normalizeCcy((parsed as any)?.currencyCode);
@@ -437,8 +435,8 @@ export default function WalletScreen() {
                 typeof cachedBal === "number"
                   ? cachedBal
                   : typeof cachedBal === "string" && cachedBal.trim() !== ""
-                  ? Number(cachedBal)
-                  : NaN;
+                    ? Number(cachedBal)
+                    : NaN;
 
               if (Number.isFinite(cachedNum)) initialBalance = cachedNum;
             }
@@ -525,25 +523,25 @@ export default function WalletScreen() {
             !sellNeedsConfirm
               ? true
               : sellCcy === ccy && typeof s.sellBalanceBefore === "number"
-              ? await checkAndClearIfSettled(
+                ? await checkAndClearIfSettled(
                   sellCcy,
                   nextBalance,
                   safeNumber(s.sellBalanceBefore, 0) - safeNumber(s.sellAmount, 0),
                   0.01
                 )
-              : false;
+                : false;
 
           const buySettled =
             !buyNeedsConfirm
               ? true
               : buyCcy === ccy && typeof s.buyBalanceBefore === "number"
-              ? await checkAndClearIfSettled(
+                ? await checkAndClearIfSettled(
                   buyCcy,
                   nextBalance,
                   safeNumber(s.buyBalanceBefore, 0) + safeNumber(s.buyAmount, 0),
                   0.01
                 )
-              : false;
+                : false;
 
           if (sellSettled && buySettled) {
             await removeSettlement(s.id, true);
@@ -650,12 +648,12 @@ export default function WalletScreen() {
   }, [account?.currencyCode]);
 
 
-    const initialLoadDoneRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
   // ✅ Initial load once account is ready
   useEffect(() => {
     if (!account?.currencyCode) return;
-      if (initialLoadDoneRef.current) return;
-          initialLoadDoneRef.current = true;
+    if (initialLoadDoneRef.current) return;
+    initialLoadDoneRef.current = true;
     (async () => {
       await refreshPendingSettlements();
       // await refreshBalance();
@@ -810,14 +808,14 @@ export default function WalletScreen() {
                       sKey === "completed"
                         ? styles.walletTxStatusCompleted
                         : sKey === "failed"
-                        ? styles.walletTxStatusFailed
-                        : styles.walletTxStatusPending;
+                          ? styles.walletTxStatusFailed
+                          : styles.walletTxStatusPending;
 
                     const txIsCredit = isCredit(tx.transactionType);
                     const rowKey = String(
                       tx.id ||
-                        tx.reference ||
-                        stableTxId([tx.createdAt, tx.amount, tx.transactionType, tx.currency, tx.counterpartyName])
+                      tx.reference ||
+                      stableTxId([tx.createdAt, tx.amount, tx.transactionType, tx.currency, tx.counterpartyName])
                     );
 
                     return (
@@ -888,8 +886,8 @@ export default function WalletScreen() {
                       sKey === "completed"
                         ? styles.walletTxStatusCompleted
                         : sKey === "failed"
-                        ? styles.walletTxStatusFailed
-                        : styles.walletTxStatusPending;
+                          ? styles.walletTxStatusFailed
+                          : styles.walletTxStatusPending;
 
                     return (
                       <View key={tx.id}>
@@ -953,7 +951,7 @@ export default function WalletScreen() {
         {refreshingOverlay}
 
         {walletGroups.map(([day, items]) => (
-          <View key={day} style={{padding: 12}}>
+          <View key={day} style={{ padding: 12 }}>
             <AppText style={styles.walletTxGroupTitle}>{prettyDayLabel(day)}</AppText>
 
             <View style={styles.walletTxCard}>
@@ -963,8 +961,8 @@ export default function WalletScreen() {
                   sKey === "completed"
                     ? styles.walletTxStatusCompleted
                     : sKey === "failed"
-                    ? styles.walletTxStatusFailed
-                    : styles.walletTxStatusPending;
+                      ? styles.walletTxStatusFailed
+                      : styles.walletTxStatusPending;
 
                 const txIsCredit = isCredit(tx.transactionType);
                 const rowKey = String(
@@ -1074,10 +1072,10 @@ export default function WalletScreen() {
               ? `/addmoneymethods?currencyCode=${ccy}`
               : `/add-money/local?currency=${ccy}`;
             return [
-              { icon: "arrow-up-outline",       label: "Send",    route: `/sendmoney?from=${ccy}` },
-              { icon: "add",                    label: "Add",     route: addRoute },
-              { icon: "repeat-outline",         label: "Convert", route: `/convert?from=${ccy}` },
-              { icon: "arrow-down-outline",     label: "Withdraw", route: `/withdraw?currency=${ccy}` },
+              { icon: "arrow-up-outline", label: "Send", route: `/sendmoney?from=${ccy}` },
+              { icon: "add", label: "Add", route: addRoute },
+              { icon: "repeat-outline", label: "Convert", route: `/convert?from=${ccy}` },
+              { icon: "arrow-down-outline", label: "Withdraw", route: `/withdraw?currency=${ccy}` },
             ].map(a => (
               <Pressable key={a.label} onPress={() => router.push(a.route as any)} style={{ alignItems: "center", gap: SPACE.sm }}>
                 <View style={ws.balCardActionIcon}>
@@ -1137,9 +1135,9 @@ export default function WalletScreen() {
               </View>
             ) : virtualAccount ? (
               <>
-                <DetailRow k="Bank name"       v={virtualAccount.bankName} />
-                <DetailRow k="Account number"  v={virtualAccount.accountNumber} />
-                <DetailRow k="Account name"    v={virtualAccount.accountName} />
+                <DetailRow k="Bank name" v={virtualAccount.bankName} />
+                <DetailRow k="Account number" v={virtualAccount.accountNumber} />
+                <DetailRow k="Account name" v={virtualAccount.accountName} />
                 {!!virtualAccount.expiresAt && (
                   <DetailRow
                     k="Valid until"
@@ -1152,7 +1150,7 @@ export default function WalletScreen() {
             ) : (
               <View style={{ padding: 24, alignItems: "center" }}>
                 <Ionicons name="card-outline" size={32} color={colors.muted} style={{ marginBottom: 10 }} />
-                <AppText style={{ color: colors.text, fontWeight: "700", fontSize: 14, marginBottom: 4 }}>
+                <AppText style={{ color: colors.text, fontWeight: "600", fontSize: 14, marginBottom: 4 }}>
                   No virtual account yet
                 </AppText>
                 <AppText style={{ color: colors.muted, fontSize: 12, textAlign: "center", marginBottom: 16 }}>
@@ -1162,7 +1160,7 @@ export default function WalletScreen() {
                   onPress={() => router.push(`/add-money/local?currency=NGN` as any)}
                   style={{ backgroundColor: colors.actionBg, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 }}
                 >
-                  <AppText style={{ color: colors.actionText, fontWeight: "700", fontSize: 13 }}>Set up now</AppText>
+                  <AppText style={{ color: colors.actionText, fontWeight: "600", fontSize: 13 }}>Set up now</AppText>
                 </Pressable>
               </View>
             )}
@@ -1178,13 +1176,13 @@ export default function WalletScreen() {
                   const lines = [
                     `Account Name: ${account.accountName || "—"}`,
                     `Currency: ${account.currencyName} (${account.currencyCode})`,
-                    account.iban          ? `IBAN: ${account.iban}` : "",
-                    account.bicSwift      ? `BIC/SWIFT: ${account.bicSwift}` : "",
+                    account.iban ? `IBAN: ${account.iban}` : "",
+                    account.bicSwift ? `BIC/SWIFT: ${account.bicSwift}` : "",
                     account.accountNumber ? `Account Number: ${account.accountNumber}` : "",
                     account.routingNumber ? `Routing Number: ${account.routingNumber}` : "",
-                    account.sortCode      ? `Sort Code: ${account.sortCode}` : "",
-                    account.bankName      ? `Bank Name: ${account.bankName}` : "",
-                    account.bankAddress   ? `Bank Address: ${account.bankAddress}` : "",
+                    account.sortCode ? `Sort Code: ${account.sortCode}` : "",
+                    account.bankName ? `Bank Name: ${account.bankName}` : "",
+                    account.bankAddress ? `Bank Address: ${account.bankAddress}` : "",
                   ].filter(Boolean).join("\n");
                   await (await import("expo-clipboard")).setStringAsync(lines);
                   Alert.alert("Copied!", "Account details copied to clipboard.");
@@ -1195,16 +1193,16 @@ export default function WalletScreen() {
                 <AppText style={ws.copyAllText}>Copy all</AppText>
               </Pressable>
             </View>
-            <DetailRow k="Account name"  v={account.accountName || "—"} />
-            <DetailRow k="Currency"      v={`${account.currencyName || account.currencyCode} (${account.currencyCode})`} />
-            {!!account.iban          && <DetailRow k="IBAN"           v={account.iban} />}
-            {!!account.bicSwift      && <DetailRow k="BIC/SWIFT"      v={account.bicSwift} />}
+            <DetailRow k="Account name" v={account.accountName || "—"} />
+            <DetailRow k="Currency" v={`${account.currencyName || account.currencyCode} (${account.currencyCode})`} />
+            {!!account.iban && <DetailRow k="IBAN" v={account.iban} />}
+            {!!account.bicSwift && <DetailRow k="BIC/SWIFT" v={account.bicSwift} />}
             {!!account.accountNumber && <DetailRow k="Account Number" v={account.accountNumber} />}
             {!!account.routingNumber && <DetailRow k="Routing Number" v={account.routingNumber} />}
-            {!!account.sortCode      && <DetailRow k="Sort Code"      v={account.sortCode} />}
-            {!!account.bankName      && <DetailRow k="Bank Name"      v={account.bankName} />}
-            {!!account.bankAddress   && <DetailRow k="Bank Address"   v={account.bankAddress} />}
-            <DetailRow k="Status"        v={account.status || "Active"} copyable={false} />
+            {!!account.sortCode && <DetailRow k="Sort Code" v={account.sortCode} />}
+            {!!account.bankName && <DetailRow k="Bank Name" v={account.bankName} />}
+            {!!account.bankAddress && <DetailRow k="Bank Address" v={account.bankAddress} />}
+            <DetailRow k="Status" v={account.status || "Active"} copyable={false} />
           </View>
         </ScrollView>
       )}

@@ -2,11 +2,11 @@
  * ConversionStatusBanner - Shows explicit debit/credit status for pending conversions
  * Auto-hides when settlement completes
  */
-import React from "react";
-import { View, Pressable, Animated, StyleSheet } from "react-native";
-import AppText from "./AppText";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { PendingSettlement } from "../hooks/usePendingSettlements";
+import AppText from "./AppText";
 
 interface ConversionStatusBannerProps {
   settlements: PendingSettlement[];
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   timestamp: {
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   statusAmount: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#EF4444",
   },
   creditAmount: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   pendingText: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#D97706",
   },
   footer: {

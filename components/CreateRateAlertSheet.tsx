@@ -1,13 +1,13 @@
-import React, { useState } from "react";
-import { View, Pressable, ActivityIndicator, Switch } from "react-native";
+import { createRateAlert } from "@/api/config";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState } from "react";
+import { ActivityIndicator, Pressable, Switch, View } from "react-native";
+import { useAppTheme } from "../theme/ThemeProvider";
 import AppText from "./AppText";
 import AppTextInput from "./AppTextInput";
-import CountryFlag from "./CountryFlag";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createRateAlert } from "@/api/config";
 import BottomSheet from "./BottomSheet";
-import { useAppTheme } from "../theme/ThemeProvider";
+import CountryFlag from "./CountryFlag";
 
 type Props = {
   open: boolean;
@@ -83,7 +83,7 @@ export default function CreateRateAlertSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose}>
-      <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
+      <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.text, marginBottom: 4 }}>
         Set Rate Alert
       </AppText>
       <AppText style={{ color: colors.muted, marginBottom: 20 }}>
@@ -100,7 +100,7 @@ export default function CreateRateAlertSheet({
         }}
       >
         <CountryFlag currencyCode={fromCurrency} fallbackEmoji={fromFlag} size="md" />
-        <AppText style={{ fontSize: 18, fontWeight: "700", marginHorizontal: 8, color: colors.text }}>
+        <AppText style={{ fontSize: 18, fontWeight: "600", marginHorizontal: 8, color: colors.text }}>
           {fromCurrency} → {toCurrency}
         </AppText>
         <CountryFlag currencyCode={toCurrency} fallbackEmoji={toFlag} size="md" />
@@ -116,13 +116,13 @@ export default function CreateRateAlertSheet({
         }}
       >
         <AppText style={{ color: colors.muted, fontSize: 12, marginBottom: 4 }}>Current Rate</AppText>
-        <AppText style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}>
+        <AppText style={{ color: colors.text, fontSize: 18, fontWeight: "600" }}>
           1 {fromCurrency} = {currentRate.toFixed(4)} {toCurrency}
         </AppText>
       </View>
 
       {/* Target Rate Input */}
-      <AppText style={{ fontWeight: "700", color: colors.text, marginBottom: 8 }}>Target Rate</AppText>
+      <AppText style={{ fontWeight: "600", color: colors.text, marginBottom: 8 }}>Target Rate</AppText>
       <AppTextInput
         value={targetRate}
         onChangeText={setTargetRate}
@@ -135,14 +135,14 @@ export default function CreateRateAlertSheet({
           borderRadius: 10,
           padding: 14,
           fontSize: 18,
-          fontWeight: "700",
+          fontWeight: "600",
           marginBottom: 16,
           color: colors.text,
         }}
       />
 
       {/* Direction Toggle */}
-      <AppText style={{ fontWeight: "700", color: colors.text, marginBottom: 8 }}>Alert When Rate</AppText>
+      <AppText style={{ fontWeight: "600", color: colors.text, marginBottom: 8 }}>Alert When Rate</AppText>
       <View style={{ flexDirection: "row", marginBottom: 16 }}>
         <Pressable
           onPress={() => setDirection("above")}
@@ -158,7 +158,7 @@ export default function CreateRateAlertSheet({
           }}
         >
           <Ionicons name="trending-up" size={18} color={direction === "above" ? colors.primary : colors.muted} style={{ marginBottom: 4 }} />
-          <AppText style={{ fontWeight: "700", color: direction === "above" ? colors.primary : colors.muted }}>
+          <AppText style={{ fontWeight: "600", color: direction === "above" ? colors.primary : colors.muted }}>
             Goes Above
           </AppText>
         </Pressable>
@@ -175,7 +175,7 @@ export default function CreateRateAlertSheet({
           }}
         >
           <Ionicons name="trending-down" size={18} color={direction === "below" ? colors.red : colors.muted} style={{ marginBottom: 4 }} />
-          <AppText style={{ fontWeight: "700", color: direction === "below" ? colors.red : colors.muted }}>
+          <AppText style={{ fontWeight: "600", color: direction === "below" ? colors.red : colors.muted }}>
             Drops Below
           </AppText>
         </Pressable>
@@ -194,7 +194,7 @@ export default function CreateRateAlertSheet({
         }}
       >
         <View>
-          <AppText style={{ fontWeight: "700", color: colors.text }}>Recurring Alert</AppText>
+          <AppText style={{ fontWeight: "600", color: colors.text }}>Recurring Alert</AppText>
           <AppText style={{ color: colors.muted, fontSize: 12 }}>Keep alerting each time target is hit</AppText>
         </View>
         <Switch
@@ -225,7 +225,7 @@ export default function CreateRateAlertSheet({
         {loading ? (
           <ActivityIndicator color={colors.actionText} />
         ) : (
-          <AppText style={{ color: colors.actionText, fontWeight: "700", fontSize: 16 }}>Create Alert</AppText>
+          <AppText style={{ color: colors.actionText, fontWeight: "600", fontSize: 16 }}>Create Alert</AppText>
         )}
       </Pressable>
     </BottomSheet>

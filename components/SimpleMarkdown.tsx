@@ -1,8 +1,8 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import AppText from "./AppText";
+import { StyleSheet, View } from "react-native";
 import { COLORS } from "../theme/colors";
 import { SPACE } from "../theme/designSystem";
+import AppText from "./AppText";
 
 interface Props {
   content: string;
@@ -73,15 +73,15 @@ export default function SimpleMarkdown({ content }: Props) {
 }
 
 const s = StyleSheet.create({
-  heading: { fontWeight: "700", color: COLORS.text, marginBottom: SPACE.sm, marginTop: SPACE.lg },
+  heading: { fontWeight: "600", color: COLORS.text, marginBottom: SPACE.sm, marginTop: SPACE.lg },
   h1: { fontSize: 22 },
   h2: { fontSize: 18 },
   h3: { fontSize: 15 },
   paragraph: { fontSize: 14, color: COLORS.text, lineHeight: 22, marginBottom: SPACE.lg },
-  bold: { fontWeight: "700", fontSize: 14, color: COLORS.text },
+  bold: { fontWeight: "600", fontSize: 14, color: COLORS.text },
   italic: { fontStyle: "italic", fontSize: 14, color: COLORS.text },
   listBlock: { marginBottom: SPACE.lg },
   listRow: { flexDirection: "row", marginBottom: SPACE.sm, paddingRight: SPACE.sm },
-  listBullet: { fontSize: 14, color: COLORS.primary, fontWeight: "700", width: 22 },
+  listBullet: { fontSize: 14, color: COLORS.primary, fontWeight: "600", width: 22 },
   listText: { flex: 1, fontSize: 14, color: COLORS.text, lineHeight: 21 },
 });

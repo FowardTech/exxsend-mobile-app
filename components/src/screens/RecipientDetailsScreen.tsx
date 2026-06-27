@@ -1,24 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "react-native";
-import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { View, Pressable, FlatList, ActivityIndicator } from "react-native";
-import AppText from "../../AppText";
-import AppTextInput from "../../AppTextInput";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import BottomSheet from "../../BottomSheet";
-import { useAppTheme } from "../../../theme/ThemeProvider";
-import { useStyles } from "../../../theme/styles";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, StatusBar, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  getBanksByCountry,
-  verifyBankAccount,
   Bank,
-  CURRENCY_TO_COUNTRY,
   COUNTRY_NAMES,
+  CURRENCY_TO_COUNTRY,
+  getBanksByCountry,
   getCurrencySymbol,
+  verifyBankAccount,
 } from "../../../api/flutterwave";
 import { saveRecipientToDB } from "../../../api/sync";
+import { useAppTheme } from "../../../theme/ThemeProvider";
+import { useStyles } from "../../../theme/styles";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BottomSheet from "../../BottomSheet";
 
 // ✅ Email validation regex (Interac)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -209,11 +208,11 @@ export default function RecipientDetailsScreen() {
   const displayBank = isInterac ? "Interac e-Transfer" : selectedBank?.name || "";
   const initials = displayName
     ? displayName
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((n) => n[0]?.toUpperCase())
-        .join("")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0]?.toUpperCase())
+      .join("")
     : "??";
 
   const handleContinue = () => {
@@ -225,25 +224,25 @@ export default function RecipientDetailsScreen() {
     // ✅ Build recipient payload
     const recipientData = isInterac
       ? {
-          accountName: recipientName.trim(),
-          accountNumber: recipientEmail.trim().toLowerCase(), // email in accountNumber field
-          bankCode: "INTERAC",
-          bankName: "Interac e-Transfer",
-          currency: destCurrency,
-          countryCode: "CA",
-          isInterac: true,
-          payoutType: "interac",
-        }
+        accountName: recipientName.trim(),
+        accountNumber: recipientEmail.trim().toLowerCase(), // email in accountNumber field
+        bankCode: "INTERAC",
+        bankName: "Interac e-Transfer",
+        currency: destCurrency,
+        countryCode: "CA",
+        isInterac: true,
+        payoutType: "interac",
+      }
       : {
-          accountName: accountName.trim(),
-          accountNumber: account,
-          bankCode: selectedBank!.code,
-          bankName: selectedBank!.name,
-          currency: destCurrency,
-          countryCode,
-          isInterac: false,
-          payoutType: "bank",
-        };
+        accountName: accountName.trim(),
+        accountNumber: account,
+        bankCode: selectedBank!.code,
+        bankName: selectedBank!.name,
+        currency: destCurrency,
+        countryCode,
+        isInterac: false,
+        payoutType: "bank",
+      };
 
     // ✅ Save recipient to DB if toggle is on
     if (save && userPhone) {
@@ -285,7 +284,7 @@ export default function RecipientDetailsScreen() {
           }}
         >
           <AppText style={{ fontSize: 13, color: "#065F46" }}>Sending</AppText>
-          <AppText style={{ fontSize: 20, fontWeight: "700", color: "#065F46" }}>
+          <AppText style={{ fontSize: 20, fontWeight: "600", color: "#065F46" }}>
             {symbol}
             {parseFloat(toAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
             {destCurrency}
@@ -462,7 +461,7 @@ export default function RecipientDetailsScreen() {
                     setBankSearchQuery("");
                   }}
                 >
-                  <AppText style={{ fontWeight: "700" }}>{item.name}</AppText>
+                  <AppText style={{ fontWeight: "600" }}>{item.name}</AppText>
                   <AppText style={{ color: "#9B9B9B" }}>›</AppText>
                 </Pressable>
               )}
@@ -480,10 +479,10 @@ export default function RecipientDetailsScreen() {
       <BottomSheet open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <View style={{ alignItems: "center", paddingTop: 18 }}>
           <View style={styles.confirmAvatar}>
-            <AppText style={{ color: "#fff", fontWeight: "700", fontSize: 18 }}>{initials}</AppText>
+            <AppText style={{ color: "#fff", fontWeight: "600", fontSize: 18 }}>{initials}</AppText>
           </View>
           <View style={styles.verifyBadge}>
-            <AppText style={{ color: "#fff", fontWeight: "700" }}>✓</AppText>
+            <AppText style={{ color: "#fff", fontWeight: "600" }}>✓</AppText>
           </View>
 
           <AppText style={styles.confirmTitle}>Confirm recipient details</AppText>

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, ActivityIndicator, Share, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import QRCode from "react-native-qrcode-svg";
-import AppText from "@/components/AppText";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
 import { getUserProfile } from "@/api/config";
+import AppText from "@/components/AppText";
+import { COLORS } from "@/theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, Share, StyleSheet, View } from "react-native";
+import QRCode from "react-native-qrcode-svg";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 /**
  * Encodes the user's real, backend-recorded @username (not their raw phone
@@ -42,7 +42,7 @@ export default function ReceiveQrScreen() {
           setUsername(res.user.username);
           AsyncStorage.setItem("user_username", res.user.username);
         }
-      } catch {}
+      } catch { }
       setLoading(false);
     })();
   }, []);
@@ -55,7 +55,7 @@ export default function ReceiveQrScreen() {
       await Share.share({
         message: `Send me money on ExxSend — scan my code in the app, or use this link: ${payCode}`,
       });
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -118,15 +118,15 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
   iconBtn: { width: 38, height: 38, borderRadius: RADIUS.full, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", ...GLASS_BORDER, ...CARD_SHADOW },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text },
   body: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   subtitle: { fontSize: 14, color: COLORS.muted, textAlign: "center", marginBottom: SPACE.xxl, lineHeight: 20, paddingHorizontal: SPACE.lg },
   qrCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.xl, padding: SPACE.xxl, ...GLASS_BORDER, ...CARD_SHADOW },
-  userName: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginTop: SPACE.xxl },
+  userName: { fontSize: 18, fontWeight: "600", color: COLORS.text, marginTop: SPACE.xxl },
   handleHint: { fontSize: 13, color: COLORS.muted, fontWeight: "600", marginTop: SPACE.xs },
-  noUsernameTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginTop: SPACE.lg, textAlign: "center" },
+  noUsernameTitle: { fontSize: 17, fontWeight: "600", color: COLORS.text, marginTop: SPACE.lg, textAlign: "center" },
   scanBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: SPACE.xxxl, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.xxl },
-  scanBtnText: { color: COLORS.primary, fontSize: 14, fontWeight: "700" },
+  scanBtnText: { color: COLORS.primary, fontSize: 14, fontWeight: "600" },
   errorWrap: { alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.lg },
   errorText: { fontSize: 14, color: COLORS.muted, textAlign: "center", lineHeight: 20 },
 });

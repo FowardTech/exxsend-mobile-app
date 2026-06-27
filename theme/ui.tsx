@@ -2,10 +2,9 @@
  * Shared UI primitives used across all screens.
  * Import these instead of writing inline styles.
  */
-import React from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { COLORS } from "./colors";
 
 // ── Card ──────────────────────────────────────────────────────
@@ -89,7 +88,7 @@ const ui = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+  sectionTitle: { fontSize: 15, fontWeight: "600", color: COLORS.text },
   sectionAction: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
   screenHeader: {
     flexDirection: "row",
@@ -98,7 +97,7 @@ const ui = StyleSheet.create({
     paddingHorizontal: 16,
     height: 52,
   },
-  screenHeaderTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, flex: 1, textAlign: "center" },
+  screenHeaderTitle: { fontSize: 15, fontWeight: "600", color: COLORS.text, flex: 1, textAlign: "center" },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
     backgroundColor: COLORS.bg,
@@ -111,9 +110,9 @@ const ui = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   primaryBtnDisabled: { backgroundColor: COLORS.border },
-  primaryBtnText: { color: COLORS.actionText, fontSize: 14, fontWeight: "700", letterSpacing: 0.1 },
+  primaryBtnText: { color: COLORS.actionText, fontSize: 14, fontWeight: "600", letterSpacing: 0.1 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  badgeText: { fontSize: 11, fontWeight: "700" },
+  badgeText: { fontSize: 11, fontWeight: "600" },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderLight },
 });
 

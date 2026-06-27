@@ -1,43 +1,41 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useAutoPolling } from "../../hooks/useAutoPolling";
 import {
-  View,
-  Text,
-  Pressable,
-  Alert,
-  RefreshControl,
-  Image,
-  ActivityIndicator,
-  LayoutChangeEvent,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { ScrollView } from "react-native";
-import ScreenShell from "./../../ScreenShell";
-import PrimaryButton from "./../../PrimaryButton";
-import OutlineButton from "./../../OutlineButton";
-import BottomSheet from "./../../BottomSheet";
-import { styles } from "../../../theme/styles";
-import { COLORS } from "../../../theme/colors";
-import { LinearGradient } from "expo-linear-gradient";
-import VerifyEmailCard from "../../../components/src/screens/VerifyEmailCardScreen";
-import VerifyIdentityCardScreen from "./VerifyIdentityCardScreen";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  sendEmailOtp,
-  getUserProfile,
-  getUserAccounts,
+  createPlaidIdvSession,
   // getCountries, // ❌ not used for live rate flags anymore
   getExchangeRates,
+  getPublicCountries,
   getTotalBalance,
-  createPlaidIdvSession,
-  getPublicCurrencies,
-  getPublicCountries, // ✅ ADD THIS (use your real function name)
+  getUserAccounts,
+  getUserProfile,
+  sendEmailOtp
 } from "@/api/config";
-import { getLocalBalance } from "../../../api/flutterwave";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle } from "react-native-svg";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  LayoutChangeEvent,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle, Defs, Path, Stop, LinearGradient as SvgGradient } from "react-native-svg";
+import { getLocalBalance } from "../../../api/flutterwave";
+import VerifyEmailCard from "../../../components/src/screens/VerifyEmailCardScreen";
 import { usePendingSettlements } from "../../../hooks/usePendingSettlements";
+import { COLORS } from "../../../theme/colors";
+import { styles } from "../../../theme/styles";
+import { useAutoPolling } from "../../hooks/useAutoPolling";
+import BottomSheet from "./../../BottomSheet";
+import OutlineButton from "./../../OutlineButton";
+import PrimaryButton from "./../../PrimaryButton";
+import ScreenShell from "./../../ScreenShell";
 
 /** ---------------- Types ---------------- **/
 type Country = {
@@ -251,7 +249,7 @@ function LiveRateMiniChart({
                 backgroundColor: active ? "rgba(25,149,95,0.10)" : "transparent",
               }}
             >
-              <Text style={{ fontWeight: "700", color: active ? "#19955f" : "#6b7280", fontSize: 12 }}>{r}</Text>
+              <Text style={{ fontWeight: "600", color: active ? "#19955f" : "#6b7280", fontSize: 12 }}>{r}</Text>
             </Pressable>
           );
         })}
@@ -259,8 +257,8 @@ function LiveRateMiniChart({
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
         <View>
-          <Text style={{ color: "#6b7280", fontSize: 12, fontWeight: "700" }}>{pairLabel}</Text>
-          <Text style={{ color: "#111827", fontSize: 16, fontWeight: "700", marginTop: 2 }}>
+          <Text style={{ color: "#6b7280", fontSize: 12, fontWeight: "600" }}>{pairLabel}</Text>
+          <Text style={{ color: "#111827", fontSize: 16, fontWeight: "600", marginTop: 2 }}>
             {Number(baseRate || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </Text>
         </View>
@@ -273,7 +271,7 @@ function LiveRateMiniChart({
             backgroundColor: isPositive ? "rgba(25,149,95,0.12)" : "rgba(239,68,68,0.12)",
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: "700", color: isPositive ? "#19955f" : "#ef4444" }}>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: isPositive ? "#19955f" : "#ef4444" }}>
             {isPositive ? "+" : ""}
             {changePercent.toFixed(2)}%
           </Text>
@@ -428,22 +426,22 @@ export default function HomeScreen() {
           ? true
           : sellAccount && sellBaselineOk
             ? await checkAndClearIfSettled(
-                sellCcy,
-                Number(sellAccount.balance || 0),
-                Number(settlement.sellBalanceBefore) - Number(settlement.sellAmount || 0),
-                0.01
-              )
+              sellCcy,
+              Number(sellAccount.balance || 0),
+              Number(settlement.sellBalanceBefore) - Number(settlement.sellAmount || 0),
+              0.01
+            )
             : false;
 
         const buySettled = !buyNeedsConfirm
           ? true
           : buyAccount && buyBaselineOk
             ? await checkAndClearIfSettled(
-                buyCcy,
-                Number(buyAccount.balance || 0),
-                Number(settlement.buyBalanceBefore) + Number(settlement.buyAmount || 0),
-                0.01
-              )
+              buyCcy,
+              Number(buyAccount.balance || 0),
+              Number(settlement.buyBalanceBefore) + Number(settlement.buyAmount || 0),
+              0.01
+            )
             : false;
 
         if (sellSettled && buySettled) {
@@ -473,7 +471,7 @@ export default function HomeScreen() {
           try {
             const parsed = JSON.parse(cachedAccounts);
             if (Array.isArray(parsed) && parsed.length > 0) setAccounts(parsed);
-          } catch {}
+          } catch { }
         }
 
         if (cachedTotalBalance) {
@@ -485,16 +483,16 @@ export default function HomeScreen() {
               if (parsed.symbol) setHomeCurrencySymbol(parsed.symbol);
               setTotalBalanceLoading(false);
             }
-          } catch {}
+          } catch { }
         }
 
         if (cachedFlags) {
           try {
             const parsed = JSON.parse(cachedFlags);
             if (parsed && typeof parsed === "object") setFlagsByCurrency(parsed);
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
     };
     loadCachedData();
   }, []);
@@ -504,7 +502,7 @@ export default function HomeScreen() {
     setHideBalance(newValue);
     try {
       await AsyncStorage.setItem(HIDE_BALANCE_KEY, String(newValue));
-    } catch {}
+    } catch { }
   }, [hideBalance]);
 
   const formatBalance = useCallback(
@@ -585,7 +583,7 @@ export default function HomeScreen() {
       if (Object.keys(flagsMap).length > 0) {
         setFlagsByCurrency(flagsMap);
         setDisabledCurrencies(disabledMap);
-        AsyncStorage.setItem(CACHED_FLAGS_KEY, JSON.stringify(flagsMap)).catch(() => {});
+        AsyncStorage.setItem(CACHED_FLAGS_KEY, JSON.stringify(flagsMap)).catch(() => { });
       } else {
         // keep existing state (cached) if API fails
         flagsMap = flagsByCurrency || {};
@@ -623,7 +621,7 @@ export default function HomeScreen() {
                 symbol: totalRes.homeCurrencySymbol || homeCurrencySymbol,
                 cachedAt: Date.now(),
               })
-            ).catch(() => {});
+            ).catch(() => { });
           }
           if (totalRes.homeCurrency) {
             setHomeCurrency(totalRes.homeCurrency);
@@ -671,12 +669,12 @@ export default function HomeScreen() {
                 if (balanceByCurrency.has(ccy)) return { ...a, balance: balanceByCurrency.get(ccy)!, isExotic: true };
                 return a;
               });
-            } catch {}
+            } catch { }
           }
 
           if (currentVersion === fetchVersionRef.current) {
             setAccounts(userAccounts);
-            AsyncStorage.setItem(CACHED_ACCOUNTS_KEY, JSON.stringify(userAccounts)).catch(() => {});
+            AsyncStorage.setItem(CACHED_ACCOUNTS_KEY, JSON.stringify(userAccounts)).catch(() => { });
           }
 
           await clearSettledConversions(userAccounts);
@@ -879,7 +877,7 @@ export default function HomeScreen() {
             >
               <Text style={{ fontSize: 16, marginRight: 8 }}>⚠️</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "700", color: "#856404" }}>KYC Verification Pending</Text>
+                <Text style={{ fontWeight: "600", color: "#856404" }}>KYC Verification Pending</Text>
                 <Text style={{ color: "#856404", fontSize: 12, marginTop: 2 }}>
                   Your account is awaiting admin approval. Some features are restricted.
                 </Text>
@@ -901,7 +899,7 @@ export default function HomeScreen() {
                 <ActivityIndicator size="small" color={COLORS.primary} />
               ) : (
                 <Pressable onPress={toggleHideBalance} style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={{ fontWeight: "700", fontSize: 16, color: "#222" }}>
+                  <Text style={{ fontWeight: "600", fontSize: 16, color: "#222" }}>
                     {hideBalance ? "••••••" : `${homeCurrencySymbol}${formatBalance(totalBalance)}`}
                   </Text>
                   <Text style={{ marginLeft: 6, fontSize: 14 }}>{hideBalance ? "🙈" : "👁️"}</Text>
@@ -1026,7 +1024,7 @@ export default function HomeScreen() {
                 >
                   <View style={styles.recentAvatarWrap}>
                     <View style={styles.recentAvatar}>
-                      <Text style={{ fontWeight: "700", color: "#323232ff" }}>{initials}</Text>
+                      <Text style={{ fontWeight: "600", color: "#323232ff" }}>{initials}</Text>
                     </View>
                     <View style={styles.smallFlag}>
                       <Text>{flag}</Text>

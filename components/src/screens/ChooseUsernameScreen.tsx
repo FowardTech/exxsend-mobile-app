@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { lookupExxsendMember, setUsername as setUsernameApi } from "@/api/config";
 import AppText from "@/components/AppText";
 import AppTextInput from "@/components/AppTextInput";
 import BackButton from "@/components/BackButton";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { lookupExxsendMember, setUsername as setUsernameApi } from "@/api/config";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Status = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -146,7 +146,7 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.sm },
   body: { flex: 1, paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.xl },
   iconWrap: { width: 56, height: 56, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center", marginBottom: SPACE.lg },
-  title: { fontSize: 24, fontWeight: "700", color: COLORS.text },
+  title: { fontSize: 24, fontWeight: "600", color: COLORS.text },
   subtitle: { fontSize: 14, color: COLORS.muted, fontWeight: "500", marginTop: SPACE.sm, lineHeight: 20, marginBottom: SPACE.xxl },
   inputWrap: {
     flexDirection: "row", alignItems: "center",
@@ -154,10 +154,10 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACE.lg, height: 56,
     ...GLASS_BORDER, ...CARD_SHADOW,
   },
-  atSign: { fontSize: 17, fontWeight: "700", color: COLORS.muted, marginRight: 2 },
-  input: { flex: 1, fontSize: 17, fontWeight: "700", color: COLORS.text, paddingVertical: 0 },
+  atSign: { fontSize: 17, fontWeight: "600", color: COLORS.muted, marginRight: 2 },
+  input: { flex: 1, fontSize: 17, fontWeight: "600", color: COLORS.text, paddingVertical: 0 },
   statusText: { fontSize: 12, fontWeight: "600", marginTop: SPACE.sm, marginLeft: 2 },
   footer: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.xl },
   saveBtn: { height: 54, borderRadius: RADIUS.md, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  saveBtnText: { fontSize: 15, fontWeight: "600", color: "#FFFFFF" },
 });

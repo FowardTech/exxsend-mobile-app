@@ -3,10 +3,10 @@
  * Gives consistent back button, title size, and SafeAreaView top padding.
  */
 import React from "react";
-import { View, StyleSheet, StatusBar } from "react-native";
+import { StatusBar, StyleSheet, View } from "react-native";
+import { COLORS } from "../theme/colors";
 import AppText from "./AppText";
 import BackButton from "./BackButton";
-import { COLORS } from "../theme/colors";
 
 interface Props {
   title: string;
@@ -43,7 +43,7 @@ const s = StyleSheet.create({
   placeholder: { width: 34 },
   title: {
     flex: 1, textAlign: "center",
-    fontSize: 17, fontWeight: "700",
+    fontSize: 17, fontWeight: "600",
     color: COLORS.text,
     marginHorizontal: 8,
   },

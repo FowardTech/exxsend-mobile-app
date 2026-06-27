@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AppText from "../../AppText";
-import AppTextInput from "../../AppTextInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import ScreenShell from "./../../ScreenShell";
-import { styles } from "../../../theme/styles";
-import { COLORS } from "../../../theme/colors";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import {
+  Bank,
   getNigerianBanks,
   verifyBankAccount,
-  Bank,
 } from "../../../api/flutterwave";
+import { COLORS } from "../../../theme/colors";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import ScreenShell from "./../../ScreenShell";
 
 // Bank picker modal component
 function BankPickerModal({
@@ -64,14 +63,14 @@ function BankPickerModal({
       >
         <View style={{ padding: 20 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <AppText style={{ fontSize: 18, fontWeight: "700", color: "#1F2937" }}>
+            <AppText style={{ fontSize: 18, fontWeight: "600", color: "#1F2937" }}>
               Select Bank
             </AppText>
             <Pressable onPress={onClose}>
               <AppText style={{ fontSize: 16, color: "#6B7280" }}>Cancel</AppText>
             </Pressable>
           </View>
-          
+
           <AppTextInput
             style={{
               marginTop: 16,
@@ -89,7 +88,7 @@ function BankPickerModal({
             autoCapitalize="none"
           />
         </View>
-        
+
         <ScrollView style={{ paddingHorizontal: 20 }}>
           {filteredBanks.map((bank) => (
             <Pressable
@@ -110,7 +109,7 @@ function BankPickerModal({
               </AppText>
             </Pressable>
           ))}
-          
+
           {filteredBanks.length === 0 && (
             <AppText style={{ textAlign: "center", color: "#9CA3AF", marginTop: 20 }}>
               No banks found
@@ -124,26 +123,26 @@ function BankPickerModal({
 
 export default function BankDetailsScreen() {
   const router = useRouter();
-  
+
   const [userPhone, setUserPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  
+
   // Bank data
   const [banks, setBanks] = useState<Bank[]>([]);
   const [banksLoading, setBanksLoading] = useState(true);
-  
+
   // Form state
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [isVerified, setIsVerified] = useState(false);
-  
+
   // Modal state
   const [showBankPicker, setShowBankPicker] = useState(false);
   const [bankSearchQuery, setBankSearchQuery] = useState("");
-  
+
   // Load user phone and existing details
   useEffect(() => {
     const loadData = async () => {
@@ -188,7 +187,7 @@ export default function BankDetailsScreen() {
 
     loadData();
   }, []);
-  
+
   // Load Nigerian banks
   useEffect(() => {
     const loadBanks = async () => {
@@ -203,24 +202,24 @@ export default function BankDetailsScreen() {
         setBanksLoading(false);
       }
     };
-    
+
     loadBanks();
   }, []);
-  
+
   // Verify account when account number is complete
   const handleVerifyAccount = useCallback(async () => {
     if (!selectedBank || accountNumber.length < 10) {
       Alert.alert("Invalid Input", "Please select a bank and enter a valid 10-digit account number.");
       return;
     }
-    
+
     setVerifying(true);
     setIsVerified(false);
     setAccountName("");
-    
+
     try {
       const result = await verifyBankAccount(accountNumber, selectedBank.code);
-      
+
       if (result.success && result.accountName) {
         setAccountName(result.accountName);
         setIsVerified(true);
@@ -237,28 +236,28 @@ export default function BankDetailsScreen() {
       setVerifying(false);
     }
   }, [selectedBank, accountNumber]);
-  
+
   // Auto-verify when account number reaches 10 digits
   useEffect(() => {
     if (accountNumber.length === 10 && selectedBank && !isVerified && !verifying) {
       handleVerifyAccount();
     }
   }, [accountNumber, selectedBank, isVerified, verifying, handleVerifyAccount]);
-  
+
   // Reset verification when bank or account changes
   useEffect(() => {
     setIsVerified(false);
     setAccountName("");
   }, [selectedBank?.code]);
-  
+
   const handleSave = async () => {
     if (!isVerified || !selectedBank || !accountNumber || !accountName) {
       Alert.alert("Incomplete", "Please verify your account before saving.");
       return;
     }
-    
+
     setSaving(true);
-    
+
     try {
       const details = {
         isConfigured: true,
@@ -268,7 +267,7 @@ export default function BankDetailsScreen() {
         bankName: selectedBank.name,
       };
       await AsyncStorage.setItem("user_payout_details", JSON.stringify(details));
-      
+
       Alert.alert(
         "Success",
         "Your bank details have been saved. Future NGN payouts will be sent automatically to this account.",
@@ -290,7 +289,7 @@ export default function BankDetailsScreen() {
       </ScreenShell>
     );
   }
-  
+
   return (
     <ScreenShell >
       <KeyboardAvoidingView
@@ -309,7 +308,7 @@ export default function BankDetailsScreen() {
               funds will be sent directly to this account.
             </AppText>
           </View>
-          
+
           {/* Bank Selection */}
           <View style={{ marginBottom: 20 }}>
             <AppText style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
@@ -339,13 +338,13 @@ export default function BankDetailsScreen() {
                 {banksLoading
                   ? "Loading banks..."
                   : selectedBank
-                  ? selectedBank.name
-                  : "Select your bank"}
+                    ? selectedBank.name
+                    : "Select your bank"}
               </AppText>
               <AppText style={{ fontSize: 18, color: "#9CA3AF" }}>▼</AppText>
             </Pressable>
           </View>
-          
+
           {/* Account Number */}
           <View style={{ marginBottom: 20 }}>
             <AppText style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
@@ -394,7 +393,7 @@ export default function BankDetailsScreen() {
               Enter your 10-digit NUBAN account number
             </AppText>
           </View>
-          
+
           {/* Account Name (auto-filled after verification) */}
           {accountName ? (
             <View style={{ marginBottom: 24 }}>
@@ -420,7 +419,7 @@ export default function BankDetailsScreen() {
               </AppText>
             </View>
           ) : null}
-          
+
           {/* Verify Button (if not auto-verified) */}
           {selectedBank && accountNumber.length === 10 && !isVerified && !verifying && (
             <Pressable
@@ -438,7 +437,7 @@ export default function BankDetailsScreen() {
               </AppText>
             </Pressable>
           )}
-          
+
           {/* Save Button */}
           <Pressable
             style={{
@@ -457,7 +456,7 @@ export default function BankDetailsScreen() {
               <AppText
                 style={{
                   fontSize: 16,
-                  fontWeight: "700",
+                  fontWeight: "600",
                   color: isVerified ? "#fff" : "#9CA3AF",
                 }}
               >
@@ -465,7 +464,7 @@ export default function BankDetailsScreen() {
               </AppText>
             )}
           </Pressable>
-          
+
           {/* Info Card */}
           <View
             style={{
@@ -488,7 +487,7 @@ export default function BankDetailsScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      
+
       {/* Bank Picker Modal */}
       <BankPickerModal
         visible={showBankPicker}

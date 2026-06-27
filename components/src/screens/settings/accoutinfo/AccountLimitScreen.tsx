@@ -1,15 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, ScrollView, StyleSheet, Modal, ActivityIndicator } from "react-native";
-import AppText from "../../../../AppText";
-import BackButton from "../../../../BackButton";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { API_BASE_URL } from "../../../../../api/config";
+import CountryFlag from "../../../../../components/CountryFlag";
 import ScreenShell from "../../../../../components/ScreenShell";
 import { COLORS } from "../../../../../theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../../../theme/designSystem";
-import CountryFlag from "../../../../../components/CountryFlag";
-import { API_BASE_URL } from "../../../../../api/config";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "../../../../../theme/designSystem";
+import AppText from "../../../../AppText";
+import BackButton from "../../../../BackButton";
 
 type UserAccount = {
   id: string;
@@ -170,10 +170,10 @@ export default function AccountLimitsScreen() {
     (async () => {
       try {
         const phone = (await AsyncStorage.getItem("user_phone")) || "";
-        
+
         // Try multiple cache key patterns (v2 is current, v1 is legacy fallback)
         let raw: string | null = null;
-        
+
         if (phone) {
           // Try v2 first (current HomeScreen pattern)
           raw = await AsyncStorage.getItem(`cached_accounts_v2_${phone}`);
@@ -189,7 +189,7 @@ export default function AccountLimitsScreen() {
         if (!raw) {
           raw = await AsyncStorage.getItem("cached_accounts_v1");
         }
-        
+
         const parsed = raw ? JSON.parse(raw) : [];
         if (Array.isArray(parsed)) {
           setAccounts(
@@ -278,10 +278,10 @@ export default function AccountLimitsScreen() {
   return (
     <>
       <ScreenShell padded={false} scrollable={false}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-        <View style={s.header}>
-          <BackButton onPress={() => router.back()} />
-          <AppText style={s.headerTitle}>Account limits</AppText>
+        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+          <View style={s.header}>
+            <BackButton onPress={() => router.back()} />
+            <AppText style={s.headerTitle}>Account limits</AppText>
             <View style={{ width: 40 }} />
           </View>
 
@@ -297,7 +297,7 @@ export default function AccountLimitsScreen() {
                   style={{
                     marginTop: 10,
                     color: "#6B7280",
-                    fontWeight: "700",
+                    fontWeight: "600",
                   }}
                 >
                   No wallets found yet
@@ -320,8 +320,8 @@ export default function AccountLimitsScreen() {
                           {a.iban
                             ? "IBAN, SWIFT/BIC"
                             : a.accountNumber
-                            ? "Account number"
-                            : "Account"}
+                              ? "Account number"
+                              : "Account"}
                         </AppText>
                       </View>
                     </View>
@@ -418,14 +418,14 @@ const s = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
   subtitle: {
     paddingHorizontal: SCREEN_PADDING,
     marginTop: SPACE.xs + 2,
     color: COLORS.muted,
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 12,
   },
   card: {
@@ -446,8 +446,8 @@ const s = StyleSheet.create({
   },
   divider: { borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
   left: { flexDirection: "row", alignItems: "center" },
-  title: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-  sub: { marginTop: 2, fontSize: 12, fontWeight: "700", color: COLORS.muted },
+  title: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+  sub: { marginTop: 2, fontSize: 12, fontWeight: "600", color: COLORS.muted },
 });
 
 const m = StyleSheet.create({
@@ -479,7 +479,7 @@ const m = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
   closeBtn: {
@@ -501,7 +501,7 @@ const m = StyleSheet.create({
   loadingText: {
     marginTop: SPACE.md,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.muted,
   },
   errorContainer: {
@@ -511,7 +511,7 @@ const m = StyleSheet.create({
   errorText: {
     marginTop: SPACE.sm + 2,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.muted,
   },
   section: {
@@ -525,12 +525,12 @@ const m = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
   noData: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.muted,
     fontStyle: "italic",
   },
@@ -539,7 +539,7 @@ const m = StyleSheet.create({
   },
   limitLabel: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.textSecondary,
     marginBottom: 4,
   },
@@ -550,12 +550,12 @@ const m = StyleSheet.create({
   },
   limitUsed: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
   limitRemaining: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.primary,
   },
   progressBg: {
@@ -583,7 +583,7 @@ const m = StyleSheet.create({
   noticeText: {
     flex: 1,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.accentDark,
     lineHeight: 16,
   },

@@ -1,10 +1,10 @@
-import React from "react";
-import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AppText from "../../AppText";
 import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, View } from "react-native";
 import { COLORS } from "../../../theme/colors";
 import { styles } from "../../../theme/styles";
+import AppText from "../../AppText";
 
 export default function FraudAwareScreen() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function FraudAwareScreen() {
         </View>
 
         <View style={styles.infoBox}>
-          <AppText style={{ fontWeight: "700", color: COLORS.muted }}>
+          <AppText style={{ fontWeight: "600", color: COLORS.muted }}>
             ⓘ Only continue if you understand this and are sure you are acting of your own free will.
           </AppText>
         </View>

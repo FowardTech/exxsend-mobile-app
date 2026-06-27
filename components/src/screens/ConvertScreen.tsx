@@ -1,31 +1,31 @@
-import { Ionicons } from "@expo/vector-icons";
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useAutoPolling } from "../../../hooks/useAutoPolling";
-import { View, Pressable, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, FlatList, ScrollView, StyleSheet } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import AppTextInput from "../../AppTextInput";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLocalSearchParams } from "expo-router";
-import ScreenShell from "./../../ScreenShell";
-import CurrencyPill from "./../../CurrencyPill";
-import { Wallet } from "./../../CurrencyPickerModal";
-import { useStyles } from "../../../theme/styles";
-import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../theme/designSystem";
-import { router } from "expo-router";
-import {
-  getUserWallets,
-  getConversionQuote,
-  executeConversion,
-  clearAllBalanceCaches,
-} from "../../../api/config";
-import { addPendingSettlement, usePendingSettlements, clearPendingForCurrency } from "../../../hooks/usePendingSettlements";
-import FeeBreakdown, { FeeInfo } from "../../../components/FeeBreakdown";
-import CountryFlag from "../../../components/CountryFlag";
-import { userScopedKey } from "../../../utils/cacheKeys";
 import { useAppTheme } from "@/theme/ThemeProvider";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  clearAllBalanceCaches,
+  executeConversion,
+  getConversionQuote,
+  getUserWallets,
+} from "../../../api/config";
 import { checkLiquidity, isLiquidityLowResponse, LiquidityResult } from "../../../api/liquidity";
+import CountryFlag from "../../../components/CountryFlag";
+import FeeBreakdown, { FeeInfo } from "../../../components/FeeBreakdown";
 import LiquidityBanner from "../../../components/LiquidityBanner";
+import { useAutoPolling } from "../../../hooks/useAutoPolling";
+import { useDeviceTrustGate } from "../../../hooks/useDeviceTrustGate";
+import { addPendingSettlement, clearPendingForCurrency, usePendingSettlements } from "../../../hooks/usePendingSettlements";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE, TYPE } from "../../../theme/designSystem";
+import { useStyles } from "../../../theme/styles";
+import { userScopedKey } from "../../../utils/cacheKeys";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
+import { Wallet } from "./../../CurrencyPickerModal";
+import CurrencyPill from "./../../CurrencyPill";
+import ScreenShell from "./../../ScreenShell";
 
 // ✅ FIX: extend Wallet locally to include countryCode (API may return it)
 type WalletWithCountry = Wallet & { countryCode?: string; country_code?: string };
@@ -105,7 +105,7 @@ const QuickAmountButton = ({
       onPress={onPress}
       disabled={disabled}
     >
-      <AppText style={{ color: colors.primary, fontWeight: "700", fontSize: 13 }}>{label}</AppText>
+      <AppText style={{ color: colors.primary, fontWeight: "600", fontSize: 13 }}>{label}</AppText>
     </Pressable>
   );
 };
@@ -113,36 +113,37 @@ const QuickAmountButton = ({
 export default function ConvertScreen() {
   const { colors } = useAppTheme();
   const styles = useStyles();
+  const { ensureDeviceTrusted } = useDeviceTrustGate();
 
   const cv = useMemo(() => StyleSheet.create({
 
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54, position: "relative" },
-  headerSide: { minWidth: 34 },
-  headerTitle: { position: "absolute", left: 0, right: 0, textAlign: "center", ...TYPE.subtitle, color: colors.text },
-  body: { padding: SCREEN_PADDING, paddingBottom: SPACE.xxxl },
-  card: { backgroundColor: colors.card, borderRadius: RADIUS.lg, padding: SPACE.xl, marginBottom: SPACE.md, ...GLASS_BORDER, ...CARD_SHADOW },
-  cardLabel: { ...TYPE.eyebrow, color: colors.muted, marginBottom: SPACE.md },
-  amtRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
-  amtInput: { flex: 1, fontSize: 32, fontWeight: "700" as const, color: colors.text, padding: 0 },
-  amtInputReadonly: { flex: 1, fontSize: 32, fontWeight: "700" as const, color: colors.textSecondary, padding: 0 },
-  balRow: { flexDirection: "row", alignItems: "center", marginTop: SPACE.md },
-  balText: { ...TYPE.caption, color: colors.muted },
-  errText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.red },
-  warnText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.accent },
-  quickRow: { flexDirection: "row", gap: SPACE.sm, marginTop: SPACE.lg },
-  quickBtn: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight },
-  quickBtnDisabled: { backgroundColor: colors.borderLight },
-  quickBtnText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary },
-  quickBtnTextDisabled: { color: colors.muted },
-  midRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, marginBottom: SPACE.md },
-  swapBtn: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center" },
-  rateBox: { flex: 1, backgroundColor: colors.card, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md - 2, alignItems: "center", ...GLASS_BORDER, ...CARD_SHADOW },
-  rateText: { ...TYPE.subtitle, fontSize: 13, color: colors.textSecondary },
-  convertBtn: { backgroundColor: colors.actionBg, borderRadius: RADIUS.md, paddingVertical: SPACE.lg + 1, alignItems: "center", justifyContent: "center", marginTop: SPACE.xs },
-  convertBtnDisabled: { backgroundColor: colors.border },
-  convertBtnText: { color: colors.actionText, fontSize: 15, fontWeight: "700" as const },
-  infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: SPACE.lg },
-  infoText: { ...TYPE.caption, color: colors.green },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54, position: "relative" },
+    headerSide: { minWidth: 34 },
+    headerTitle: { position: "absolute", left: 0, right: 0, textAlign: "center", ...TYPE.subtitle, color: colors.text },
+    body: { padding: SCREEN_PADDING, paddingBottom: SPACE.xxxl },
+    card: { backgroundColor: colors.card, borderRadius: RADIUS.lg, padding: SPACE.xl, marginBottom: SPACE.md, ...GLASS_BORDER, ...CARD_SHADOW },
+    cardLabel: { ...TYPE.eyebrow, color: colors.muted, marginBottom: SPACE.md },
+    amtRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+    amtInput: { flex: 1, fontSize: 32, fontWeight: "600" as const, color: colors.text, padding: 0 },
+    amtInputReadonly: { flex: 1, fontSize: 32, fontWeight: "600" as const, color: colors.textSecondary, padding: 0 },
+    balRow: { flexDirection: "row", alignItems: "center", marginTop: SPACE.md },
+    balText: { ...TYPE.caption, color: colors.muted },
+    errText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.red },
+    warnText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.accent },
+    quickRow: { flexDirection: "row", gap: SPACE.sm, marginTop: SPACE.lg },
+    quickBtn: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight },
+    quickBtnDisabled: { backgroundColor: colors.borderLight },
+    quickBtnText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary },
+    quickBtnTextDisabled: { color: colors.muted },
+    midRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, marginBottom: SPACE.md },
+    swapBtn: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center" },
+    rateBox: { flex: 1, backgroundColor: colors.card, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md - 2, alignItems: "center", ...GLASS_BORDER, ...CARD_SHADOW },
+    rateText: { ...TYPE.subtitle, fontSize: 13, color: colors.textSecondary },
+    convertBtn: { backgroundColor: colors.actionBg, borderRadius: RADIUS.md, paddingVertical: SPACE.lg + 1, alignItems: "center", justifyContent: "center", marginTop: SPACE.xs },
+    convertBtnDisabled: { backgroundColor: colors.border },
+    convertBtnText: { color: colors.actionText, fontSize: 15, fontWeight: "600" as const },
+    infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: SPACE.lg },
+    infoText: { ...TYPE.caption, color: colors.green },
   }), [colors]);
 
   const params = useLocalSearchParams();
@@ -468,6 +469,9 @@ export default function ConvertScreen() {
   const executeConversionRequest = async () => {
     if (!fromWallet || !toWallet || !fromAmount) return;
 
+    const trusted = await ensureDeviceTrusted(userPhone);
+    if (!trusted) return;
+
     setConverting(true);
     try {
       const response = await executeConversion(
@@ -514,7 +518,7 @@ export default function ConvertScreen() {
         // ✅ CRITICAL: wipe caches so HomeScreen never shows stale or “added” cached values
         try {
           await clearAllBalanceCaches();
-        } catch {}
+        } catch { }
 
         // ✅ force a reload of wallets now (so this screen also stays correct)
         await loadWallets();
@@ -632,7 +636,7 @@ export default function ConvertScreen() {
               >
                 <AppText style={{ fontSize: 18, color: colors.textSecondary }}>✕</AppText>
               </Pressable>
-              <AppText style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Convert From</AppText>
+              <AppText style={{ fontSize: 18, fontWeight: "600", color: colors.text }}>Convert From</AppText>
               <View style={{ width: 30 }} />
             </View>
           </View>
@@ -685,7 +689,7 @@ export default function ConvertScreen() {
                       Balance: {getOptimisticBalance(toNumberSafe(item.balance), item.currencyCode).toFixed(2)} {item.currencyCode}
                     </AppText>
                   </View>
-                  {selected && <AppText style={{ fontSize: 18, color: colors.primary, fontWeight: "700" }}>✓</AppText>}
+                  {selected && <AppText style={{ fontSize: 18, color: colors.primary, fontWeight: "600" }}>✓</AppText>}
                 </Pressable>
               );
             }}
@@ -718,7 +722,7 @@ export default function ConvertScreen() {
               >
                 <AppText style={{ fontSize: 18, color: colors.textSecondary }}>✕</AppText>
               </Pressable>
-              <AppText style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Convert To</AppText>
+              <AppText style={{ fontSize: 18, fontWeight: "600", color: colors.text }}>Convert To</AppText>
               <View style={{ width: 30 }} />
             </View>
           </View>
@@ -771,7 +775,7 @@ export default function ConvertScreen() {
                       Balance: {getOptimisticBalance(toNumberSafe(item.balance), item.currencyCode).toFixed(2)} {item.currencyCode}
                     </AppText>
                   </View>
-                  {selected && <AppText style={{ fontSize: 18, color: colors.primary, fontWeight: "700" }}>✓</AppText>}
+                  {selected && <AppText style={{ fontSize: 18, color: colors.primary, fontWeight: "600" }}>✓</AppText>}
                 </Pressable>
               );
             }}
@@ -800,10 +804,10 @@ export default function ConvertScreen() {
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <BackButton onPress={() => router.back()} />
-              <AppText style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>Convert Currency</AppText>
+              <AppText style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>Convert Currency</AppText>
               <AppText style={styles.subtitle}>You need at least 2 currency wallets to convert between currencies.</AppText>
               <Pressable style={styles.primaryBtn} onPress={() => router.push("/addaccount")}>
-                <AppText style={{ color: colors.actionText, fontWeight: "700", fontSize: 16 }}>+ Add Currency</AppText>
+                <AppText style={{ color: colors.actionText, fontWeight: "600", fontSize: 16 }}>+ Add Currency</AppText>
               </Pressable>
             </View>
           </View>
@@ -868,140 +872,140 @@ export default function ConvertScreen() {
     <ScreenShell scrollable={false} padded={false}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
 
-          {/* ── Header ── */}
-          <View style={cv.header}>
-            <View style={cv.headerSide}>
-              <BackButton onPress={() => router.back()} />
+        {/* ── Header ── */}
+        <View style={cv.header}>
+          <View style={cv.headerSide}>
+            <BackButton onPress={() => router.back()} />
+          </View>
+          <AppText style={cv.headerTitle} pointerEvents="none">Convert</AppText>
+          <View style={cv.headerSide} />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={cv.body} keyboardShouldPersistTaps="handled">
+
+          {/* ── FROM card ── */}
+          <View style={cv.card}>
+            <AppText style={cv.cardLabel}>You convert</AppText>
+            <View style={cv.amtRow}>
+              <AppTextInput
+                value={fromAmount}
+                onChangeText={setFromAmount}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+                placeholderTextColor={colors.muted}
+                style={[cv.amtInput, balanceExceeded && { color: colors.red }]}
+              />
+              <CurrencyPill
+                flag={fromWallet?.flag || "🏳️"}
+                code={fromWallet?.currencyCode || "Select"}
+                countryCode={getWalletCountryCode(fromWallet)}
+                onPress={() => setShowFromPicker(true)}
+              />
             </View>
-            <AppText style={cv.headerTitle} pointerEvents="none">Convert</AppText>
-            <View style={cv.headerSide} />
+            <View style={cv.balRow}>
+              <Ionicons name="wallet-outline" size={13} color={colors.muted} />
+              <AppText style={[cv.balText, balanceExceeded && { color: colors.red }]}>
+                {" "}Balance: {fromDisplayBalance.toFixed(2)} {fromWallet?.currencyCode || ""}
+              </AppText>
+              {balanceExceeded && <AppText style={cv.errText}> · Insufficient</AppText>}
+              {fromHasPending && <AppText style={cv.warnText}> · Settlement pending</AppText>}
+            </View>
+
+            {/* Quick amounts */}
+            <View style={cv.quickRow}>
+              {[["25%", 0.25], ["50%", 0.5], ["75%", 0.75], ["MAX", 1.0]].map(([label, pct]) => (
+                <Pressable
+                  key={label as string}
+                  onPress={() => handleQuickAmount(pct as number)}
+                  disabled={!fromWallet || fromDisplayBalance <= 0 || fromHasPending}
+                  style={({ pressed }) => [cv.quickBtn, (!fromWallet || fromDisplayBalance <= 0) && cv.quickBtnDisabled, pressed && { opacity: 0.7 }]}
+                >
+                  <AppText style={[cv.quickBtnText, (!fromWallet || fromDisplayBalance <= 0) && cv.quickBtnTextDisabled]}>{label as string}</AppText>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={cv.body} keyboardShouldPersistTaps="handled">
-
-            {/* ── FROM card ── */}
-            <View style={cv.card}>
-              <AppText style={cv.cardLabel}>You convert</AppText>
-              <View style={cv.amtRow}>
-                <AppTextInput
-                  value={fromAmount}
-                  onChangeText={setFromAmount}
-                  placeholder="0.00"
-                  keyboardType="decimal-pad"
-                  placeholderTextColor={colors.muted}
-                  style={[cv.amtInput, balanceExceeded && { color: colors.red }]}
-                />
-                <CurrencyPill
-                  flag={fromWallet?.flag || "🏳️"}
-                  code={fromWallet?.currencyCode || "Select"}
-                  countryCode={getWalletCountryCode(fromWallet)}
-                  onPress={() => setShowFromPicker(true)}
-                />
-              </View>
-              <View style={cv.balRow}>
-                <Ionicons name="wallet-outline" size={13} color={colors.muted} />
-                <AppText style={[cv.balText, balanceExceeded && { color: colors.red }]}>
-                  {" "}Balance: {fromDisplayBalance.toFixed(2)} {fromWallet?.currencyCode || ""}
-                </AppText>
-                {balanceExceeded && <AppText style={cv.errText}> · Insufficient</AppText>}
-                {fromHasPending && <AppText style={cv.warnText}> · Settlement pending</AppText>}
-              </View>
-
-              {/* Quick amounts */}
-              <View style={cv.quickRow}>
-                {[["25%", 0.25], ["50%", 0.5], ["75%", 0.75], ["MAX", 1.0]].map(([label, pct]) => (
-                  <Pressable
-                    key={label as string}
-                    onPress={() => handleQuickAmount(pct as number)}
-                    disabled={!fromWallet || fromDisplayBalance <= 0 || fromHasPending}
-                    style={({ pressed }) => [cv.quickBtn, (!fromWallet || fromDisplayBalance <= 0) && cv.quickBtnDisabled, pressed && { opacity: 0.7 }]}
-                  >
-                    <AppText style={[cv.quickBtnText, (!fromWallet || fromDisplayBalance <= 0) && cv.quickBtnTextDisabled]}>{label as string}</AppText>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* ── Swap + Rate ── */}
-            <View style={cv.midRow}>
-              <Pressable onPress={swapCurrencies} style={cv.swapBtn}>
-                <Ionicons name="swap-vertical-outline" size={20} color={colors.primary} />
-              </Pressable>
-              <View style={cv.rateBox}>
-                {quoteLoading
-                  ? <ActivityIndicator size="small" color={colors.primary} />
-                  : rate
-                    ? <AppText style={cv.rateText}>1 {fromWallet?.currencyCode} = {rate.toFixed(4)} {toWallet?.currencyCode}</AppText>
-                    : <AppText style={cv.rateText}>Enter amount to see rate</AppText>
-                }
-              </View>
-            </View>
-
-            {/* ── TO card ── */}
-            <View style={cv.card}>
-              <AppText style={cv.cardLabel}>You receive</AppText>
-              <View style={cv.amtRow}>
-                <AppTextInput
-                  value={quoteLoading ? "..." : toAmount}
-                  editable={false}
-                  placeholder="0.00"
-                  placeholderTextColor={colors.muted}
-                  style={cv.amtInputReadonly}
-                />
-                <CurrencyPill
-                  flag={toWallet?.flag || "🏳️"}
-                  code={toWallet?.currencyCode || "Select"}
-                  countryCode={getWalletCountryCode(toWallet)}
-                  onPress={() => setShowToPicker(true)}
-                />
-              </View>
-              <View style={cv.balRow}>
-                <Ionicons name="wallet-outline" size={13} color={colors.muted} />
-                <AppText style={cv.balText}> Balance: {toDisplayBalance.toFixed(2)} {toWallet?.currencyCode || ""}</AppText>
-              </View>
-            </View>
-
-            {/* ── Fee breakdown ── */}
-            {fromWallet && toWallet && rate && parseFloat(fromAmount) > 0 && (
-              <FeeBreakdown
-                fee={feeInfo}
-                sellAmount={parseFloat(fromAmount)}
-                sellCurrency={fromWallet.currencyCode}
-                buyAmount={parseFloat(toAmount) || 0}
-                buyCurrency={toWallet.currencyCode}
-                rate={rate}
-              />
-            )}
-
-            {/* ── Liquidity banner ── */}
-            <LiquidityBanner
-              result={liquidityBlock}
-              retrying={liquidityChecking}
-              onRetry={runLiquidityCheck}
-            />
-
-            {/* ── Convert button ── */}
-            <Pressable
-              onPress={handleConvert}
-              disabled={!canConvert || converting}
-              style={({ pressed }) => [cv.convertBtn, (!canConvert || converting) && cv.convertBtnDisabled, pressed && { opacity: 0.85 }]}
-            >
-              {converting
-                ? <ActivityIndicator color={colors.actionText} />
-                : <AppText style={cv.convertBtnText}>Convert Now</AppText>
-              }
+          {/* ── Swap + Rate ── */}
+          <View style={cv.midRow}>
+            <Pressable onPress={swapCurrencies} style={cv.swapBtn}>
+              <Ionicons name="swap-vertical-outline" size={20} color={colors.primary} />
             </Pressable>
-
-            {/* ── Info ── */}
-            <View style={cv.infoRow}>
-              <Ionicons name="flash-outline" size={13} color={colors.green} />
-              <AppText style={cv.infoText}> Instant conversion · No hidden fees</AppText>
+            <View style={cv.rateBox}>
+              {quoteLoading
+                ? <ActivityIndicator size="small" color={colors.primary} />
+                : rate
+                  ? <AppText style={cv.rateText}>1 {fromWallet?.currencyCode} = {rate.toFixed(4)} {toWallet?.currencyCode}</AppText>
+                  : <AppText style={cv.rateText}>Enter amount to see rate</AppText>
+              }
             </View>
+          </View>
 
-          </ScrollView>
+          {/* ── TO card ── */}
+          <View style={cv.card}>
+            <AppText style={cv.cardLabel}>You receive</AppText>
+            <View style={cv.amtRow}>
+              <AppTextInput
+                value={quoteLoading ? "..." : toAmount}
+                editable={false}
+                placeholder="0.00"
+                placeholderTextColor={colors.muted}
+                style={cv.amtInputReadonly}
+              />
+              <CurrencyPill
+                flag={toWallet?.flag || "🏳️"}
+                code={toWallet?.currencyCode || "Select"}
+                countryCode={getWalletCountryCode(toWallet)}
+                onPress={() => setShowToPicker(true)}
+              />
+            </View>
+            <View style={cv.balRow}>
+              <Ionicons name="wallet-outline" size={13} color={colors.muted} />
+              <AppText style={cv.balText}> Balance: {toDisplayBalance.toFixed(2)} {toWallet?.currencyCode || ""}</AppText>
+            </View>
+          </View>
 
-          {FromPickerModal}
-          {ToPickerModal}
+          {/* ── Fee breakdown ── */}
+          {fromWallet && toWallet && rate && parseFloat(fromAmount) > 0 && (
+            <FeeBreakdown
+              fee={feeInfo}
+              sellAmount={parseFloat(fromAmount)}
+              sellCurrency={fromWallet.currencyCode}
+              buyAmount={parseFloat(toAmount) || 0}
+              buyCurrency={toWallet.currencyCode}
+              rate={rate}
+            />
+          )}
+
+          {/* ── Liquidity banner ── */}
+          <LiquidityBanner
+            result={liquidityBlock}
+            retrying={liquidityChecking}
+            onRetry={runLiquidityCheck}
+          />
+
+          {/* ── Convert button ── */}
+          <Pressable
+            onPress={handleConvert}
+            disabled={!canConvert || converting}
+            style={({ pressed }) => [cv.convertBtn, (!canConvert || converting) && cv.convertBtnDisabled, pressed && { opacity: 0.85 }]}
+          >
+            {converting
+              ? <ActivityIndicator color={colors.actionText} />
+              : <AppText style={cv.convertBtnText}>Convert Now</AppText>
+            }
+          </Pressable>
+
+          {/* ── Info ── */}
+          <View style={cv.infoRow}>
+            <Ionicons name="flash-outline" size={13} color={colors.green} />
+            <AppText style={cv.infoText}> Instant conversion · No hidden fees</AppText>
+          </View>
+
+        </ScrollView>
+
+        {FromPickerModal}
+        {ToPickerModal}
 
       </KeyboardAvoidingView>
     </ScreenShell>

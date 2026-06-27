@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, ActivityIndicator, Pressable, StyleSheet, Alert } from "react-native";
-import { WebView, WebViewNavigation } from "react-native-webview";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AppText from "@/components/AppText";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS } from "@/theme/designSystem";
 import { syncSnapTrade } from "@/api/investments";
+import AppText from "@/components/AppText";
+import { COLORS } from "@/theme/colors";
+import { RADIUS, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { WebView, WebViewNavigation } from "react-native-webview";
 
 export default function InvestConnectBrokerScreen() {
   const router = useRouter();
@@ -153,11 +153,11 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACE.lg, height: 54 },
   iconBtn: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.bgTertiary, alignItems: "center", justifyContent: "center" },
-  topTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  topTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: SPACE.xxxl },
   errorText: { fontSize: 14, color: COLORS.muted, textAlign: "center", marginBottom: SPACE.lg },
   syncingText: { fontSize: 14, color: COLORS.muted, fontWeight: "600", marginTop: SPACE.lg },
   backBtn: { backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.md, paddingHorizontal: SPACE.xxl },
-  backBtnText: { color: COLORS.primary, fontSize: 14, fontWeight: "700" },
+  backBtnText: { color: COLORS.primary, fontSize: 14, fontWeight: "600" },
   webviewLoading: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg },
 });

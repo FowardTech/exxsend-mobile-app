@@ -1,13 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, Modal, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
+import { getSavedRecipients, RecentRecipientFromDB } from "../api/sync";
+import { COLORS } from "../theme/colors";
 import AppText from "./AppText";
 import AppTextInput from "./AppTextInput";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../theme/colors";
-import { getSavedRecipients } from "../api/sync";
 import RecipientAvatar from "./RecipientAvatar";
-import { RecentRecipientFromDB } from "../api/sync";
 
 interface Props {
   visible: boolean;
@@ -61,7 +60,7 @@ export default function BeneficiaryPickerModal({ visible, currency, selected, on
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={s.overlay} onPress={onClose}>
-        <Pressable style={s.sheet} onPress={() => {}}>
+        <Pressable style={s.sheet} onPress={() => { }}>
           <View style={s.header}>
             <Pressable onPress={onClose} style={s.closeBtn} hitSlop={10}>
               <AppText style={s.closeText}>✕</AppText>
@@ -80,7 +79,7 @@ export default function BeneficiaryPickerModal({ visible, currency, selected, on
 
           <Pressable style={s.addNewRow} onPress={onAddNew}>
             <View style={s.addNewIcon}>
-              <AppText style={{ color: COLORS.primary, fontSize: 18, fontWeight: "700" }}>+</AppText>
+              <AppText style={{ color: COLORS.primary, fontSize: 18, fontWeight: "600" }}>+</AppText>
             </View>
             <AppText style={s.addNewText}>Add a new beneficiary</AppText>
           </Pressable>
@@ -159,7 +158,7 @@ const s = StyleSheet.create({
   },
   closeBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
   closeText: { fontSize: 18, color: "#6B7280" },
-  title: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+  title: { fontSize: 18, fontWeight: "600", color: "#1F2937" },
   searchInput: {
     marginHorizontal: 16, marginTop: 12, marginBottom: 4,
     backgroundColor: "#F3F4F6", borderRadius: 12,
@@ -176,7 +175,7 @@ const s = StyleSheet.create({
     width: 30, height: 30, borderRadius: 15, backgroundColor: "#FFFFFF",
     alignItems: "center", justifyContent: "center",
   },
-  addNewText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  addNewText: { fontSize: 14, fontWeight: "600", color: COLORS.primary },
   centerBox: { paddingVertical: 40, alignItems: "center" },
   emptyText: { textAlign: "center", color: "#9CA3AF", fontSize: 14, paddingHorizontal: 24 },
   item: {
@@ -189,9 +188,9 @@ const s = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryLight,
     alignItems: "center", justifyContent: "center",
   },
-  avatarText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
+  avatarText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 15, fontWeight: "700", color: "#1F2937" },
+  itemName: { fontSize: 15, fontWeight: "600", color: "#1F2937" },
   itemMeta: { fontSize: 13, color: "#6B7280", marginTop: 2 },
-  checkmark: { fontSize: 18, color: "#059669", fontWeight: "700" },
+  checkmark: { fontSize: 18, color: "#059669", fontWeight: "600" },
 });

@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, ScrollView, StyleSheet, Alert } from "react-native";
-import AppText from "./AppText";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import * as LocalAuthentication from "expo-local-authentication";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useAppTheme } from "../theme/ThemeProvider";
 import { ColorTokens } from "../theme/palettes";
+import AppText from "./AppText";
 
 interface PromoCard {
   key: string;
@@ -155,7 +155,7 @@ const CARD_HEIGHT = 150;
 function makeStyles(colors: ColorTokens) {
   return StyleSheet.create({
     wrap: { marginTop: 8 },
-    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text, marginHorizontal: 20, marginBottom: 12 },
+    sectionTitle: { fontSize: 18, fontWeight: "600", color: colors.text, marginHorizontal: 20, marginBottom: 12 },
     scrollRow: { paddingHorizontal: 20, gap: 12, paddingBottom: 4 },
     cardPressable: { width: CARD_WIDTH },
     card: {
@@ -170,7 +170,7 @@ function makeStyles(colors: ColorTokens) {
       backgroundColor: colors.primaryLight,
     },
     cardTextWrap: { flex: 1 },
-    cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text, lineHeight: 19 },
+    cardTitle: { fontSize: 14, fontWeight: "600", color: colors.text, lineHeight: 19 },
     cardTitleLight: { color: "#FFFFFF" },
     cardSubtitle: { fontSize: 11, fontWeight: "500", color: colors.muted, marginTop: 6, lineHeight: 15 },
     cardSubtitleLight: { color: "rgba(255,255,255,0.85)" },

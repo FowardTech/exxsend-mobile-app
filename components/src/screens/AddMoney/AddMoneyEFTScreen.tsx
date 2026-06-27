@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView, StatusBar, KeyboardAvoidingView, Platform } from "react-native";
-import AppText from "../../../AppText";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { COLORS } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../../../../components/ScreenHeader";
-import { COLORS } from "@/theme/colors";
+import AppText from "../../../AppText";
 
 // ── Helpers ──────────────────────────────────────────────────
 function generateReference(phone: string): string {
@@ -115,7 +115,7 @@ export default function AddMoneyEFTScreen() {
           {/* Info banner */}
           <View style={s.infoBanner}>
             <Ionicons name="time-outline" size={16} color={COLORS.primary} style={{ marginRight: 8 }} />
-            <AppText style={s.infoText}>Funds typically arrive within <AppText style={{ fontWeight: "700" }}>1–3 business days</AppText>. No fees for EFT deposits.</AppText>
+            <AppText style={s.infoText}>Funds typically arrive within <AppText style={{ fontWeight: "600" }}>1–3 business days</AppText>. No fees for EFT deposits.</AppText>
           </View>
 
           {/* Step 1: Reference */}
@@ -167,9 +167,9 @@ export default function AddMoneyEFTScreen() {
             {confirming
               ? <ActivityIndicator color={COLORS.actionText} />
               : <>
-                  <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.actionText} />
-                  <AppText style={s.confirmBtnText}>I've sent the EFT</AppText>
-                </>
+                <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.actionText} />
+                <AppText style={s.confirmBtnText}>I've sent the EFT</AppText>
+              </>
             }
           </Pressable>
 
@@ -191,18 +191,18 @@ const s = StyleSheet.create({
   section: { marginBottom: 16 },
   stepHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
   stepNum: { width: 26, height: 26, borderRadius: 999, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
-  stepNumText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13 },
-  stepTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  stepNumText: { color: "#FFFFFF", fontWeight: "600", fontSize: 13 },
+  stepTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   stepDesc: { fontSize: 13, color: COLORS.muted, fontWeight: "500", lineHeight: 20, marginBottom: 12, marginLeft: 36 },
   refBox: { backgroundColor: COLORS.primaryLight, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.primary, borderStyle: "dashed", overflow: "hidden" },
   detailsCard: { backgroundColor: "#FFFFFF", borderRadius: 16, borderWidth: 1, borderColor: COLORS.borderLight, overflow: "hidden" },
   copyRow: { flexDirection: "row", alignItems: "center", padding: 14 },
   copyLabel: { fontSize: 11, color: COLORS.muted, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
-  copyValue: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  copyValue: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   copyBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
   divider: { height: 1, backgroundColor: COLORS.borderLight },
   confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: COLORS.actionBg, borderRadius: 16, paddingVertical: 17 },
-  confirmBtnText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
+  confirmBtnText: { color: COLORS.actionText, fontSize: 15, fontWeight: "600" },
   secureRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 16 },
   secureText: { fontSize: 12, color: COLORS.muted, fontWeight: "600" },
 });

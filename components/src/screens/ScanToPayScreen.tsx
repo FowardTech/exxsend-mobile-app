@@ -1,12 +1,12 @@
-import React, { useState, useRef } from "react";
-import { View, Pressable, StyleSheet, Alert, Linking } from "react-native";
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import AppText from "../../AppText";
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from "expo-camera";
+import { useRouter } from "expo-router";
+import React, { useRef, useState } from "react";
+import { Alert, Linking, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../../../theme/colors";
-import { SPACE, RADIUS } from "../../../theme/designSystem";
+import { RADIUS, SPACE } from "../../../theme/designSystem";
+import AppText from "../../AppText";
 
 /**
  * Expected QR payload shape for an ExxSend "pay me" code: an
@@ -26,14 +26,14 @@ function parseExxSendPayCode(data: string): { username: string } | null {
       const username = decodeURIComponent(url.pathname.replace(/^\//, ""));
       if (username) return { username };
     }
-  } catch {}
+  } catch { }
 
   try {
     const parsed = JSON.parse(data);
     if (parsed?.app === "exxsend" && parsed?.type === "pay" && parsed?.handle) {
       return { username: String(parsed.handle).replace(/^@/, "") };
     }
-  } catch {}
+  } catch { }
 
   return null;
 }
@@ -146,7 +146,7 @@ const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "transparent" },
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm },
   iconBtn: { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.15)", justifyContent: "center", alignItems: "center" },
-  topTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  topTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
   frameWrap: { alignItems: "center", marginTop: SPACE.huge * 2 },
   frame: { width: 260, height: 260, position: "relative" },
   corner: { position: "absolute", width: 36, height: 36, borderColor: COLORS.primary },
@@ -157,12 +157,12 @@ const s = StyleSheet.create({
   frameHint: { color: "#FFFFFF", fontSize: 13, fontWeight: "600", textAlign: "center", marginTop: SPACE.xl, paddingHorizontal: SPACE.xxxl },
   permissionWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SPACE.xxxl },
   permissionIcon: { width: 72, height: 72, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center", marginBottom: SPACE.lg },
-  permissionTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.sm },
+  permissionTitle: { fontSize: 18, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.sm },
   permissionSub: { fontSize: 14, color: COLORS.muted, textAlign: "center", marginBottom: SPACE.xl, lineHeight: 20 },
   permissionBtn: { backgroundColor: COLORS.actionBg, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.xxxl, alignItems: "center" },
-  permissionBtnText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
+  permissionBtnText: { color: COLORS.actionText, fontSize: 15, fontWeight: "600" },
   permissionLink: { marginTop: SPACE.lg, alignItems: "center" },
-  permissionLinkText: { color: COLORS.primary, fontSize: 14, fontWeight: "700" },
+  permissionLinkText: { color: COLORS.primary, fontSize: 14, fontWeight: "600" },
   myCodeBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: SPACE.xxxl, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: RADIUS.full, paddingVertical: SPACE.sm + 2, paddingHorizontal: SPACE.xl },
-  myCodeBtnText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  myCodeBtnText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
 });

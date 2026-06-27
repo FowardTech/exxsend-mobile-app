@@ -1,12 +1,12 @@
-import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
-import AppText from "../../../../AppText";
-import BackButton from "../../../../BackButton";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import ScreenShell from "../../../../../components/ScreenShell";
 import { COLORS } from "../../../../../theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../../../theme/designSystem";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "../../../../../theme/designSystem";
+import AppText from "../../../../AppText";
+import BackButton from "../../../../BackButton";
 
 function Item({
   icon,
@@ -46,21 +46,21 @@ export default function AccountInformationScreen() {
       <View style={s.header}>
         <BackButton onPress={() => router.back()} />
         <AppText style={s.headerTitle}>Account Information</AppText>
-          <View style={{ width: 40 }} />
-        </View>
+        <View style={{ width: 40 }} />
+      </View>
 
-        <View style={s.card}>
-          <Item
-            icon="person-outline"
-            title="Profile"
-            onPress={() => router.push("/userdetails" as any)}
-          />
-          <Item
-            icon="speedometer-outline"
-            title="Account limits"
-            onPress={() => router.push("/accountlimit" as any)}
-          />
-          {/* <Item
+      <View style={s.card}>
+        <Item
+          icon="person-outline"
+          title="Profile"
+          onPress={() => router.push("/userdetails" as any)}
+        />
+        <Item
+          icon="speedometer-outline"
+          title="Account limits"
+          onPress={() => router.push("/accountlimit" as any)}
+        />
+        {/* <Item
             icon="document-text-outline"
             title="Account statement"
             onPress={() => router.push("/accountstatement" as any)}
@@ -72,8 +72,8 @@ export default function AccountInformationScreen() {
             onPress={() => router.push("/language" as any)}
             isLast
           /> */}
-        </View>
-      </ScreenShell>
+      </View>
+    </ScreenShell>
   );
 }
 
@@ -89,7 +89,7 @@ const s = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
 
@@ -123,7 +123,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginRight: SPACE.sm + 2,
   },
-  itemTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  itemTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   itemRight: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  rightText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
+  rightText: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
 });

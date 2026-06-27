@@ -1,21 +1,25 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  BrokerageAccount,
+  CryptoOrderType,
+  CryptoSide,
+  CryptoTimeInForce,
+  getSnapTradeAccounts,
+  placeCryptoTrade,
+  previewCryptoTrade,
+  syncSnapTrade,
+} from "@/api/investments";
 import AppText from "@/components/AppText";
 import AppTextInput from "@/components/AppTextInput";
 import BackButton from "@/components/BackButton";
 import BrokerLogo from "@/components/BrokerLogo";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import {
-  getSnapTradeAccounts, BrokerageAccount,
-  previewCryptoTrade, placeCryptoTrade,
-  CryptoSide, CryptoOrderType, CryptoTimeInForce,
-  syncSnapTrade,
-} from "@/api/investments";
+import { GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Crypto pair quick-select chips.
 
@@ -70,7 +74,7 @@ export default function CryptoTradeScreen() {
           const list = Array.isArray(res.accounts) ? res.accounts : [];
           setAccounts(list);
           if (list.length >= 1) setSelectedAccount(list[0]);
-        } catch {}
+        } catch { }
       }
       setLoadingAccounts(false);
     })();
@@ -120,7 +124,7 @@ export default function CryptoTradeScreen() {
     try {
       const res = await placeCryptoTrade(buildBody());
       if (res.success) {
-        syncSnapTrade(phone).catch(() => {});
+        syncSnapTrade(phone).catch(() => { });
         setPreviewOpen(false);
         router.replace({
           pathname: "/result" as any,
@@ -339,29 +343,29 @@ export default function CryptoTradeScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SCREEN_PADDING },
   emptyText: { fontSize: 13, color: COLORS.muted, fontWeight: "600", textAlign: "center" },
   body: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
 
   accountPill: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, alignSelf: "center", backgroundColor: COLORS.white, borderRadius: RADIUS.full, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, marginBottom: SPACE.md, ...GLASS_BORDER },
-  accountPillText: { fontSize: 12, fontWeight: "700", color: COLORS.text, maxWidth: 200 },
+  accountPillText: { fontSize: 12, fontWeight: "600", color: COLORS.text, maxWidth: 200 },
 
-  fieldLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.lg },
-  pairInput: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, height: 50, fontSize: 15, fontWeight: "700", color: COLORS.text, ...GLASS_BORDER },
-  amountInput: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, height: 50, fontSize: 17, fontWeight: "700", color: COLORS.text, ...GLASS_BORDER },
+  fieldLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: SPACE.sm, marginTop: SPACE.lg },
+  pairInput: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, height: 50, fontSize: 15, fontWeight: "600", color: COLORS.text, ...GLASS_BORDER },
+  amountInput: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg, height: 50, fontSize: 17, fontWeight: "600", color: COLORS.text, ...GLASS_BORDER },
 
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm, marginTop: SPACE.sm },
   chip: { paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm, borderRadius: RADIUS.full, backgroundColor: COLORS.white, ...GLASS_BORDER },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipText: { fontSize: 12, fontWeight: "700", color: COLORS.text },
+  chipText: { fontSize: 12, fontWeight: "600", color: COLORS.text },
   chipTextActive: { color: "#FFFFFF" },
 
   actionToggle: { flexDirection: "row", backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: 4, marginTop: SPACE.xl, ...GLASS_BORDER },
   actionToggleBtn: { flex: 1, alignItems: "center", paddingVertical: SPACE.md, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: "transparent" },
   actionToggleBtnActiveBuy: { backgroundColor: "transparent", borderColor: COLORS.primary },
   actionToggleBtnActiveSell: { backgroundColor: COLORS.borderLight, borderColor: COLORS.border },
-  actionToggleText: { fontSize: 14, fontWeight: "700", color: COLORS.muted },
+  actionToggleText: { fontSize: 14, fontWeight: "600", color: COLORS.muted },
   actionToggleTextActiveBuy: { color: COLORS.primary },
   actionToggleTextActiveSell: { color: COLORS.text },
 
@@ -371,23 +375,23 @@ const s = StyleSheet.create({
   postOnlyText: { fontSize: 13, color: COLORS.muted, fontWeight: "500" },
 
   previewBtn: { backgroundColor: COLORS.primaryDark, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xxl },
-  previewBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  previewBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: COLORS.white, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: SPACE.xl, paddingBottom: SPACE.huge },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.lg },
+  modalTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.lg },
   modalRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.md },
-  modalRowTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  modalRowTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   modalRowSub: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
 
   previewSummary: { alignItems: "center", marginBottom: SPACE.lg },
-  previewAction: { fontSize: 18, fontWeight: "700", color: COLORS.text },
+  previewAction: { fontSize: 18, fontWeight: "600", color: COLORS.text },
   previewSub: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 4 },
   previewRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: SPACE.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.borderLight },
   previewRowLabel: { fontSize: 13, color: COLORS.muted, fontWeight: "600" },
-  previewRowValue: { fontSize: 13, color: COLORS.text, fontWeight: "700" },
+  previewRowValue: { fontSize: 13, color: COLORS.text, fontWeight: "600" },
   confirmBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center", marginTop: SPACE.xl },
-  confirmBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  confirmBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
   cancelLink: { alignItems: "center", paddingVertical: SPACE.md },
   cancelLinkText: { fontSize: 13, color: COLORS.muted, fontWeight: "600" },
 });

@@ -1,10 +1,10 @@
-import React, { useRef, useState } from "react";
-import { View, Pressable, ScrollView, Image, StyleSheet, Dimensions, Linking, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
-import { useRouter } from "expo-router";
+import { PromotionalBanner } from "@/api/config";
 import AppText from "@/components/AppText";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { PromotionalBanner } from "@/api/config";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Dimensions, Image, Linking, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH - SCREEN_PADDING * 2;
@@ -22,7 +22,7 @@ export default function PromoBannerCarousel({ banners }: Props) {
     const target = banner.ctaUrl || banner.deeplink || banner.url;
     if (!target) return;
     if (/^https?:\/\//i.test(target)) {
-      Linking.openURL(target).catch(() => {});
+      Linking.openURL(target).catch(() => { });
     } else {
       // Treat anything else as an in-app route (e.g. "/referral", "/investoverview").
       router.push(target.startsWith("/") ? (target as any) : (`/${target}` as any));
@@ -102,10 +102,10 @@ const s = StyleSheet.create({
   },
   image: { width: "100%", height: "100%" },
   textContent: { flex: 1, padding: SPACE.lg, justifyContent: "center" },
-  title: { fontSize: 16, fontWeight: "700", color: COLORS.primaryDark },
+  title: { fontSize: 16, fontWeight: "600", color: COLORS.primaryDark },
   subtitle: { fontSize: 12, fontWeight: "600", color: COLORS.muted, marginTop: 4 },
   ctaPill: { alignSelf: "flex-start", backgroundColor: COLORS.primary, borderRadius: RADIUS.full, paddingHorizontal: SPACE.md, paddingVertical: 6, marginTop: SPACE.sm },
-  ctaPillText: { fontSize: 12, fontWeight: "700", color: COLORS.white },
+  ctaPillText: { fontSize: 12, fontWeight: "600", color: COLORS.white },
   dotsRow: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: SPACE.sm },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.borderLight },
   dotActive: { backgroundColor: COLORS.primary, width: 16 },

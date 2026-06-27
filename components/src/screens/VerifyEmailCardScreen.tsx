@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, StyleSheet } from "react-native";
-import AppText from "../../AppText";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "@/theme/colors";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import AppText from "../../AppText";
 
 interface Props { onPress: () => void; email: string; }
 
@@ -44,13 +44,13 @@ const s = StyleSheet.create({
   wrap: { paddingHorizontal: 20, paddingTop: 14 },
   card: { borderRadius: 18, padding: 16, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#BFDBFE" },
   left: { flex: 1, flexDirection: "row", alignItems: "center" },
-  iconCircle: { width: 44, height: 44, borderRadius: 14, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center", marginRight: 12,},
+  iconCircle: { width: 44, height: 44, borderRadius: 14, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center", marginRight: 12, },
   textCol: { flex: 1 },
   labelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary },
-  label: { fontSize: 10, fontWeight: "700", color: COLORS.primary, textTransform: "uppercase", letterSpacing: 0.8 },
-  title: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  label: { fontSize: 10, fontWeight: "600", color: COLORS.primary, textTransform: "uppercase", letterSpacing: 0.8 },
+  title: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   sub: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
   btn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  btnText: { fontSize: 12, fontWeight: "700", color: "#FFFFFF" },
+  btnText: { fontSize: 12, fontWeight: "600", color: "#FFFFFF" },
 });

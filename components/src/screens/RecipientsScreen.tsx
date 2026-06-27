@@ -1,17 +1,17 @@
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Pressable, FlatList, StyleSheet, StatusBar, ActivityIndicator, RefreshControl } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lookupMemberByUsername } from "../../../api/config";
+import { COUNTRY_NAMES, CURRENCY_TO_COUNTRY } from "../../../api/flutterwave";
+import { getSavedRecipients, RecentRecipientFromDB } from "../../../api/sync";
+import RecipientAvatar from "../../../components/RecipientAvatar";
+import { COLORS } from "../../../theme/colors";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import BackButton from "../../BackButton";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { COLORS } from "../../../theme/colors";
-import { getSavedRecipients, RecentRecipientFromDB } from "../../../api/sync";
-import { lookupMemberByUsername } from "../../../api/config";
-import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "../../../api/flutterwave";
-import RecipientAvatar from "../../../components/RecipientAvatar";
 
 function getInitials(name: string) {
   return (name || "U").split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
@@ -99,7 +99,7 @@ export default function RecipientsScreen() {
             if (photoById.size > 0) {
               setRecipients((prev) => prev.map((r) => (photoById.has(r.id) ? { ...r, avatarUrl: photoById.get(r.id) as string } : r)));
             }
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
     } catch { }
@@ -229,7 +229,7 @@ export default function RecipientsScreen() {
               {list.length === 0 && (
                 <View style={{ alignItems: "center", paddingTop: 48 }}>
                   <Ionicons name="people-outline" size={48} color={COLORS.muted} />
-                  <AppText style={{ fontSize: 15, fontWeight: "700", color: COLORS.text, marginTop: 12 }}>
+                  <AppText style={{ fontSize: 15, fontWeight: "600", color: COLORS.text, marginTop: 12 }}>
                     {q ? "No results found" : "No saved recipients"}
                   </AppText>
                   <AppText style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", marginTop: 6 }}>
@@ -252,30 +252,30 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, height: 50, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.borderLight },
   backBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: COLORS.border, justifyContent: "center", alignItems: "center" },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "600", color: COLORS.text },
   helpBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  helpText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  helpText: { fontSize: 14, fontWeight: "600", color: COLORS.primary },
   searchWrap: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 12, backgroundColor: "#FFFFFF", borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 44 },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: "500" },
   newRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 10, backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.borderLight, paddingHorizontal: 14, paddingVertical: 14 },
   newIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  newText: { flex: 1, fontSize: 14, fontWeight: "700", color: COLORS.text },
+  newText: { flex: 1, fontSize: 14, fontWeight: "600", color: COLORS.text },
   section: { marginTop: 14 },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: COLORS.text, marginBottom: 10 },
+  sectionTitle: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 10 },
   bubblesRow: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
   bubble: { alignItems: "center", width: 64 },
   bubbleAvatar: { width: 48, height: 48, borderRadius: 16, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center", marginBottom: 5 },
-  bubbleInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
+  bubbleInitials: { color: "#FFFFFF", fontWeight: "600", fontSize: 16 },
   bubbleName: { fontSize: 11, fontWeight: "600", color: COLORS.text, textAlign: "center" },
   bubbleBank: { fontSize: 10, color: COLORS.muted, textAlign: "center" },
   tabsRow: { flexDirection: "row", marginTop: 16, marginBottom: 10, gap: 8 },
   tabActive: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.primary },
-  tabActiveText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  tabActiveText: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
   tabInactive: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: COLORS.border },
   tabInactiveText: { fontSize: 13, fontWeight: "600", color: COLORS.textSecondary },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.borderLight },
   rowAvatar: { width: 42, height: 42, borderRadius: 14, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  rowInitials: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
-  rowName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  rowInitials: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  rowName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   rowMeta: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
 });

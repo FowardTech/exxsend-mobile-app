@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, ActivityIndicator, Alert } from "react-native";
-import AppText from "../../AppText";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
-import ScreenShell from "../../../components/ScreenShell";
-import type { SavedRecipient } from "./RecipientSelectScreen";
-import { sendNGN } from "../../../api/flutterwave";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, View } from "react-native";
 import { sendBankPayment } from "../../../api/currencycloud";
+import { sendNGN } from "../../../api/flutterwave";
+import ScreenShell from "../../../components/ScreenShell";
+import AppText from "../../AppText";
+import type { SavedRecipient } from "./RecipientSelectScreen";
 
 /** =========================
  *  Recent recipients storage
@@ -189,12 +189,12 @@ export default function TransferConfirmScreen() {
           <Pressable onPress={() => router.back()} style={{ paddingVertical: 8, paddingRight: 10 }}>
             <Ionicons name="arrow-back" size={18} color={COLORS.text} />
           </Pressable>
-          <AppText style={{ fontSize: 20, fontWeight: "700" }}>Confirm Transfer</AppText>
+          <AppText style={{ fontSize: 20, fontWeight: "600" }}>Confirm Transfer</AppText>
         </View>
 
         <View style={{ backgroundColor: "#F9FAFB", borderRadius: 16, padding: 16 }}>
-          <AppText style={{ color: "#6B7280", fontWeight: "700" }}>You send</AppText>
-          <AppText style={{ marginTop: 6, fontSize: 22, fontWeight: "700" }}>
+          <AppText style={{ color: "#6B7280", fontWeight: "600" }}>You send</AppText>
+          <AppText style={{ marginTop: 6, fontSize: 22, fontWeight: "600" }}>
             {Number(fromAmount).toLocaleString()} {params.fromCurrency}
           </AppText>
 
@@ -206,8 +206,8 @@ export default function TransferConfirmScreen() {
         </View>
 
         <View style={{ marginTop: 14, backgroundColor: "#ECFDF5", borderRadius: 16, padding: 16 }}>
-          <AppText style={{ color: "#065F46", fontWeight: "700" }}>Recipient gets</AppText>
-          <AppText style={{ marginTop: 6, fontSize: 24, fontWeight: "700", color: "#065F46" }}>
+          <AppText style={{ color: "#065F46", fontWeight: "600" }}>Recipient gets</AppText>
+          <AppText style={{ marginTop: 6, fontSize: 24, fontWeight: "600", color: "#065F46" }}>
             {destCurrency === "NGN" ? "₦" : "$"}
             {Number(toAmount).toLocaleString()} {destCurrency}
           </AppText>
@@ -223,7 +223,7 @@ export default function TransferConfirmScreen() {
             padding: 16,
           }}
         >
-          <AppText style={{ fontWeight: "700" }}>{recipient.accountName}</AppText>
+          <AppText style={{ fontWeight: "600" }}>{recipient.accountName}</AppText>
           <AppText style={{ marginTop: 6, color: "#6B7280" }}>
             {recipient.bankName} • {recipient.accountNumber}
           </AppText>
@@ -244,7 +244,7 @@ export default function TransferConfirmScreen() {
           {sending ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <AppText style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Send</AppText>
+            <AppText style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>Send</AppText>
           )}
         </Pressable>
       </View>

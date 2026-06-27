@@ -1,26 +1,25 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Pressable, ScrollView, Share, ActivityIndicator, StyleSheet, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Clipboard from "expo-clipboard";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getMyReferralCode, getReferralPublicConfig } from "../../../api/config";
+import { useAppTheme } from "../../../theme/ThemeProvider";
 import AppText from "../../AppText";
 import BackButton from "../../BackButton";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getMyReferralCode, getReferralPublicConfig } from "../../../api/config";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useStyles } from "../../../theme/styles";
-import { useAppTheme } from "../../../theme/ThemeProvider";
-import * as Clipboard from "expo-clipboard";
 
 function StepRow({ num, title, subtitle }: { num: string; title: string; subtitle: string }) {
   const { colors } = useAppTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
       <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
-        <AppText style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>{num}</AppText>
+        <AppText style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}>{num}</AppText>
       </View>
       <View style={{ flex: 1 }}>
-        <AppText style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>{title}</AppText>
+        <AppText style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>{title}</AppText>
         <AppText style={{ fontSize: 13, color: colors.muted, fontWeight: "500", marginTop: 3, lineHeight: 18 }}>{subtitle}</AppText>
       </View>
     </View>
@@ -95,98 +94,98 @@ export default function ReferralScreen() {
 
   const s = useMemo(() => StyleSheet.create({
 
-  // Hero
-  hero: {
-    paddingTop: 56, paddingBottom: 36, paddingHorizontal: 24,
-    overflow: "hidden",
-  },
-  backBtn: {
-    position: "absolute", top: 14, left: 16,
-    width: 38, height: 38, borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    justifyContent: "center", alignItems: "center",
-  },
-  heroIconWrap: {
-    width: 72, height: 72, borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    justifyContent: "center", alignItems: "center",
-    marginBottom: 16,
-  },
-  heroTitle: { fontSize: 28, fontWeight: "700", color: "#FFFFFF", marginBottom: 8 },
-  heroSub:   { fontSize: 15, color: "rgba(255,255,255,0.85)", fontWeight: "500", lineHeight: 22 },
-  rewardPill: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    alignSelf: "flex-start", marginTop: 18,
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 999, backgroundColor: colors.accentLight,
-  },
-  rewardPillText: { fontSize: 13, fontWeight: "700", color: colors.accentDark },
-  leaderboardLink: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: "rgba(255,255,255,0.4)" },
-  leaderboardLinkText: { fontSize: 12.5, fontWeight: "700", color: "#FFFFFF" },
+    // Hero
+    hero: {
+      paddingTop: 56, paddingBottom: 36, paddingHorizontal: 24,
+      overflow: "hidden",
+    },
+    backBtn: {
+      position: "absolute", top: 14, left: 16,
+      width: 38, height: 38, borderRadius: 12,
+      backgroundColor: "rgba(255,255,255,0.18)",
+      justifyContent: "center", alignItems: "center",
+    },
+    heroIconWrap: {
+      width: 72, height: 72, borderRadius: 24,
+      backgroundColor: "rgba(255,255,255,0.18)",
+      justifyContent: "center", alignItems: "center",
+      marginBottom: 16,
+    },
+    heroTitle: { fontSize: 28, fontWeight: "600", color: "#FFFFFF", marginBottom: 8 },
+    heroSub: { fontSize: 15, color: "rgba(255,255,255,0.85)", fontWeight: "500", lineHeight: 22 },
+    rewardPill: {
+      flexDirection: "row", alignItems: "center", gap: 6,
+      alignSelf: "flex-start", marginTop: 18,
+      paddingHorizontal: 14, paddingVertical: 8,
+      borderRadius: 999, backgroundColor: colors.accentLight,
+    },
+    rewardPillText: { fontSize: 13, fontWeight: "600", color: colors.accentDark },
+    leaderboardLink: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: "rgba(255,255,255,0.4)" },
+    leaderboardLinkText: { fontSize: 12.5, fontWeight: "600", color: "#FFFFFF" },
 
-  // Sections
-  section: {
-    marginHorizontal: 16, marginTop: 16,
-    backgroundColor: colors.card, borderRadius: 20,
-    padding: 18, borderWidth: 1, borderColor: colors.borderLight,
-  },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 16 },
+    // Sections
+    section: {
+      marginHorizontal: 16, marginTop: 16,
+      backgroundColor: colors.card, borderRadius: 20,
+      padding: 18, borderWidth: 1, borderColor: colors.borderLight,
+    },
+    sectionTitle: { fontSize: 13, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 16 },
 
-  // Steps
-  stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 14 },
-  stepNum: {
-    width: 32, height: 32, borderRadius: 10,
-    backgroundColor: colors.primaryLight,
-    justifyContent: "center", alignItems: "center",
-    flexShrink: 0,
-  },
-  stepNumText: { fontSize: 14, fontWeight: "700", color: colors.primary },
-  stepTitle:   { fontSize: 15, fontWeight: "700", color: colors.text },
-  stepSub:     { fontSize: 13, color: colors.muted, fontWeight: "500", marginTop: 3, lineHeight: 18 },
-  stepDivider: { height: 1, backgroundColor: colors.borderLight, marginVertical: 14, marginLeft: 46 },
+    // Steps
+    stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 14 },
+    stepNum: {
+      width: 32, height: 32, borderRadius: 10,
+      backgroundColor: colors.primaryLight,
+      justifyContent: "center", alignItems: "center",
+      flexShrink: 0,
+    },
+    stepNumText: { fontSize: 14, fontWeight: "600", color: colors.primary },
+    stepTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
+    stepSub: { fontSize: 13, color: colors.muted, fontWeight: "500", marginTop: 3, lineHeight: 18 },
+    stepDivider: { height: 1, backgroundColor: colors.borderLight, marginVertical: 14, marginLeft: 46 },
 
-  // Code box
-  loadingBox: { height: 60, justifyContent: "center", alignItems: "center" },
-  codeBox: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.primaryLight, borderRadius: 14,
-    paddingHorizontal: 18, paddingVertical: 16,
-    borderWidth: 1.5, borderColor: colors.border,
-    borderStyle: "dashed",
-  },
-  codeText: { fontSize: 22, fontWeight: "700", color: colors.primary, letterSpacing: 4 },
+    // Code box
+    loadingBox: { height: 60, justifyContent: "center", alignItems: "center" },
+    codeBox: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      backgroundColor: colors.primaryLight, borderRadius: 14,
+      paddingHorizontal: 18, paddingVertical: 16,
+      borderWidth: 1.5, borderColor: colors.border,
+      borderStyle: "dashed",
+    },
+    codeText: { fontSize: 22, fontWeight: "600", color: colors.primary, letterSpacing: 4 },
 
-  // Link box
-  linkBox: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: colors.bg, borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 14,
-    borderWidth: 1, borderColor: colors.border, gap: 10,
-  },
-  linkText: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+    // Link box
+    linkBox: {
+      flexDirection: "row", alignItems: "center",
+      backgroundColor: colors.bg, borderRadius: 14,
+      paddingHorizontal: 14, paddingVertical: 14,
+      borderWidth: 1, borderColor: colors.border, gap: 10,
+    },
+    linkText: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.textSecondary },
 
-  // Copy pill
-  copyPill: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 999, backgroundColor: colors.primaryLight,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  copyPillDone: { backgroundColor: colors.greenSoft, borderColor: colors.greenLight },
-  copyPillText: { fontSize: 12, fontWeight: "700", color: colors.primary },
+    // Copy pill
+    copyPill: {
+      flexDirection: "row", alignItems: "center", gap: 4,
+      paddingHorizontal: 12, paddingVertical: 7,
+      borderRadius: 999, backgroundColor: colors.primaryLight,
+      borderWidth: 1, borderColor: colors.border,
+    },
+    copyPillDone: { backgroundColor: colors.greenSoft, borderColor: colors.greenLight },
+    copyPillText: { fontSize: 12, fontWeight: "600", color: colors.primary },
 
-  // Share button
-  shareBtn: { marginHorizontal: 16, marginTop: 20, borderRadius: 18, overflow: "hidden", backgroundColor: colors.actionBg },
-  shareBtnInner: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 10, paddingVertical: 18,
-  },
-  shareBtnText: { color: colors.actionText, fontSize: 16, fontWeight: "700" },
+    // Share button
+    shareBtn: { marginHorizontal: 16, marginTop: 20, borderRadius: 18, overflow: "hidden", backgroundColor: colors.actionBg },
+    shareBtnInner: {
+      flexDirection: "row", alignItems: "center", justifyContent: "center",
+      gap: 10, paddingVertical: 18,
+    },
+    shareBtnText: { color: colors.actionText, fontSize: 16, fontWeight: "600" },
 
-  // Terms
-  termsBox: { marginHorizontal: 16, marginTop: 16, gap: 10 },
-  termRow:  { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  termText: { flex: 1, fontSize: 12, color: colors.muted, fontWeight: "600", lineHeight: 18 },
+    // Terms
+    termsBox: { marginHorizontal: 16, marginTop: 16, gap: 10 },
+    termRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+    termText: { flex: 1, fontSize: 12, color: colors.muted, fontWeight: "600", lineHeight: 18 },
   }), [colors]);
 
   return (

@@ -8,12 +8,12 @@
  *
  * Orange for severity "low", red for severity "critical".
  */
-import React, { useEffect, useRef, useState } from "react";
-import { View, Pressable, StyleSheet, ActivityIndicator } from "react-native";
-import AppText from "./AppText";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/colors";
 import type { LiquidityResult } from "@/api/liquidity";
+import { COLORS } from "@/theme/colors";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import AppText from "./AppText";
 
 interface Props {
   /** The blocked result — pass null/undefined to render nothing */
@@ -105,5 +105,5 @@ const s = StyleSheet.create({
   },
   message: { fontSize: 13, fontWeight: "600", lineHeight: 19 },
   retryRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  retryText: { fontSize: 12, fontWeight: "700" },
+  retryText: { fontSize: 12, fontWeight: "600" },
 });

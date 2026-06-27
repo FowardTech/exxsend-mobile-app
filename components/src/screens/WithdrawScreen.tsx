@@ -1,25 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "./../../../theme/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, TouchableWithoutFeedback, View } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import AppTextInput from "../../AppTextInput";
 import {
   getConversionQuote,
   getPayoutDestinations,
   getUserWallets,
   PayoutDestination,
 } from "../../../api/config";
+import CountryFlag from "../../../components/CountryFlag";
 import CurrencyPickerModal, { Wallet } from "../../../components/CurrencyPickerModal";
 import CurrencyPill from "../../../components/CurrencyPill";
 import ScreenShell from "../../../components/ScreenShell";
+import { RADIUS, SPACE, TYPE } from "../../../theme/designSystem";
 import { styles } from "../../../theme/styles";
 import { useAppTheme } from "../../../theme/ThemeProvider";
-import { SPACE, RADIUS, TYPE, CARD_SHADOW } from "../../../theme/designSystem";
-import CountryFlag from "../../../components/CountryFlag";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
+import { COLORS } from "./../../../theme/colors";
 
 const QuickAmountButton = ({
   label,
@@ -44,7 +44,7 @@ const QuickAmountButton = ({
       onPress={onPress}
       disabled={disabled}
     >
-      <AppText style={{ color: colors.primary, fontWeight: "700", fontSize: 13 }}>{label}</AppText>
+      <AppText style={{ color: colors.primary, fontWeight: "600", fontSize: 13 }}>{label}</AppText>
     </Pressable>
   );
 };
@@ -279,7 +279,7 @@ export default function SendMoneyScreen() {
     return (
       <ScreenShell>
         <View style={{ flex: 1, padding: 20 }}>
-          <AppText style={{ fontSize: 22, fontWeight: "700", color: "#333", marginBottom: 8 }}>
+          <AppText style={{ fontSize: 22, fontWeight: "600", color: "#333", marginBottom: 8 }}>
             Withdraw
           </AppText>
           <AppText style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
@@ -290,7 +290,7 @@ export default function SendMoneyScreen() {
             style={{ backgroundColor: COLORS.actionBg, borderRadius: 12, padding: 16, alignItems: "center" }}
             onPress={() => router.push("/addaccount")}
           >
-            <AppText style={{ color: COLORS.actionText, fontWeight: "700", fontSize: 16 }}>+ Add Currency</AppText>
+            <AppText style={{ color: COLORS.actionText, fontWeight: "600", fontSize: 16 }}>+ Add Currency</AppText>
           </Pressable>
         </View>
       </ScreenShell>
@@ -321,7 +321,7 @@ export default function SendMoneyScreen() {
 
           {/* FROM */}
           <View style={styles.convertBox}>
-            <AppText style={{ color: colors.primary, fontWeight: "700" }}>You send</AppText>
+            <AppText style={{ color: colors.primary, fontWeight: "600" }}>You send</AppText>
             <View style={styles.convertRow}>
               <AppTextInput
                 value={fromAmount}
@@ -375,7 +375,7 @@ export default function SendMoneyScreen() {
 
           {/* TO */}
           <View style={styles.convertBox}>
-            <AppText style={{ color: colors.primary, fontWeight: "700" }}>
+            <AppText style={{ color: colors.primary, fontWeight: "600" }}>
               Recipient gets ({selectedDestination?.code || "Select"})
             </AppText>
             <View style={styles.convertRow}>
@@ -404,7 +404,7 @@ export default function SendMoneyScreen() {
             onPress={handleContinue}
             disabled={!canContinue}
           >
-            <AppText style={{ color: canContinue ? colors.actionText : colors.muted, fontWeight: "700", fontSize: 18 }}>
+            <AppText style={{ color: canContinue ? colors.actionText : colors.muted, fontWeight: "600", fontSize: 18 }}>
               Continue
             </AppText>
           </Pressable>

@@ -4,7 +4,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, TextInput as RNTextInput, StatusBar, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api, applyReferralCode } from "../../../api/config";
+import { api } from "../../../api/config";
+import { verifyDevice } from "../../../api/devices";
 import { COLORS } from "../../../theme/colors";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
@@ -12,49 +13,47 @@ import BackButton from "../../BackButton";
 
 const OTP_LEN = 6;
 
-export default function VerifyNumberScreen() {
+export default function VerifyDeviceScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phone: string; requestId: string }>();
-  const [phone, setPhone] = useState(params.phone || "");
+  // redirectTo lets a transaction-gating call site send the user back to
+  // resume exactly where they were once this device is trusted, rather
+  // than always landing on Home.
+  const params = useLocalSearchParams<{ redirectTo?: string }>();
   const inputRef = useRef<RNTextInput | null>(null);
 
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [focused, setFocused] = useState(false);
   const [seconds, setSeconds] = useState(60);
   const [loading, setLoading] = useState(false);
-  const [currentRequestId, setCurrentRequestId] = useState(params.requestId);
+  const [sending, setSending] = useState(true);
+  const [requestId, setRequestId] = useState("");
 
-  const canContinue = code.length === OTP_LEN && !loading && !!currentRequestId;
+  const canContinue = code.length === OTP_LEN && !loading && !!requestId;
 
-  // Reached with no requestId — most likely resumed from app/index.tsx
-  // after the app was closed while still mid-OTP-entry. Whatever code was
-  // sent before has almost certainly expired by now, so send a fresh one
-  // automatically rather than showing an input for a code that can't
-  // possibly still be valid.
-  useEffect(() => {
-    if (currentRequestId) return;
-    (async () => {
-      const savedPhone = phone || (await AsyncStorage.getItem("user_phone")) || "";
-      if (!savedPhone) { router.replace("/getstarted" as any); return; }
-      if (!phone) setPhone(savedPhone);
-      setLoading(true);
-      try {
-        const result = await api.sendOtp(savedPhone);
-        if (result.success) {
-          setCurrentRequestId(result.request_id);
-          setSeconds(60);
-        } else {
-          Alert.alert("Couldn't send code", result.message || "Please try again.", [
-            { text: "OK", onPress: () => router.replace("/getstarted" as any) },
-          ]);
-        }
-      } catch {
-        Alert.alert("Network error", "Please try again.", [
-          { text: "OK", onPress: () => router.replace("/getstarted" as any) },
-        ]);
-      } finally {
-        setLoading(false);
+  const sendCode = async (savedPhone: string) => {
+    setSending(true);
+    try {
+      const result = await api.sendOtp(savedPhone);
+      if (result.success) {
+        setRequestId(result.request_id);
+        setSeconds(60);
+      } else {
+        Alert.alert("Couldn't send code", result.message || "Please try again.");
       }
+    } catch {
+      Alert.alert("Network error", "Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const savedPhone = (await AsyncStorage.getItem("user_phone")) || "";
+      if (!savedPhone) { router.replace("/login" as any); return; }
+      setPhone(savedPhone);
+      sendCode(savedPhone);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -71,46 +70,33 @@ export default function VerifyNumberScreen() {
     return `${m}:${s < 10 ? `0${s}` : s}`;
   }, [seconds]);
 
-  const handleResend = async () => {
-    if (seconds > 0 || loading) return;
-    setLoading(true);
-    try {
-      const result = await api.sendOtp(phone || "");
-      if (result.success) {
-        setCurrentRequestId(result.request_id);
-        setSeconds(60);
-        setCode("");
-        Alert.alert("Sent!", "A new code has been sent.");
-      } else {
-        Alert.alert("Error", result.message || "Failed to resend");
-      }
-    } catch {
-      Alert.alert("Error", "Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleResend = () => {
+    if (seconds > 0 || sending) return;
+    setCode("");
+    sendCode(phone);
   };
 
   const handleVerify = async () => {
-    if (!canContinue || !currentRequestId) return;
+    if (!canContinue) return;
     setLoading(true);
     try {
-      const result = await api.verifyOtp(currentRequestId, code);
-      if (result.success) {
-        await AsyncStorage.setItem("signup_stage", "phone_verified");
-
-        // Attach the referral code right after the phone step, before
-        // password — per the documented flow. Best-effort: a failure here
-        // shouldn't block signup from continuing.
-        const pendingReferral = await AsyncStorage.getItem("pending_referral_code");
-        if (pendingReferral) {
-          applyReferralCode(phone, pendingReferral).catch(() => { });
-        }
-
-        router.replace({ pathname: "/pin", params: { phone, verified: "true" } });
-      } else {
-        Alert.alert("Invalid Code", result.message || "Please check and try again.");
+      const result = await api.verifyOtp(requestId, code);
+      if (!result.success) {
+        Alert.alert("Invalid code", result.message || "Please check and try again.");
         setCode("");
+        return;
+      }
+      const deviceRes = await verifyDevice(phone);
+      if (!deviceRes.success) {
+        Alert.alert("Couldn't verify device", deviceRes.message || "Please try again.");
+        return;
+      }
+      if (params.redirectTo) {
+        router.replace(decodeURIComponent(params.redirectTo) as any);
+      } else if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)" as any);
       }
     } catch {
       Alert.alert("Error", "Network error. Please try again.");
@@ -123,43 +109,33 @@ export default function VerifyNumberScreen() {
     <SafeAreaView style={s.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
 
-      {/* Header */}
       <View style={s.header}>
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => router.back()} showLabel={false} />
         <View style={{ flex: 1 }} />
         <Pressable onPress={() => router.push("/support" as any)} style={s.helpPill}>
           <AppText style={s.helpText}>Get help</AppText>
         </Pressable>
       </View>
 
-      {/* Content */}
       <View style={s.body}>
-        {/* Icon */}
         <View style={s.iconRing}>
-          <Ionicons name="phone-portrait-outline" size={28} color={COLORS.primary} />
+          <Ionicons name="shield-checkmark-outline" size={28} color={COLORS.primary} />
         </View>
 
-        <AppText style={s.title}>Verify your number</AppText>
+        <AppText style={s.title}>Verify this device</AppText>
         <AppText style={s.subtitle}>
+          For your security, we need to confirm it's really you on this device.{"\n"}
           Enter the 6-digit code sent to{"\n"}
           <AppText style={s.phone}>{phone}</AppText>
         </AppText>
 
-        {/* OTP Boxes */}
         <Pressable onPress={() => inputRef.current?.focus()} style={s.otpRow}>
           {Array.from({ length: OTP_LEN }).map((_, i) => {
             const char = code[i] || "";
             const isActive = focused && i === Math.min(code.length, OTP_LEN - 1);
             const isFilled = !!char;
             return (
-              <View
-                key={i}
-                style={[
-                  s.otpBox,
-                  isActive && s.otpBoxActive,
-                  isFilled && s.otpBoxFilled,
-                ]}
-              >
+              <View key={i} style={[s.otpBox, isActive && s.otpBoxActive, isFilled && s.otpBoxFilled]}>
                 <AppText style={s.otpChar}>{char}</AppText>
               </View>
             );
@@ -172,26 +148,25 @@ export default function VerifyNumberScreen() {
             textContentType="oneTimeCode"
             autoComplete="one-time-code"
             autoFocus
+            editable={!sending}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
           />
         </Pressable>
 
-        {/* Resend */}
         <View style={s.resendRow}>
           <AppText style={s.resendLabel}>Didn't receive it? </AppText>
           {seconds > 0 ? (
             <AppText style={s.resendTimer}>Retry in {mmss}</AppText>
           ) : (
-            <Pressable onPress={handleResend} disabled={loading}>
+            <Pressable onPress={handleResend} disabled={sending}>
               <AppText style={s.resendLink}>Resend code</AppText>
             </Pressable>
           )}
         </View>
       </View>
 
-      {/* CTA */}
       <View style={s.footer}>
         <Pressable
           onPress={handleVerify}
@@ -199,7 +174,7 @@ export default function VerifyNumberScreen() {
           style={({ pressed }) => [s.ctaBtn, !canContinue && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
         >
           <View style={s.ctaInner}>
-            {loading ? <ActivityIndicator color={COLORS.actionText} /> : <AppText style={s.ctaText}>Verify & Continue</AppText>}
+            {loading ? <ActivityIndicator color={COLORS.actionText} /> : <AppText style={s.ctaText}>Verify Device</AppText>}
           </View>
         </Pressable>
       </View>
@@ -210,7 +185,6 @@ export default function VerifyNumberScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
   helpPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.primaryLight },
   helpText: { color: COLORS.primary, fontWeight: "600", fontSize: 13 },
   body: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },

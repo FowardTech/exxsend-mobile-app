@@ -1,13 +1,13 @@
-import React, { useCallback } from "react";
-import { View, Pressable, StyleSheet, Linking, Alert, ScrollView } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useCallback } from "react";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../../../../theme/colors";
-import { RADIUS, CARD_SHADOW, GLASS_BORDER } from "../../../../theme/designSystem";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS } from "../../../../theme/designSystem";
+import AppText from "../../../AppText";
+import BackButton from "../../../BackButton";
 
 const SUPPORT_EMAIL = "support@exxsend.com";
 const SUPPORT_PHONE = "+1-800-555-1234";
@@ -127,7 +127,7 @@ export default function SupportScreen() {
         <View style={s.hoursBox}>
           <Ionicons name="time-outline" size={18} color={COLORS.muted} style={{ marginRight: 10 }} />
           <View>
-            <AppText style={{ fontSize: 13, fontWeight: "700", color: COLORS.text }}>Support hours</AppText>
+            <AppText style={{ fontSize: 13, fontWeight: "600", color: COLORS.text }}>Support hours</AppText>
             <AppText style={{ fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 3 }}>Monday – Friday · 9am – 9pm EST</AppText>
             <AppText style={{ fontSize: 12, color: COLORS.muted, fontWeight: "600" }}>Saturday – Sunday · 10am – 6pm EST</AppText>
           </View>
@@ -139,18 +139,18 @@ export default function SupportScreen() {
 
 const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "600", color: COLORS.text },
   hero: { marginHorizontal: 16, marginTop: 12, borderRadius: 20, padding: 22, overflow: "hidden" },
   heroIcon: { width: 60, height: 60, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center", marginBottom: 14 },
-  heroTitle: { fontSize: 20, fontWeight: "700", color: "#FFFFFF", marginBottom: 6 },
+  heroTitle: { fontSize: 20, fontWeight: "600", color: "#FFFFFF", marginBottom: 6 },
   heroSub: { fontSize: 14, color: "rgba(255,255,255,0.80)", fontWeight: "500", marginBottom: 14 },
   responseTimePill: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  responseTimeText: { fontSize: 12, color: "#FFFFFF", fontWeight: "700" },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.8, paddingHorizontal: 20, marginTop: 22, marginBottom: 8 },
+  responseTimeText: { fontSize: 12, color: "#FFFFFF", fontWeight: "600" },
+  sectionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, letterSpacing: 0.8, paddingHorizontal: 20, marginTop: 22, marginBottom: 8 },
   card: { marginHorizontal: 16, backgroundColor: COLORS.white, borderRadius: RADIUS.lg, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
   item: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16 },
   iconWrap: { width: 42, height: 42, borderRadius: 14, justifyContent: "center", alignItems: "center", marginRight: 14 },
-  itemTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  itemTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   itemSub: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 3 },
   divider: { height: 1, backgroundColor: COLORS.borderLight, marginLeft: 72 },
   hoursBox: { flexDirection: "row", alignItems: "flex-start", marginHorizontal: 16, marginTop: 16, backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: 16, ...GLASS_BORDER, ...CARD_SHADOW },

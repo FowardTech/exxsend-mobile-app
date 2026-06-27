@@ -1,10 +1,10 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AppText from "./AppText";
-import { COLORS } from "../theme/colors";
-import { SPACE, RADIUS } from "../theme/designSystem";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 import { FeeWaiversResponse, getSmallestQualifyingAmount } from "../api/feeWaivers";
+import { COLORS } from "../theme/colors";
+import { RADIUS, SPACE } from "../theme/designSystem";
+import AppText from "./AppText";
 
 interface Props {
   waivers: FeeWaiversResponse | null;
@@ -59,6 +59,6 @@ const s = StyleSheet.create({
   cardEarned: { backgroundColor: "#D1FAE5" },
   cardProgress: { backgroundColor: COLORS.primaryLight },
   emoji: { fontSize: 16, marginRight: 8 },
-  textEarned: { flex: 1, fontSize: 13, fontWeight: "700", color: "#065F46" },
+  textEarned: { flex: 1, fontSize: 13, fontWeight: "600", color: "#065F46" },
   textProgress: { flex: 1, fontSize: 13, fontWeight: "600", color: COLORS.primary },
 });

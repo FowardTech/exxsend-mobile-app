@@ -3,7 +3,7 @@ import { Platform, StyleSheet } from "react-native";
 import { COLORS } from "./colors";
 
 export const otherstyles = StyleSheet.create({
-    // =========================
+  // =========================
   // Network Error State
   // =========================
   netErrWrap: {
@@ -30,7 +30,7 @@ export const otherstyles = StyleSheet.create({
   },
   netErrTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
     textAlign: "center",
   },
@@ -39,8 +39,8 @@ export const otherstyles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     textAlign: "center",
-    alignItems:'center',
-    justifyContent:'center',
+    alignItems: 'center',
+    justifyContent: 'center',
     lineHeight: 18,
     paddingHorizontal: 10,
   },
@@ -58,7 +58,7 @@ export const otherstyles = StyleSheet.create({
   },
   netErrBtnText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 16,
   },
   netErrHint: {
@@ -79,7 +79,7 @@ export const otherstyles = StyleSheet.create({
 
   backIcon: {
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1E1E1E",
   },
   /** ---------------- Recipient Confirm (Flutterwave) ---------------- **/
@@ -104,13 +104,13 @@ export const otherstyles = StyleSheet.create({
   },
   confirmTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   confirmSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
   },
 
@@ -126,14 +126,14 @@ export const otherstyles = StyleSheet.create({
   },
   confirmHeroLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
     opacity: 0.9,
   },
   confirmHeroAmount: {
     marginTop: 8,
     fontSize: 34,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
     letterSpacing: -0.3,
   },
@@ -150,7 +150,7 @@ export const otherstyles = StyleSheet.create({
   },
   confirmHeroPillText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
   },
   confirmHeroDot: {
@@ -162,7 +162,7 @@ export const otherstyles = StyleSheet.create({
   },
   confirmHeroMetaText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
     opacity: 0.9,
   },
@@ -171,7 +171,7 @@ export const otherstyles = StyleSheet.create({
     marginTop: 18,
     marginBottom: 10,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -193,17 +193,17 @@ export const otherstyles = StyleSheet.create({
   },
   confirmRowLabel: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
   },
   confirmRowValue: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   confirmRowValueSmall: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -218,13 +218,13 @@ export const otherstyles = StyleSheet.create({
   },
   confirmDetailLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
     marginBottom: 6,
   },
   confirmDetailValue: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   confirmMono: {
@@ -256,18 +256,18 @@ export const otherstyles = StyleSheet.create({
   },
   confirmNoticeTitle: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#92400E",
   },
   confirmNoticeText: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#92400E",
     opacity: 0.95,
     lineHeight: 16,
   },
-primaryBtn: {
+  primaryBtn: {
     width: "100%",
     height: 50,
     paddingVertical: 15,
@@ -296,7 +296,7 @@ primaryBtn: {
   confirmPrimaryBtnText: {
     color: COLORS.black,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   confirmPrimaryBtnInner: {
     flexDirection: "row",
@@ -310,7 +310,7 @@ primaryBtn: {
   },
   confirmCancelText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
   },
 
@@ -323,7 +323,7 @@ primaryBtn: {
   confirmInvalidText: {
     color: "#EF4444",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     textAlign: "center",
   },
   confirmInvalidBtn: {
@@ -335,10 +335,10 @@ primaryBtn: {
   },
   confirmInvalidBtnText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "600",
   },
 
-    /** ---------------- Recipient New (Flutterwave) ---------------- **/
+  /** ---------------- Recipient New (Flutterwave) ---------------- **/
   recipientNewContainer: {
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -356,14 +356,14 @@ primaryBtn: {
   },
   recipientNewSummaryLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
     opacity: 0.9,
   },
   recipientNewSummaryAmount: {
     marginTop: 8,
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
     letterSpacing: -0.2,
   },
@@ -381,7 +381,7 @@ primaryBtn: {
   },
   recipientNewPillText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F5132",
   },
   recipientNewPillSoft: {
@@ -394,7 +394,7 @@ primaryBtn: {
   },
   recipientNewPillSoftText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -402,7 +402,7 @@ primaryBtn: {
     marginTop: 16,
     marginBottom: 8,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#374151",
   },
 
@@ -420,7 +420,7 @@ primaryBtn: {
   recipientNewSelectText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
     paddingRight: 10,
   },
@@ -429,7 +429,7 @@ primaryBtn: {
   },
   recipientNewSelectChevron: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#9CA3AF",
   },
 
@@ -449,7 +449,7 @@ primaryBtn: {
   recipientNewInput: {
     flex: 1,
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
     paddingVertical: 14,
   },
@@ -464,14 +464,14 @@ primaryBtn: {
   },
   recipientNewVerifiedText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#19955f",
   },
 
   recipientNewHelpText: {
     marginTop: 8,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
     lineHeight: 16,
   },
@@ -487,7 +487,7 @@ primaryBtn: {
   },
   recipientNewSoftBtnText: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1D4ED8",
   },
 
@@ -513,11 +513,11 @@ primaryBtn: {
   recipientNewCheckboxTick: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   recipientNewSaveText: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#374151",
   },
 
@@ -552,13 +552,13 @@ primaryBtn: {
   },
   bankModalTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   bankModalSub: {
     marginTop: 3,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
   },
   bankModalCloseBtn: {
@@ -569,7 +569,7 @@ primaryBtn: {
   },
   bankModalCloseText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -592,7 +592,7 @@ primaryBtn: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -610,13 +610,13 @@ primaryBtn: {
   bankModalRowText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
     paddingRight: 10,
   },
   bankModalChevron: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#9CA3AF",
   },
 
@@ -627,7 +627,7 @@ primaryBtn: {
   bankModalLoadingText: {
     marginTop: 10,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#9CA3AF",
   },
 
@@ -637,13 +637,13 @@ primaryBtn: {
   },
   bankModalEmptyTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   bankModalEmptySub: {
     marginTop: 6,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
     textAlign: "center",
     paddingHorizontal: 18,
@@ -651,7 +651,7 @@ primaryBtn: {
   },
 
 
-    /** ---------------- Generic center state ---------------- **/
+  /** ---------------- Generic center state ---------------- **/
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -661,7 +661,7 @@ primaryBtn: {
   centerStateText: {
     marginTop: 10,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#9CA3AF",
   },
 
@@ -689,7 +689,7 @@ primaryBtn: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -716,18 +716,18 @@ primaryBtn: {
   },
   recipientSelectNewIconPlus: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#19955f",
   },
   recipientSelectNewTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   recipientSelectNewSub: {
     marginTop: 3,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
   },
 
@@ -739,12 +739,12 @@ primaryBtn: {
   },
   recipientSelectSectionTitle: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   recipientSelectSectionCount: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#9CA3AF",
   },
 
@@ -783,7 +783,7 @@ primaryBtn: {
   },
   recipientSelectAvatarText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
 
@@ -793,19 +793,19 @@ primaryBtn: {
   },
   recipientSelectRowName: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   recipientSelectRowSub: {
     marginTop: 4,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
   },
 
   recipientSelectChevron: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#9CA3AF",
   },
 
@@ -824,13 +824,13 @@ primaryBtn: {
   recipientSelectEmptyTitle: {
     marginTop: 10,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   recipientSelectEmptySub: {
     marginTop: 6,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#6B7280",
     textAlign: "center",
     lineHeight: 16,
@@ -846,11 +846,11 @@ primaryBtn: {
   },
   recipientSelectEmptyBtnText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#19955f",
   },
 
-netErrBackdrop: {
+  netErrBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
@@ -892,7 +892,7 @@ netErrBackdrop: {
   },
   netErrCloseText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#374151",
   },
 
@@ -907,12 +907,12 @@ netErrBackdrop: {
   },
   netErrIcon: { fontSize: 20 },
 
-  netErrTitle: { fontSize: 16, fontWeight: "700", color: "#111827", marginTop: 4 },
-  netErrMessage: { marginTop: 6, color: "#6B7280", fontWeight: "600", lineHeight: 20, textAlign:'center' },
+  netErrTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginTop: 4 },
+  netErrMessage: { marginTop: 6, color: "#6B7280", fontWeight: "600", lineHeight: 20, textAlign: 'center' },
 
   netErrBtn: { marginTop: 14, borderRadius: 12 },
   netErrBtnRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  netErrBtnText: { color: "#fff", fontWeight: "700", fontSize: 16, marginLeft: 10 },
+  netErrBtnText: { color: "#fff", fontWeight: "600", fontSize: 16, marginLeft: 10 },
 
-  netErrHint: { marginTop: 12, color: "#9CA3AF", fontWeight: "700", fontSize: 12 },
+  netErrHint: { marginTop: 12, color: "#9CA3AF", fontWeight: "600", fontSize: 12 },
 });

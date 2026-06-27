@@ -1,11 +1,11 @@
-import React, { useMemo } from "react";
-import { View, Pressable, ScrollView, Share, Alert } from "react-native";
-import AppText from "./AppText";
-import BackButton from "./BackButton";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
+import React, { useMemo } from "react";
+import { Alert, Pressable, ScrollView, Share, View } from "react-native";
 import ScreenShell from "../components/ScreenShell";
 import { useAppTheme } from "../theme/ThemeProvider";
+import AppText from "./AppText";
+import BackButton from "./BackButton";
 
 interface ResultScreenParams {
   type: "success" | "error";
@@ -124,7 +124,7 @@ export default function ResultScreen({ params }: ResultScreenProps) {
               )}
             </View>
           </View>
-          <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.text }}>{title}</AppText>
+          <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.text }}>{title}</AppText>
           <AppText style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>{dateStr}</AppText>
         </View>
 
@@ -135,17 +135,17 @@ export default function ResultScreen({ params }: ResultScreenProps) {
               {!!recipientName && (
                 <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 14 }}>
                   <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
-                    <AppText style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>
+                    <AppText style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}>
                       {recipientName.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")}
                     </AppText>
                   </View>
                   <View>
                     <AppText style={{ fontSize: 12, color: colors.muted }}>Transfer to</AppText>
-                    <AppText style={{ fontSize: 14, fontWeight: "700", color: colors.text }}>{recipientName}</AppText>
+                    <AppText style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>{recipientName}</AppText>
                   </View>
                 </View>
               )}
-              <AppText style={{ fontSize: 13, fontWeight: "700", color: colors.text, marginBottom: 6 }}>Transaction Details</AppText>
+              <AppText style={{ fontSize: 13, fontWeight: "600", color: colors.text, marginBottom: 6 }}>Transaction Details</AppText>
               {!!amount && <DetailRow label="Amount" value={amount} />}
               {!!transactionId && <DetailRow label="Transaction ID" value={transactionId} />}
               {!!fee && <DetailRow label="Fee" value={fee} />}
@@ -176,12 +176,12 @@ export default function ResultScreen({ params }: ResultScreenProps) {
         {!ui.isError && hasStructuredDetails && (
           <View style={{ flexDirection: "row", gap: 12, marginHorizontal: 16, marginTop: 16 }}>
             <Pressable onPress={onShare} style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 13, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
-              <AppText style={{ fontSize: 14, fontWeight: "700", color: colors.text }}>Share Receipt</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>Share Receipt</AppText>
               <Ionicons name="share-outline" size={16} color={colors.text} />
             </Pressable>
             {!!secondaryText && !!secondaryRoute && (
               <Pressable onPress={onSecondary} style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 13, borderRadius: 14, backgroundColor: colors.primaryLight }}>
-                <AppText style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>{secondaryText}</AppText>
+                <AppText style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}>{secondaryText}</AppText>
                 <Ionicons name="download-outline" size={16} color={colors.primary} />
               </Pressable>
             )}
@@ -196,11 +196,11 @@ export default function ResultScreen({ params }: ResultScreenProps) {
             onPress={onPrimary}
             style={{ backgroundColor: ui.isError ? colors.text : colors.actionBg, borderRadius: 16, paddingVertical: 16, alignItems: "center" }}
           >
-            <AppText style={{ color: ui.isError ? "#FFFFFF" : colors.actionText, fontSize: 16, fontWeight: "700" }}>{primaryText}</AppText>
+            <AppText style={{ color: ui.isError ? "#FFFFFF" : colors.actionText, fontSize: 16, fontWeight: "600" }}>{primaryText}</AppText>
           </Pressable>
           {!hasStructuredDetails && !!secondaryText && !!secondaryRoute && (
             <Pressable onPress={onSecondary} style={{ alignItems: "center", paddingVertical: 14 }}>
-              <AppText style={{ fontSize: 14, fontWeight: "700", color: ui.accent }}>{secondaryText}</AppText>
+              <AppText style={{ fontSize: 14, fontWeight: "600", color: ui.accent }}>{secondaryText}</AppText>
             </Pressable>
           )}
         </View>

@@ -1,17 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { COUNTRY_NAMES, CURRENCY_TO_COUNTRY } from "@/api/flutterwave";
+import { RecentRecipientFromDB } from "@/api/sync";
+import { getUserTransactions, WalletTransaction } from "@/api/transactions";
 import AppText from "@/components/AppText";
 import BackButton from "@/components/BackButton";
-import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "@/theme/designSystem";
-import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "@/api/flutterwave";
-import { getUserTransactions, WalletTransaction } from "@/api/transactions";
-import { RecentRecipientFromDB } from "@/api/sync";
 import RecipientAvatar from "@/components/RecipientAvatar";
+import { COLORS } from "@/theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function getInitials(name: string) {
   return (name || "U").split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
@@ -63,7 +63,7 @@ export default function RecipientActivityScreen() {
           });
           setTransactions(matches);
         }
-      } catch {}
+      } catch { }
       setLoading(false);
     })();
   }, [recipient]);
@@ -185,22 +185,22 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SCREEN_PADDING, height: 54 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
   body: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.huge },
   profileBlock: { alignItems: "center", paddingVertical: SPACE.xl },
   avatar: { width: 72, height: 72, borderRadius: RADIUS.full, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center", marginBottom: SPACE.md },
-  avatarText: { fontSize: 24, fontWeight: "700", color: COLORS.primary },
-  name: { fontSize: 19, fontWeight: "700", color: COLORS.text },
+  avatarText: { fontSize: 24, fontWeight: "600", color: COLORS.primary },
+  name: { fontSize: 19, fontWeight: "600", color: COLORS.text },
   meta: { fontSize: 13, color: COLORS.muted, fontWeight: "600", marginTop: 4 },
-  metaCurrency: { fontSize: 11, color: COLORS.primary, fontWeight: "700", marginTop: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  metaCurrency: { fontSize: 11, color: COLORS.primary, fontWeight: "600", marginTop: 6, textTransform: "uppercase", letterSpacing: 0.5 },
   sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, marginBottom: SPACE.xxl },
-  sendBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.md },
+  sendBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
+  sectionTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.md },
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW },
   txRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 1, gap: SPACE.md },
   txIconWrap: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" },
   txTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   txDate: { fontSize: 11, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
-  txAmount: { fontSize: 14, fontWeight: "700" },
+  txAmount: { fontSize: 14, fontWeight: "600" },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderLight, marginLeft: SPACE.lg + 36 + SPACE.md },
 });

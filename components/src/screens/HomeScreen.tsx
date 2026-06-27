@@ -1,43 +1,47 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, StatusBar, View, StyleSheet, Dimensions } from "react-native";
-import AppText from "../../AppText";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as LocalAuthentication from "expo-local-authentication";
 import NetInfo from "@react-native-community/netinfo";
+import * as LocalAuthentication from "expo-local-authentication";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Dimensions, Image, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import AppText from "../../AppText";
 
 import {
-  checkEmailVerified, getExchangeRates,
-  getTotalBalance, getUserAccounts, getUserProfile, sendEmailOtp,
-  getReferralPublicConfig, getActivePromotionalBanners, PromotionalBanner,
-  getSumsubVerificationStatus, SumsubVerificationStatus,
+  checkEmailVerified,
+  getActivePromotionalBanners,
+  getExchangeRates,
+  getReferralPublicConfig,
+  getSumsubVerificationStatus,
+  getTotalBalance, getUserAccounts, getUserProfile,
+  PromotionalBanner,
+  sendEmailOtp,
+  SumsubVerificationStatus,
 } from "@/api/config";
-import { getUserTransactions, WalletTransaction } from "@/api/transactions";
-import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { getRecentRecipientsFromDB, getLocalRecentRecipients, RecentRecipientFromDB } from "@/api/sync";
-import { fetchMyFeeWaivers, FeeWaiversResponse } from "@/api/feeWaivers";
-import FeeWaiverBanner from "@/components/FeeWaiverBanner";
-import RecipientAvatar from "@/components/RecipientAvatar";
-import BiometricPromptBanner from "@/components/BiometricPromptBanner";
+import { FeeWaiversResponse, fetchMyFeeWaivers } from "@/api/feeWaivers";
 import { getIncomingMoneyRequests } from "@/api/moneyRequests";
-import { getLocalBalance } from "../../../api/flutterwave";
-import { usePendingSettlements, clearPendingForCurrency } from "../../../hooks/usePendingSettlements";
-import { useAppTheme } from "../../../theme/ThemeProvider";
+import { getLocalRecentRecipients, getRecentRecipientsFromDB, RecentRecipientFromDB } from "@/api/sync";
+import { getUserTransactions, WalletTransaction } from "@/api/transactions";
+import BiometricPromptBanner from "@/components/BiometricPromptBanner";
+import FeeWaiverBanner from "@/components/FeeWaiverBanner";
+import PromoBannerCarousel from "@/components/PromoBannerCarousel";
+import RecipientAvatar from "@/components/RecipientAvatar";
+import { COLORS } from "@/theme/colors";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Path } from "react-native-svg";
-import { useStyles } from "../../../theme/styles";
-import { SPACE, RADIUS, TYPE, CARD_SHADOW, GLASS_BORDER, SCREEN_PADDING } from "../../../theme/designSystem";
-import { userScopedKey } from "../../../utils/cacheKeys";
+import Svg, { Circle } from "react-native-svg";
+import { getLocalBalance } from "../../../api/flutterwave";
 import CountryFlag from "../../../components/CountryFlag";
 import { PendingBadge } from "../../../components/PendingBadge";
 import VerifyEmailCard from "../../../components/src/screens/VerifyEmailCardScreen";
-import VerifyIdentityCardScreen from "./VerifyIdentityCardScreen";
-import BottomSheet from "../../BottomSheet";
-import HomeQuickActionsCarousel from "../../HomeQuickActionsCarousel";
 import { useNotificationContext } from "../../../context/NotificationContext";
-import { COLORS } from "@/theme/colors";
+import { clearPendingForCurrency, usePendingSettlements } from "../../../hooks/usePendingSettlements";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SCREEN_PADDING, SPACE, TYPE } from "../../../theme/designSystem";
+import { useStyles } from "../../../theme/styles";
+import { useAppTheme } from "../../../theme/ThemeProvider";
+import { userScopedKey } from "../../../utils/cacheKeys";
+import BottomSheet from "../../BottomSheet";
+import VerifyIdentityCardScreen from "./VerifyIdentityCardScreen";
 
 // ─── Types ───────────────────────────────────────────────────
 type UserAccount = {
@@ -59,23 +63,23 @@ const WALLET_CARD_WIDTH = SCREEN_WIDTH - 20 - 56;
 
 // ─── Constants ───────────────────────────────────────────────
 const HIDE_KEY = "hide_balance_preference";
-const ACC_KEY  = "cached_accounts_v1";
-const TOT_KEY  = "cached_total_balance_v1";
-const EXOTIC   = ["NGN","GHS","RWF","UGX","TZS","ZMW","XOF","XAF"];
+const ACC_KEY = "cached_accounts_v1";
+const TOT_KEY = "cached_total_balance_v1";
+const EXOTIC = ["NGN", "GHS", "RWF", "UGX", "TZS", "ZMW", "XOF", "XAF"];
 const DEBOUNCE = 3000;
 
 const normCcy = (c: any) => String(c || "").toUpperCase().trim();
-const toNum   = (v: any): number | null => {
+const toNum = (v: any): number | null => {
   if (v == null) return null;
   if (typeof v === "number") return isFinite(v) ? v : null;
   if (typeof v === "string") { const n = parseFloat(v.replace(/,/g, "")); return isFinite(n) ? n : null; }
   return null;
 };
-const norm     = (list: any[]): UserAccount[] =>
+const norm = (list: any[]): UserAccount[] =>
   Array.isArray(list) ? list.map(a => ({ ...a, currencyCode: normCcy(a?.currencyCode), balance: toNum(a?.balance) })) : [];
-const fmt      = (v: number | null | undefined) =>
+const fmt = (v: number | null | undefined) =>
   v == null ? "—" : v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const getInit  = (n: string) =>
+const getInit = (n: string) =>
   (n || "U").split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
 
 // Mirrors TransactionsScreen.tsx's icon/title/amount logic so the Home
@@ -124,16 +128,16 @@ function formatTxDate(dateStr: string): string {
 }
 
 async function loadAccts(phone: string): Promise<UserAccount[]> {
-  try { const r = await AsyncStorage.getItem(userScopedKey(ACC_KEY, phone)); if (r) { const p = JSON.parse(r); if (Array.isArray(p)) return norm(p); } } catch {} return [];
+  try { const r = await AsyncStorage.getItem(userScopedKey(ACC_KEY, phone)); if (r) { const p = JSON.parse(r); if (Array.isArray(p)) return norm(p); } } catch { } return [];
 }
 async function saveAccts(list: UserAccount[], phone: string) {
-  try { await AsyncStorage.setItem(userScopedKey(ACC_KEY, phone), JSON.stringify(norm(list))); } catch {}
+  try { await AsyncStorage.setItem(userScopedKey(ACC_KEY, phone), JSON.stringify(norm(list))); } catch { }
 }
 async function loadTotal(phone: string) {
-  try { const r = await AsyncStorage.getItem(userScopedKey(TOT_KEY, phone)); if (r) { const p = JSON.parse(r); const t = toNum(p?.total); if (typeof t === "number") return { total: t, currency: String(p?.currency || ""), symbol: String(p?.symbol || "") }; } } catch {} return null;
+  try { const r = await AsyncStorage.getItem(userScopedKey(TOT_KEY, phone)); if (r) { const p = JSON.parse(r); const t = toNum(p?.total); if (typeof t === "number") return { total: t, currency: String(p?.currency || ""), symbol: String(p?.symbol || "") }; } } catch { } return null;
 }
 async function saveTotal(total: number, currency: string, symbol: string, phone: string) {
-  try { await AsyncStorage.setItem(userScopedKey(TOT_KEY, phone), JSON.stringify({ total, currency, symbol })); } catch {}
+  try { await AsyncStorage.setItem(userScopedKey(TOT_KEY, phone), JSON.stringify({ total, currency, symbol })); } catch { }
 }
 
 // ─── Small sub-components ────────────────────────────────────
@@ -144,7 +148,7 @@ function InitialsAvatar({ name, size = 38, photoUrl }: { name: string; size?: nu
   }
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center" }}>
-      <AppText style={{ color: "#FFFFFF", fontWeight: "700", fontSize: size * 0.36 }}>{getInit(name)}</AppText>
+      <AppText style={{ color: "#FFFFFF", fontWeight: "600", fontSize: size * 0.36 }}>{getInit(name)}</AppText>
     </View>
   );
 }
@@ -153,7 +157,7 @@ function QuickAction({ icon, label, onPress }: { icon: string; label: string; on
   const { colors } = useAppTheme();
   return (
     <Pressable onPress={onPress} style={{ flex: 1, alignItems: "center", gap: SPACE.sm }}>
-      <View style={{ width: 52, height: 52, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center",  }}>
+      <View style={{ width: 52, height: 52, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center", }}>
         <Ionicons name={icon as any} size={28} color={colors.gray} />
       </View>
       <AppText style={{ ...TYPE.micro, letterSpacing: 0, color: colors.text, textAlign: "center" }}>{label}</AppText>
@@ -168,23 +172,23 @@ export default function HomeScreen() {
   const styles = useStyles();
   const { unreadCount } = useNotificationContext();
 
-  const [accounts,      setAccounts]      = useState<UserAccount[]>([]);
-  const [loading,       setLoading]       = useState(true);
-  const [refreshing,    setRefreshing]    = useState(false);
-  const [userName,      setUserName]      = useState("");
+  const [accounts, setAccounts] = useState<UserAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [userName, setUserName] = useState("");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
-  const [email,         setEmail]         = useState("");
-  const [totalBalance,  setTotalBalance]  = useState<number | null>(null);
-  const [homeCcy,       setHomeCcy]       = useState("CAD");
-  const [homeSym,       setHomeSym]       = useState("$");
-  const [hideBalance,   setHideBalance]   = useState(false);
-  const [rates,         setRates]         = useState<Rate[]>([]);
-  const [ratesLoading,  setRatesLoading]  = useState(false);
-  const [networkOk,     setNetworkOk]     = useState(true);
-  const [userPhone,     setUserPhone]     = useState("");
+  const [email, setEmail] = useState("");
+  const [totalBalance, setTotalBalance] = useState<number | null>(null);
+  const [homeCcy, setHomeCcy] = useState("CAD");
+  const [homeSym, setHomeSym] = useState("$");
+  const [hideBalance, setHideBalance] = useState(false);
+  const [rates, setRates] = useState<Rate[]>([]);
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [networkOk, setNetworkOk] = useState(true);
+  const [userPhone, setUserPhone] = useState("");
   const [emailVerified, setEmailVerified] = useState(true);
-  const [kycStatus,     setKycStatus]     = useState("");
+  const [kycStatus, setKycStatus] = useState("");
   // Drives the verify-identity banner's visibility and behavior — richer
   // than kycStatus alone, since it also says what tapping the banner
   // should actually do (action) and carries the specific rejection reason
@@ -196,11 +200,11 @@ export default function HomeScreen() {
   // enabled, and hasn't been dismissed before.
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
   const [bioType, setBioType] = useState("Biometric");
-  const [saving,        setSaving]        = useState(false);
-  const [recipients,    setRecipients]    = useState<RecentRecipient[]>([]);
-  const [sheetOpen,     setSheetOpen]     = useState(false);
-  const [sheetLoading,  setSheetLoading]  = useState(false);
-  const [walletsReady,  setWalletsReady]  = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [recipients, setRecipients] = useState<RecentRecipient[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetLoading, setSheetLoading] = useState(false);
+  const [walletsReady, setWalletsReady] = useState(false);
   // Admin-configured referral reward percentage, fetched live so the
   // dashboard banner can't drift out of sync with whatever ReferralScreen
   // shows (previously this banner had a hardcoded dollar figure that had
@@ -209,7 +213,7 @@ export default function HomeScreen() {
 
   // Recent activity preview (5 most recent) shown under the wallet cards,
   // with a "View all" link to the full Transactions tab.
-  const [recentTx,        setRecentTx]        = useState<WalletTransaction[]>([]);
+  const [recentTx, setRecentTx] = useState<WalletTransaction[]>([]);
   const [recentTxLoading, setRecentTxLoading] = useState(true);
 
   // Promotional banners carousel — fetched once we know the user's country
@@ -223,10 +227,10 @@ export default function HomeScreen() {
   const [feeWaivers, setFeeWaivers] = useState<FeeWaiversResponse | null>(null);
 
   const isFetching = useRef(false);
-  const lastFetch  = useRef(0);
-  const mounted    = useRef(true);
+  const lastFetch = useRef(0);
+  const mounted = useRef(true);
   const focusCount = useRef(0);
-  const accsRef    = useRef<UserAccount[]>([]);
+  const accsRef = useRef<UserAccount[]>([]);
   const settledRef = useRef<(() => void) | null>(null);
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -276,10 +280,10 @@ export default function HomeScreen() {
             // If the rate fetch fails or doesn't include this pair, fall
             // back to showing the original currency rather than a
             // mis-converted number — better to say "10 USD" than guess.
-          } catch {}
+          } catch { }
         }
         setReferralReward(`${homeSym}${amount.toFixed(2)} ${currencyLabel}${minPhrase}`);
-      } catch {}
+      } catch { }
     })();
   }, [homeCcy, homeSym]);
 
@@ -295,10 +299,10 @@ export default function HomeScreen() {
         if (!mounted.current) return;
         if (ca.length > 0) { setAccounts(ca); accsRef.current = ca; }
         if (ct) { setTotalBalance(ct.total); setHomeCcy(ct.currency || "CAD"); setHomeSym(ct.symbol || "$"); }
-        if (su) { try { const u = JSON.parse(su); setUserName(String(u.firstName || u.first_name || "").trim()); setEmail(u.email || ""); } catch {} }
+        if (su) { try { const u = JSON.parse(su); setUserName(String(u.firstName || u.first_name || "").trim()); setEmail(u.email || ""); } catch { } }
         if (sk) setKycStatus(sk);
         if (photo) setProfilePhotoUrl(photo);
-      } catch {}
+      } catch { }
     })();
   }, []); // eslint-disable-line
 
@@ -326,8 +330,8 @@ export default function HomeScreen() {
         // since this is the first point either becomes known this session.
         getActivePromotionalBanners({ country: cc || undefined, verified: ks === "verified" })
           .then(bannerRes => { if (mounted.current && bannerRes.success) setPromoBanners(bannerRes.banners); })
-          .catch(() => {});
-      }).catch(() => {});
+          .catch(() => { });
+      }).catch(() => { });
 
       try {
         const res = await getUserAccounts(phone, true);
@@ -341,22 +345,22 @@ export default function HomeScreen() {
           }
           if (mounted.current) { setAccounts(accts); accsRef.current = accts; setWalletsReady(true); accts.forEach(a => clearPendingForCurrency(a.currencyCode)); saveAccts(accts, phone); }
         }
-      } catch {}
+      } catch { }
 
       try {
         const res = await getTotalBalance(phone);
         if (mounted.current && res?.success) { const t = toNum(res.totalBalance); if (typeof t === "number") { setTotalBalance(t); const c = res.homeCurrency || homeCcy, sx = res.homeCurrencySymbol || c || "$"; setHomeCcy(c); setHomeSym(sx); saveTotal(t, c, sx, phone); } }
-      } catch {}
+      } catch { }
 
       try {
         const txRes = await getUserTransactions(phone, 1, 5);
         if (mounted.current && txRes.success) setRecentTx(txRes.transactions);
-      } catch {} finally { if (mounted.current) setRecentTxLoading(false); }
+      } catch { } finally { if (mounted.current) setRecentTxLoading(false); }
 
       try {
         const waiverRes = await fetchMyFeeWaivers(phone);
         if (mounted.current) setFeeWaivers(waiverRes);
-      } catch {}
+      } catch { }
 
       setRatesLoading(true);
       try {
@@ -375,8 +379,8 @@ export default function HomeScreen() {
             }).filter(Boolean) as Rate[]);
           }
         }
-      } catch {} finally { if (mounted.current) setRatesLoading(false); }
-    } catch {} finally { isFetching.current = false; if (mounted.current) { setLoading(false); setRefreshing(false); } }
+      } catch { } finally { if (mounted.current) setRatesLoading(false); }
+    } catch { } finally { isFetching.current = false; if (mounted.current) { setLoading(false); setRefreshing(false); } }
   }, []); // eslint-disable-line
 
   useEffect(() => { settledRef.current = () => fetchData(true); }, [fetchData]);
@@ -435,7 +439,7 @@ export default function HomeScreen() {
       if (res.success) {
         setPendingRequestCount(res.requests.filter((r) => r.status === "pending").length);
       }
-    } catch {}
+    } catch { }
   }, [userPhone]);
 
   const loadVerificationStatus = useCallback(async () => {
@@ -446,7 +450,7 @@ export default function HomeScreen() {
       if (mounted.current && res.success) {
         setVerificationStatus(res);
       }
-    } catch {}
+    } catch { }
   }, [userPhone]);
 
   // Re-checks whenever kycStatus changes (e.g. the moment verification
@@ -487,7 +491,7 @@ export default function HomeScreen() {
 
   const handleBiometricPromptDismiss = useCallback(async () => {
     setShowBiometricPrompt(false);
-    try { await AsyncStorage.setItem("biometric_prompt_dismissed", "true"); } catch {}
+    try { await AsyncStorage.setItem("biometric_prompt_dismissed", "true"); } catch { }
   }, []);
 
   useEffect(() => {
@@ -506,12 +510,12 @@ export default function HomeScreen() {
   }, [fetchData, loadRecipients, refreshSettlements, checkBiometricPrompt, kycStatus, loadPendingRequests, loadVerificationStatus]));
 
   const onRefresh = useCallback(() => { setRefreshing(true); fetchData(true); loadRecipients(); refreshSettlements(); loadPendingRequests(); loadVerificationStatus(); }, [fetchData, loadRecipients, refreshSettlements, loadPendingRequests, loadVerificationStatus]);
-  const toggleHide = useCallback(() => { setHideBalance(p => { const n = !p; AsyncStorage.setItem(HIDE_KEY, String(n)).catch(() => {}); return n; }); }, []);
+  const toggleHide = useCallback(() => { setHideBalance(p => { const n = !p; AsyncStorage.setItem(HIDE_KEY, String(n)).catch(() => { }); return n; }); }, []);
 
   useEffect(() => {
     if (!sheetOpen || !userPhone) return;
     setSheetLoading(true);
-    getUserAccounts(userPhone, true).then(res => { if (res?.success && res.accounts && mounted.current) setAccounts(norm(res.accounts)); }).catch(() => {}).finally(() => { if (mounted.current) setSheetLoading(false); });
+    getUserAccounts(userPhone, true).then(res => { if (res?.success && res.accounts && mounted.current) setAccounts(norm(res.accounts)); }).catch(() => { }).finally(() => { if (mounted.current) setSheetLoading(false); });
   }, [sheetOpen, userPhone]);
 
   const visibleRates = useMemo(() => {
@@ -519,9 +523,9 @@ export default function HomeScreen() {
     return rates.filter(r => ccys.has(r.from) && ccys.has(r.to)).slice(0, 5);
   }, [rates, accounts]);
 
-  const isKyc    = kycStatus === "verified";
+  const isKyc = kycStatus === "verified";
   const showSkel = loading && accounts.length === 0;
-  const blocked  = useCallback(() => Alert.alert("Verification Required", "Please complete identity verification to use this feature."), []);
+  const blocked = useCallback(() => Alert.alert("Verification Required", "Please complete identity verification to use this feature."), []);
 
   const handleVerifyEmail = useCallback(async () => {
     try { await sendEmailOtp(email); router.push(`/checkemail?email=${encodeURIComponent(email)}`); }
@@ -543,173 +547,173 @@ export default function HomeScreen() {
 
   const s = useMemo(() => StyleSheet.create({
 
-  root: { flex: 1, backgroundColor: colors.bg },
+    root: { flex: 1, backgroundColor: colors.bg },
 
-  // Header — plain, generous, confident name treatment
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.lg, paddingBottom: SPACE.sm,
-  },
-  greetName: { ...TYPE.subtitle, color: colors.text },
-  greetSub: { ...TYPE.caption, color: colors.muted, marginTop: 1 },
-  bellBtn: {
-    width: 42, height: 42, borderRadius: RADIUS.sm,
-    backgroundColor: colors.card, justifyContent: "center", alignItems: "center",
-    ...GLASS_BORDER,
-    ...CARD_SHADOW,
-  },
-  bellBadge: {
-    position: "absolute", top: 4, right: 4,
-    backgroundColor: colors.red, borderRadius: 8, minWidth: 16, height: 16,
-    paddingHorizontal: 3, justifyContent: "center", alignItems: "center",
-    borderWidth: 1.5, borderColor: "#FFFFFF",
-  },
-  bellBadgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" as const },
+    // Header — plain, generous, confident name treatment
+    header: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.lg, paddingBottom: SPACE.sm,
+    },
+    greetName: { ...TYPE.subtitle, color: colors.text },
+    greetSub: { ...TYPE.caption, color: colors.muted, marginTop: 1 },
+    bellBtn: {
+      width: 42, height: 42, borderRadius: RADIUS.sm,
+      backgroundColor: colors.card, justifyContent: "center", alignItems: "center",
+      ...GLASS_BORDER,
+      ...CARD_SHADOW,
+    },
+    bellBadge: {
+      position: "absolute", top: 4, right: 4,
+      backgroundColor: colors.red, borderRadius: 8, minWidth: 16, height: 16,
+      paddingHorizontal: 3, justifyContent: "center", alignItems: "center",
+      borderWidth: 1.5, borderColor: "#FFFFFF",
+    },
+    bellBadgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "600" as const },
 
-  // Balance hero — gradient blue card, the one place this saturated a
-  // background gets used. Every text/icon inside switches to white-family
-  // since the gradient runs genuinely dark at the primaryDark end.
-  balanceCard: {
-    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg,
-    borderRadius: RADIUS.xl, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.xl,
-    overflow: "hidden", position: "relative",
-    shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  balanceDecoration: { position: "absolute", top: -20, right: -20 },
-  balanceLabel: { ...TYPE.eyebrow, color: "#FFFFFF", opacity: 0.8 },
-  balanceAmount: { ...TYPE.heroNumber, color: "#FFFFFF", marginTop: SPACE.sm },
-  miniCard: {
-    flexDirection: "row", alignItems: "center", gap: SPACE.sm,
-    backgroundColor: "rgba(255,255,255,0.12)", borderRadius: RADIUS.md,
-    paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginTop: SPACE.xl,
-  },
-  miniCardChip: { width: 22, height: 16, borderRadius: 3, backgroundColor: "#D4AF7A" },
-  miniCardNumber: { flex: 1, color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: "700", letterSpacing: 2 },
-  miniCardLock: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.14)", justifyContent: "center", alignItems: "center" },
+    // Balance hero — gradient blue card, the one place this saturated a
+    // background gets used. Every text/icon inside switches to white-family
+    // since the gradient runs genuinely dark at the primaryDark end.
+    balanceCard: {
+      marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg,
+      borderRadius: RADIUS.xl, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.xl,
+      overflow: "hidden", position: "relative",
+      shadowColor: colors.primaryDark,
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.4,
+      shadowRadius: 24,
+      elevation: 16,
+    },
+    balanceDecoration: { position: "absolute", top: -20, right: -20 },
+    balanceLabel: { ...TYPE.eyebrow, color: "#FFFFFF", opacity: 0.8 },
+    balanceAmount: { ...TYPE.heroNumber, color: "#FFFFFF", marginTop: SPACE.sm },
+    miniCard: {
+      flexDirection: "row", alignItems: "center", gap: SPACE.sm,
+      backgroundColor: "rgba(255,255,255,0.12)", borderRadius: RADIUS.md,
+      paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginTop: SPACE.xl,
+    },
+    miniCardChip: { width: 22, height: 16, borderRadius: 3, backgroundColor: "#D4AF7A" },
+    miniCardNumber: { flex: 1, color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: "600", letterSpacing: 2 },
+    miniCardLock: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.14)", justifyContent: "center", alignItems: "center" },
 
-  balanceActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.md },
-  balanceActionIcon: {
-    width: 50, height: 50, borderRadius: RADIUS.full,
-    backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center",
-  },
-  balanceActionLabel: { ...TYPE.caption, color: "#FFFFFF", marginTop: SPACE.xs },
-  requestBanner: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.sm + 2, paddingHorizontal: SPACE.md, marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md, gap: SPACE.sm },
-  requestBannerIcon: { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
-  requestBannerText: { flex: 1, fontSize: 12.5, fontWeight: "600", color: COLORS.primary },
+    balanceActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.md },
+    balanceActionIcon: {
+      width: 50, height: 50, borderRadius: RADIUS.full,
+      backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center",
+    },
+    balanceActionLabel: { ...TYPE.caption, color: "#FFFFFF", marginTop: SPACE.xs },
+    requestBanner: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.md, paddingVertical: SPACE.sm + 2, paddingHorizontal: SPACE.md, marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md, gap: SPACE.sm },
+    requestBannerIcon: { width: 28, height: 28, borderRadius: RADIUS.full, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+    requestBannerText: { flex: 1, fontSize: 12.5, fontWeight: "600", color: COLORS.primary },
 
-  // Quick actions — a clean white card, blue icon tiles (navigation, not money)
-  qaCard: {
-    flexDirection: "row", justifyContent: "space-around",
-    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg,
-    paddingVertical: SPACE.xl, paddingHorizontal: SPACE.sm,
-    backgroundColor: "transparent", borderRadius: RADIUS.lg,
-   
-  },
-  qaIcon: {
-    width: 52, height: 52, borderRadius: RADIUS.full,
-    backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center", borderColor: colors.primaryMid, borderWidth: 1,
-  },
-  qaLabel: { ...TYPE.micro, letterSpacing: 0, color: colors.text, marginTop: SPACE.xs, textAlign: "center" },
+    // Quick actions — a clean white card, blue icon tiles (navigation, not money)
+    qaCard: {
+      flexDirection: "row", justifyContent: "space-around",
+      marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg,
+      paddingVertical: SPACE.xl, paddingHorizontal: SPACE.sm,
+      backgroundColor: "transparent", borderRadius: RADIUS.lg,
 
-  // Network banner
-  netBanner: {
-    flexDirection: "row", alignItems: "center", gap: SPACE.sm,
-    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg, padding: SPACE.md,
-    backgroundColor: colors.accentLight, borderRadius: RADIUS.sm,
-  },
-  netText: { flex: 1, ...TYPE.caption, color: colors.accentDark },
-  netRetry: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary },
+    },
+    qaIcon: {
+      width: 52, height: 52, borderRadius: RADIUS.full,
+      backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center", borderColor: colors.primaryMid, borderWidth: 1,
+    },
+    qaLabel: { ...TYPE.micro, letterSpacing: 0, color: colors.text, marginTop: SPACE.xs, textAlign: "center" },
 
-  // Section headers
-  sectionRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: SCREEN_PADDING, marginTop: SPACE.xxxl, marginBottom: SPACE.md,
-  },
-  sectionTitle: { ...TYPE.title, fontSize: 18, color: colors.text },
-  sectionLink: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary, fontSize: 16 },
-  addPill: {
-    flexDirection: "row", alignItems: "center", gap: SPACE.xs,
-    paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm,
-    borderRadius: RADIUS.full, backgroundColor: colors.primaryLight,
-  },
-  addPillText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary },
+    // Network banner
+    netBanner: {
+      flexDirection: "row", alignItems: "center", gap: SPACE.sm,
+      marginHorizontal: SCREEN_PADDING, marginTop: SPACE.lg, padding: SPACE.md,
+      backgroundColor: colors.accentLight, borderRadius: RADIUS.sm,
+    },
+    netText: { flex: 1, ...TYPE.caption, color: colors.accentDark },
+    netRetry: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary },
 
-  // Wallet cards — white, soft-shadowed, blue used only for the small decorative ring
-  walletScroll: { paddingHorizontal: SCREEN_PADDING, gap: SPACE.md, paddingBottom: SPACE.xs },
-  walletCard: {
-    width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg, padding: SPACE.md,
-    backgroundColor: "transparent", overflow: "hidden",
-    // Not the shared GLASS_BORDER here on purpose — that border color
-    // (#EEF3FA) is actually lighter than the page background (#f9f9f9) and
-    // only reads as a visible edge when there's a card fill behind it to
-    // anchor it. With the fill gone, it needs a tone that's genuinely
-    // darker than the page itself to stay visible as a line.
-    borderWidth: 1,
-    borderColor: "#e2e4e5ff",
-  },
-  walletCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACE.xl },
-  walletFlagRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  walletIconBadge: { width: 35, height: 35, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center" },
-  walletCcy: { ...TYPE.subtitle, color: colors.text },
-  walletBalLabel: { ...TYPE.caption, color: colors.muted, marginBottom: SPACE.xs },
-  walletBal: { fontSize: 28, fontWeight: "700" as const, color: colors.text, letterSpacing: -0.3 },
-  walletSkelLine: { width: 110, height: 24, borderRadius: RADIUS.xs, backgroundColor: colors.borderLight },
-  walletSkel: { width: WALLET_CARD_WIDTH, height: 138, borderRadius: RADIUS.lg, backgroundColor: colors.borderLight },
-  walletAddCard: {
-    width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg,
-    borderWidth: 1.5, borderColor: colors.border, borderStyle: "dashed",
-    justifyContent: "center", alignItems: "center", gap: SPACE.sm, minHeight: 138,
-  },
-  walletAddIcon: { width: 42, height: 42, borderRadius: RADIUS.sm, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center" },
-  walletAddText: { ...TYPE.caption, fontWeight: "700" as const, color: colors.primary },
-  disabledBadge: { backgroundColor: colors.errorLight, borderRadius: RADIUS.xs - 2, paddingHorizontal: SPACE.sm - 1, paddingVertical: 2 },
-  disabledBadgeText: { fontSize: 10, fontWeight: "700" as const, color: colors.red },
+    // Section headers
+    sectionRow: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: SCREEN_PADDING, marginTop: SPACE.xxxl, marginBottom: SPACE.md,
+    },
+    sectionTitle: { ...TYPE.title, fontSize: 18, color: colors.text },
+    sectionLink: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary, fontSize: 16 },
+    addPill: {
+      flexDirection: "row", alignItems: "center", gap: SPACE.xs,
+      paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm,
+      borderRadius: RADIUS.full, backgroundColor: colors.primaryLight,
+    },
+    addPillText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary },
 
-  // Quick send — circular blue avatars (identity, not money)
-  recipientScroll: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.xs, gap: SPACE.lg },
-  recipientItem: { alignItems: "center", gap: SPACE.xs, width: 60 },
-  recipientAvatar: { width: 50, height: 50, borderRadius: RADIUS.full, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center" },
-  recipientInitials: { fontSize: 16, fontWeight: "700" as const, color: "#FFFFFF" },
-  recipientName: { ...TYPE.micro, letterSpacing: 0, color: colors.text, textAlign: "center" },
-  recipientCcy: { fontSize: 10, color: colors.muted, fontWeight: "500" as const },
+    // Wallet cards — white, soft-shadowed, blue used only for the small decorative ring
+    walletScroll: { paddingHorizontal: SCREEN_PADDING, gap: SPACE.md, paddingBottom: SPACE.xs },
+    walletCard: {
+      width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg, padding: SPACE.md,
+      backgroundColor: "transparent", overflow: "hidden",
+      // Not the shared GLASS_BORDER here on purpose — that border color
+      // (#EEF3FA) is actually lighter than the page background (#f9f9f9) and
+      // only reads as a visible edge when there's a card fill behind it to
+      // anchor it. With the fill gone, it needs a tone that's genuinely
+      // darker than the page itself to stay visible as a line.
+      borderWidth: 1,
+      borderColor: "#e2e4e5ff",
+    },
+    walletCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACE.xl },
+    walletFlagRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+    walletIconBadge: { width: 35, height: 35, borderRadius: RADIUS.full, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center" },
+    walletCcy: { ...TYPE.subtitle, color: colors.text },
+    walletBalLabel: { ...TYPE.caption, color: colors.muted, marginBottom: SPACE.xs },
+    walletBal: { fontSize: 28, fontWeight: "600" as const, color: colors.text, letterSpacing: -0.3 },
+    walletSkelLine: { width: 110, height: 24, borderRadius: RADIUS.xs, backgroundColor: colors.borderLight },
+    walletSkel: { width: WALLET_CARD_WIDTH, height: 138, borderRadius: RADIUS.lg, backgroundColor: colors.borderLight },
+    walletAddCard: {
+      width: WALLET_CARD_WIDTH, borderRadius: RADIUS.lg,
+      borderWidth: 1.5, borderColor: colors.border, borderStyle: "dashed",
+      justifyContent: "center", alignItems: "center", gap: SPACE.sm, minHeight: 138,
+    },
+    walletAddIcon: { width: 42, height: 42, borderRadius: RADIUS.sm, backgroundColor: colors.primaryLight, justifyContent: "center", alignItems: "center" },
+    walletAddText: { ...TYPE.caption, fontWeight: "600" as const, color: colors.primary },
+    disabledBadge: { backgroundColor: colors.errorLight, borderRadius: RADIUS.xs - 2, paddingHorizontal: SPACE.sm - 1, paddingVertical: 2 },
+    disabledBadgeText: { fontSize: 10, fontWeight: "600" as const, color: colors.red },
 
-  // Live rates — white card, green/red only on the change tag
-  ratesCard: { marginHorizontal: SCREEN_PADDING, backgroundColor: colors.card, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW, marginBottom: SPACE.md },
-  rateRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 1, gap: SPACE.md },
-  rateFlagWrap: { flexDirection: "row", alignItems: "center", width: 42 },
-  rateFlagOver: { marginLeft: -7, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: RADIUS.full },
-  ratePair: { ...TYPE.subtitle, fontSize: 14, color: colors.text },
-  rateSubtext: { fontSize: 11, color: colors.muted, fontWeight: "500" as const, marginTop: 2 },
-  rateTag: { paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xs, borderRadius: RADIUS.xs - 2 },
-  rateTagText: { fontSize: 11, fontWeight: "700" as const },
-  rateDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginLeft: SPACE.lg },
+    // Quick send — circular blue avatars (identity, not money)
+    recipientScroll: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.xs, gap: SPACE.lg },
+    recipientItem: { alignItems: "center", gap: SPACE.xs, width: 60 },
+    recipientAvatar: { width: 50, height: 50, borderRadius: RADIUS.full, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center" },
+    recipientInitials: { fontSize: 16, fontWeight: "600" as const, color: "#FFFFFF" },
+    recipientName: { ...TYPE.micro, letterSpacing: 0, color: colors.text, textAlign: "center" },
+    recipientCcy: { fontSize: 10, color: colors.muted, fontWeight: "500" as const },
 
-  txRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 1, gap: SPACE.md },
-  txIconWrap: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-  txTitle: { ...TYPE.subtitle, fontSize: 14, color: colors.text },
-  txDate: { fontSize: 11, color: colors.muted, fontWeight: "500" as const, marginTop: 2 },
-  txAmount: { fontSize: 14, fontWeight: "700" as const },
+    // Live rates — white card, green/red only on the change tag
+    ratesCard: { marginHorizontal: SCREEN_PADDING, backgroundColor: colors.card, borderRadius: RADIUS.md, overflow: "hidden", ...GLASS_BORDER, ...CARD_SHADOW, marginBottom: SPACE.md },
+    rateRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 1, gap: SPACE.md },
+    rateFlagWrap: { flexDirection: "row", alignItems: "center", width: 42 },
+    rateFlagOver: { marginLeft: -7, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: RADIUS.full },
+    ratePair: { ...TYPE.subtitle, fontSize: 14, color: colors.text },
+    rateSubtext: { fontSize: 11, color: colors.muted, fontWeight: "500" as const, marginTop: 2 },
+    rateTag: { paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xs, borderRadius: RADIUS.xs - 2 },
+    rateTagText: { fontSize: 11, fontWeight: "600" as const },
+    rateDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginLeft: SPACE.lg },
 
-  // Recommendations — subtle purple card, distinct from the rest of
-  // Home's neutral palette since this is a one-off promotional banner.
-  refBanner: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "#F3EFFD",
-    borderWidth: 1, borderColor: "#C4B5FD",
-    borderRadius: RADIUS.lg, padding: SPACE.lg,
-    marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md,
-  },
-  refBannerTitle: { fontSize: 14, fontWeight: "700", color: "#4C1D95" },
-  refBannerSub: { fontSize: 12, color: "#6D28D9", fontWeight: "500", marginTop: 3, lineHeight: 16 },
-  refBannerIconWrap: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: "#8B5CF6",
-    justifyContent: "center", alignItems: "center",
-  },
+    txRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md + 1, gap: SPACE.md },
+    txIconWrap: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
+    txTitle: { ...TYPE.subtitle, fontSize: 14, color: colors.text },
+    txDate: { fontSize: 11, color: colors.muted, fontWeight: "500" as const, marginTop: 2 },
+    txAmount: { fontSize: 14, fontWeight: "600" as const },
+
+    // Recommendations — subtle purple card, distinct from the rest of
+    // Home's neutral palette since this is a one-off promotional banner.
+    refBanner: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      backgroundColor: "#F3EFFD",
+      borderWidth: 1, borderColor: "#C4B5FD",
+      borderRadius: RADIUS.lg, padding: SPACE.lg,
+      marginHorizontal: SCREEN_PADDING, marginTop: SPACE.md,
+    },
+    refBannerTitle: { fontSize: 14, fontWeight: "600", color: "#4C1D95" },
+    refBannerSub: { fontSize: 12, color: "#6D28D9", fontWeight: "500", marginTop: 3, lineHeight: 16 },
+    refBannerIconWrap: {
+      width: 48, height: 48, borderRadius: 24,
+      backgroundColor: "#8B5CF6",
+      justifyContent: "center", alignItems: "center",
+    },
   }), [colors]);
 
   // ─── RENDER ──────────────────────────────────────────────────
@@ -724,7 +728,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={[s.root, { alignItems: "center", justifyContent: "center" }]} edges={["top", "left", "right"]}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
-        {/* <AppText style={{ fontSize: 20, fontWeight: "700", color: colors.primary, marginBottom: 20 }}>ExxSend</AppText> */}
+        {/* <AppText style={{ fontSize: 20, fontWeight: "600", color: colors.primary, marginBottom: 20 }}>ExxSend</AppText> */}
         <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
@@ -774,7 +778,7 @@ export default function HomeScreen() {
 
 
 
-{/* ── Verify banners ── */}
+        {/* ── Verify banners ── */}
         {!emailVerified && <VerifyEmailCard email={email} onPress={handleVerifyEmail} />}
         {emailVerified && !!verificationStatus?.needsVerification && verificationStatus.action !== "none" && (() => {
           const vs = verificationStatus;
@@ -830,7 +834,7 @@ export default function HomeScreen() {
           }
         })()}
 
-        
+
         {/* ── Balance card ── */}
         <LinearGradient
           colors={[colors.primary, colors.primaryDark]}
@@ -958,9 +962,9 @@ export default function HomeScreen() {
           </>
         )}
 
-{/* ── My Wallets ── */}
-        <View style={[s.sectionRow, {marginTop: 6}]}>
-          <AppText style={[s.sectionTitle, {marginTop: -8}]}>My Wallets</AppText>
+        {/* ── My Wallets ── */}
+        <View style={[s.sectionRow, { marginTop: 6 }]}>
+          <AppText style={[s.sectionTitle, { marginTop: -8 }]}>My Wallets</AppText>
           <Pressable onPress={() => isKyc ? router.push("/addaccount") : blocked()} style={s.addPill}>
             <Ionicons name="add" size={30} color={colors.primary} />
             <AppText style={s.addPillText}>Add</AppText>
@@ -977,8 +981,8 @@ export default function HomeScreen() {
             <>
               {accounts.map(a => {
                 const disabled = String(a.status || "").toLowerCase() === "disabled";
-                const hasPend  = hasPendingForCurrency(a.currencyCode) && !walletsReady;
-                const dispBal  = hasPend ? (typeof a.balance === "number" ? getOptimisticBalance(a.balance, a.currencyCode) : null) : a.balance;
+                const hasPend = hasPendingForCurrency(a.currencyCode) && !walletsReady;
+                const dispBal = hasPend ? (typeof a.balance === "number" ? getOptimisticBalance(a.balance, a.currencyCode) : null) : a.balance;
                 return (
                   <Pressable
                     key={a.id}
@@ -1044,7 +1048,7 @@ export default function HomeScreen() {
             <AppText style={s.sectionLink}>View all</AppText>
           </Pressable>
         </View>
-        
+
         {recentTxLoading ? (
           <View style={s.ratesCard}>
             <View style={{ padding: 20, alignItems: "center" }}>
@@ -1106,7 +1110,7 @@ export default function HomeScreen() {
 
 
         {/* ── Recommendations ── */}
-        <View style={[s.sectionRow, {marginTop: 15}]}>
+        <View style={[s.sectionRow, { marginTop: 15 }]}>
           <AppText style={s.sectionTitle}>Recommendations</AppText>
         </View>
         <Pressable onPress={() => router.push("/referral")} style={s.refBanner}>

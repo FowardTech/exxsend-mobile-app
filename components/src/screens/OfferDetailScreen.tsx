@@ -1,13 +1,13 @@
-import React from "react";
-import { View, Pressable, Image, ScrollView, Linking, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { PromotionalBanner } from "@/api/config";
 import AppText from "@/components/AppText";
 import BackButton from "@/components/BackButton";
 import { COLORS } from "@/theme/colors";
-import { SPACE, RADIUS, SCREEN_PADDING } from "@/theme/designSystem";
-import { PromotionalBanner } from "@/api/config";
+import { RADIUS, SCREEN_PADDING, SPACE } from "@/theme/designSystem";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
+import { Image, Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OfferDetailScreen() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function OfferDetailScreen() {
     const target = offer.ctaUrl || offer.deeplink || offer.url;
     if (!target) return;
     if (/^https?:\/\//i.test(target)) {
-      Linking.openURL(target).catch(() => {});
+      Linking.openURL(target).catch(() => { });
     } else {
       router.push(target.startsWith("/") ? (target as any) : (`/${target}` as any));
     }
@@ -90,9 +90,9 @@ const s = StyleSheet.create({
   heroImage: { width: "100%", height: 220 },
   content: { paddingHorizontal: SCREEN_PADDING, paddingTop: SPACE.lg },
   iconWrap: { width: 56, height: 56, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center", marginBottom: SPACE.lg },
-  title: { fontSize: 24, fontWeight: "700", color: COLORS.text },
+  title: { fontSize: 24, fontWeight: "600", color: COLORS.text },
   subtitle: { fontSize: 15, color: COLORS.muted, fontWeight: "500", marginTop: SPACE.sm, lineHeight: 22 },
   footer: { paddingHorizontal: SCREEN_PADDING, paddingBottom: SPACE.xl, paddingTop: SPACE.sm },
   ctaBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: "center" },
-  ctaBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  ctaBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 });

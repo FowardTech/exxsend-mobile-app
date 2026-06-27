@@ -1,20 +1,18 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, FlatList, Alert, StyleSheet, StatusBar, ActivityIndicator, Modal } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lookupMemberByUsername, updateSavedRecipient } from "../../../../api/config";
+import { COUNTRY_NAMES, CURRENCY_TO_COUNTRY } from "../../../../api/flutterwave";
+import { deleteRecipientFromDB, getSavedRecipients } from "../../../../api/sync";
+import RecipientAvatar from "../../../../components/RecipientAvatar";
+import ScreenHeader from "../../../../components/ScreenHeader";
+import { COLORS } from "../../../../theme/colors";
+import { CARD_SHADOW, GLASS_BORDER, GLASS_BORDER_SUBTLE, RADIUS, SPACE } from "../../../../theme/designSystem";
 import AppText from "../../../AppText";
 import AppTextInput from "../../../AppTextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import ScreenHeader from "../../../../components/ScreenHeader";
-import { getSavedRecipients, deleteRecipientFromDB } from "../../../../api/sync";
-import { lookupMemberByUsername } from "../../../../api/config";
-import { updateSavedRecipient } from "../../../../api/config";
-import { CURRENCY_TO_COUNTRY, COUNTRY_NAMES } from "../../../../api/flutterwave";
-import RecipientAvatar from "../../../../components/RecipientAvatar";
-import { COLORS } from "../../../../theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER_SUBTLE, GLASS_BORDER } from "../../../../theme/designSystem";
 
 interface Recipient {
   id?: string;
@@ -95,7 +93,7 @@ export default function RecipientsManagementScreen() {
           if (photoById.size > 0) {
             setRecipients((prev) => prev.map((r) => (r.id && photoById.has(r.id) ? ({ ...r, avatarUrl: photoById.get(r.id) } as any) : r)));
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
     } catch { setRecipients([]); }
     finally { setLoading(false); }
@@ -190,7 +188,7 @@ export default function RecipientsManagementScreen() {
       ) : filtered.length === 0 ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
           <Ionicons name="people-outline" size={48} color={COLORS.muted} />
-          <AppText style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginTop: 12 }}>No saved recipients</AppText>
+          <AppText style={{ fontSize: 16, fontWeight: "600", color: COLORS.text, marginTop: 12 }}>No saved recipients</AppText>
           <AppText style={{ fontSize: 13, color: COLORS.muted, textAlign: "center", marginTop: 6 }}>Recipients you send to will appear here for quick access.</AppText>
         </View>
       ) : (
@@ -234,10 +232,10 @@ export default function RecipientsManagementScreen() {
             />
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
               <Pressable onPress={() => setEditTarget(null)} style={[s.modalBtn, { backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border }]}>
-                <AppText style={{ fontWeight: "700", color: COLORS.text }}>Cancel</AppText>
+                <AppText style={{ fontWeight: "600", color: COLORS.text }}>Cancel</AppText>
               </Pressable>
               <Pressable onPress={handleSaveEdit} disabled={saving} style={[s.modalBtn, { backgroundColor: COLORS.actionBg, flex: 1 }]}>
-                {saving ? <ActivityIndicator color={COLORS.actionText} size="small" /> : <AppText style={{ fontWeight: "700", color: COLORS.actionText }}>Save</AppText>}
+                {saving ? <ActivityIndicator color={COLORS.actionText} size="small" /> : <AppText style={{ fontWeight: "600", color: COLORS.actionText }}>Save</AppText>}
               </Pressable>
             </View>
           </View>
@@ -252,21 +250,21 @@ const s = StyleSheet.create({
   searchWrap: { flexDirection: "row", alignItems: "center", marginHorizontal: SPACE.lg, marginVertical: SPACE.sm + 2, backgroundColor: COLORS.white, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md + 2, height: 46, ...GLASS_BORDER, ...CARD_SHADOW },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.text },
   groupHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACE.sm },
-  groupLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.7 },
-  groupCount: { fontSize: 12, fontWeight: "700", color: COLORS.muted },
+  groupLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.7 },
+  groupCount: { fontSize: 12, fontWeight: "600", color: COLORS.muted },
   card: { backgroundColor: COLORS.white, borderRadius: RADIUS.md, padding: SPACE.lg, marginBottom: SPACE.sm + 2, flexDirection: "row", alignItems: "center", ...GLASS_BORDER, ...CARD_SHADOW },
   cardLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.md },
   avatar: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
-  avatarText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
-  name: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  avatarText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  name: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   meta: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2 },
   ccyTag: { marginTop: 4, alignSelf: "flex-start", backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.xs - 2, paddingHorizontal: 7, paddingVertical: 2 },
-  ccyText: { fontSize: 10, fontWeight: "700", color: COLORS.primary },
+  ccyText: { fontSize: 10, fontWeight: "600", color: COLORS.primary },
   actions: { flexDirection: "row", gap: SPACE.xs + 2 },
   actionBtn: { width: 34, height: 34, borderRadius: RADIUS.full, justifyContent: "center", alignItems: "center" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", padding: SPACE.xxxl },
   modalCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.xl - 4, padding: SPACE.xxl, width: "100%" },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: SPACE.lg - 2 },
+  modalTitle: { fontSize: 16, fontWeight: "600", color: COLORS.text, marginBottom: SPACE.lg - 2 },
   modalInput: { backgroundColor: "#FFFFFF", ...GLASS_BORDER_SUBTLE, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md + 2, height: 50, fontSize: 15, fontWeight: "600", color: COLORS.text },
   modalBtn: { paddingVertical: SPACE.md + 2, borderRadius: RADIUS.sm, alignItems: "center", justifyContent: "center", minWidth: 90 },
 });

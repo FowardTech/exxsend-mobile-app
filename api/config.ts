@@ -573,27 +573,39 @@ export async function getReferralLeaderboard(params: {
 
 export interface MyReferralRecord {
   id: string;
-  referredName?: string;
-  referredPhone?: string;
-  /** No documented status enum for this endpoint — passed through as-is
-   * and displayed verbatim (capitalized) rather than mapped to a fixed
-   * set of labels that might not match what the backend actually sends. */
-  status: string;
-  rewardAmount?: number | null;
-  rewardCurrency?: string;
+  /** The person this user referred — confirmed field is referee_name /
+   * refereeName. referrer_name/referrerName is the current user
+   * themselves, not who they referred — using that would show the
+   * user's own name on every row instead of their friend's. */
+  refereeName?: string;
+  refereePhone?: string;
+  status: string; // "pending" | "qualified" | "rewarded" (confirmed enum)
+  bonusAmount?: number | null;
+  bonusCurrency?: string;
   createdAt?: string;
+  qualifiedAt?: string | null;
+  rewardedAt?: string | null;
+}
+
+export interface MyReferralsStats {
+  totalReferred: number;
+  qualifiedReferrals: number;
+  pendingRewards: number;
+  totalEarned: number;
+  pendingBonus: number;
+  earnedCurrency: string;
 }
 
 /**
- * GET /referrals/my-referrals — no documented response shape was provided
- * for this one, so parsing here is intentionally flexible: it checks a
- * few plausible field-name/wrapper conventions (referrals/data/bare array,
- * camelCase/snake_case) rather than assuming one exact shape.
+ * GET /referrals/my-referrals — confirmed response shape. The backend
+ * sends both snake_case and camelCase for most fields (to_dict() aliases),
+ * so this checks both, but the field names themselves (not just casing)
+ * are now the actual confirmed ones rather than a guess.
  */
 export async function getMyReferrals(phone: string): Promise<{
   success: boolean;
   referrals: MyReferralRecord[];
-  totalRewarded?: number;
+  stats: MyReferralsStats | null;
   message?: string;
 }> {
   try {
@@ -603,24 +615,32 @@ export async function getMyReferrals(phone: string): Promise<{
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data?.success === false) {
-      return { success: false, referrals: [], message: data?.message || `HTTP ${res.status}` };
+      return { success: false, referrals: [], stats: null, message: data?.message || `HTTP ${res.status}` };
     }
-    const rawList = Array.isArray(data?.referrals) ? data.referrals
-      : Array.isArray(data?.data) ? data.data
-      : Array.isArray(data) ? data
-      : [];
+    const rawList = Array.isArray(data?.referrals) ? data.referrals : [];
     const referrals: MyReferralRecord[] = rawList.map((r: any) => ({
-      id: String(r.id ?? r.referralId ?? r.referral_id ?? ""),
-      referredName: r.referredName ?? r.referred_name ?? r.name,
-      referredPhone: r.referredPhone ?? r.referred_phone ?? r.phone,
+      id: String(r.id ?? ""),
+      refereeName: r.refereeName ?? r.referee_name,
+      refereePhone: r.refereePhone ?? r.referee_phone,
       status: r.status ?? "pending",
-      rewardAmount: r.rewardAmount ?? r.reward_amount ?? null,
-      rewardCurrency: r.rewardCurrency ?? r.reward_currency ?? r.currency,
+      bonusAmount: r.bonusAmount ?? r.bonus_amount ?? null,
+      bonusCurrency: r.bonusCurrency ?? r.bonus_currency,
       createdAt: r.createdAt ?? r.created_at,
+      qualifiedAt: r.qualifiedAt ?? r.qualified_at ?? null,
+      rewardedAt: r.rewardedAt ?? r.rewarded_at ?? null,
     }));
-    return { success: true, referrals, totalRewarded: data.totalRewarded ?? data.total_rewarded };
+    const statsRaw = data.stats || {};
+    const stats: MyReferralsStats = {
+      totalReferred: statsRaw.totalReferred ?? data.total_referrals ?? 0,
+      qualifiedReferrals: statsRaw.qualifiedReferrals ?? data.qualified_referrals ?? 0,
+      pendingRewards: statsRaw.pendingRewards ?? 0,
+      totalEarned: statsRaw.totalEarned ?? data.total_earned ?? 0,
+      pendingBonus: statsRaw.pendingBonus ?? data.pending_bonus ?? 0,
+      earnedCurrency: statsRaw.earnedCurrency ?? data.earned_currency ?? "",
+    };
+    return { success: true, referrals, stats };
   } catch (error: any) {
-    return { success: false, referrals: [], message: error?.message || "Could not load your referrals" };
+    return { success: false, referrals: [], stats: null, message: error?.message || "Could not load your referrals" };
   }
 }
 

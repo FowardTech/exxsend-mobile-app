@@ -1,7 +1,7 @@
 import React from "react";
-import { Modal, View, Pressable, ScrollView, StyleSheet } from "react-native";
-import AppText from "./AppText";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useAppTheme } from "../theme/ThemeProvider";
+import AppText from "./AppText";
 
 interface Props {
   visible?: boolean;
@@ -95,7 +95,7 @@ const s = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   closeBtn: {
     width: 36,
@@ -106,7 +106,7 @@ const s = StyleSheet.create({
   },
   closeText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   scrollArea: {
     flexGrow: 0,

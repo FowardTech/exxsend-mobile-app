@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Pressable, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Modal } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import {
+  Bank,
+  COUNTRY_NAMES,
+  CURRENCY_TO_COUNTRY,
+  getBanksByCountry,
+  getCurrencySymbol,
+  verifyBankAccount,
+} from "../../../api/flutterwave";
+import ScreenShell from "../../../components/ScreenShell";
+import { COLORS } from "../../../theme/colors";
+import { otherstyles } from "../../../theme/otherstyles";
+import { styles } from "../../../theme/styles";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import ScreenShell from "../../../components/ScreenShell";
-import { styles } from "../../../theme/styles";
-import { otherstyles } from "../../../theme/otherstyles";
-import { COLORS } from "../../../theme/colors";
-import {
-  getBanksByCountry,
-  verifyBankAccount,
-  Bank,
-  CURRENCY_TO_COUNTRY,
-  COUNTRY_NAMES,
-  getCurrencySymbol,
-} from "../../../api/flutterwave";
 import { SavedRecipient } from "./RecipientSelectScreen";
 
 const SAVED_RECIPIENTS_KEY = "saved_recipients";
@@ -403,9 +403,9 @@ export default function RecipientNewScreen() {
   const canContinue = isCanada
     ? EMAIL_REGEX.test(recipientEmail.trim()) && recipientName.trim().length > 0
     : !!selectedBank &&
-      accountNumber.trim().length >= 6 &&
-      accountName.trim().length > 0 &&
-      (!isNigeria ? isVerified || true : isVerified || verifying);
+    accountNumber.trim().length >= 6 &&
+    accountName.trim().length > 0 &&
+    (!isNigeria ? isVerified || true : isVerified || verifying);
 
   const formattedSendAmount = `${symbol}${toAmountRaw.toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -464,8 +464,8 @@ export default function RecipientNewScreen() {
                   padding: 12,
                 }}
               >
-                <AppText style={{ color: "#1E40AF", fontWeight: "700" }}>Interac e-Transfer</AppText>
-                <AppText style={{ color: "#1E40AF", marginTop: 6, fontSize: 12, fontWeight: "700" }}>
+                <AppText style={{ color: "#1E40AF", fontWeight: "600" }}>Interac e-Transfer</AppText>
+                <AppText style={{ color: "#1E40AF", marginTop: 6, fontSize: 12, fontWeight: "600" }}>
                   Enter the recipient’s email and name. They will receive an email to deposit the funds.
                 </AppText>
               </View>

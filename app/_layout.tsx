@@ -1,10 +1,23 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { AppState, AppStateStatus, View, Pressable } from "react-native";
+import { checkInDevice } from "@/api/devices";
+import usePushNotifications from "@/hooks/usePushNotification";
+import { registerPushTokenWithBackend } from "@/services/pushNotifications";
+import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold, useFonts } from "@expo-google-fonts/manrope";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
-import * as LocalAuthentication from "expo-local-authentication";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import React, { useEffect, useRef, useState } from "react";
+import { AppState, AppStateStatus, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import AppLockScreen from "../components/AppLockScreen";
+import AppText from "../components/AppText";
+import { CustomAlertProvider } from "../components/CustomAlert";
+import { NotificationProvider } from "../context/NotificationContext";
 import { COLORS } from "../theme/colors";
+import { useOtherStyles } from "../theme/otherstyles";
+import { ThemeProvider, useAppTheme } from "../theme/ThemeProvider";
 
 // Keep the native splash screen (the Exxsend logo configured in app.json)
 // visible until the app is actually ready to render real content — by
@@ -14,20 +27,7 @@ import { COLORS } from "../theme/colors";
 // auto-hid" and "first real frame" is exactly the blank white screen users
 // were seeing. Must run at module scope, before anything else, since the
 // native side checks for this call immediately on launch.
-SplashScreen.preventAutoHideAsync().catch(() => {});
-import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { NotificationProvider } from "../context/NotificationContext";
-import { ThemeProvider, useAppTheme } from "../theme/ThemeProvider";
-import usePushNotifications from "@/hooks/usePushNotification";
-import { registerPushTokenWithBackend } from "@/services/pushNotifications";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import AppLockScreen from "../components/AppLockScreen";
-import { CustomAlertProvider } from "../components/CustomAlert";
-import AppText from "../components/AppText";
-import { Ionicons } from "@expo/vector-icons";
-import { useOtherStyles } from "../theme/otherstyles";
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Screens that are part of the SIGNUP flow — no auth token needed
@@ -99,6 +99,7 @@ function RootLayoutContent() {
   const [authChecked, setAuthChecked] = useState(false);
   const isNavigatingRef = useRef(false);
   const pushTokenRegisteredRef = useRef(false);
+  const deviceCheckedInRef = useRef(false);
 
   // ── Global no-network overlay ──────────────────────────────────────────
   // Watches connectivity directly via NetInfo rather than navigating to a
@@ -136,7 +137,7 @@ function RootLayoutContent() {
       if (token && bioEnabledSetting === "true") {
         setLocked(true);
       }
-    } catch {}
+    } catch { }
     finally { setLockCheckDone(true); }
   };
 
@@ -186,6 +187,22 @@ function RootLayoutContent() {
           });
         }
 
+        // Device check-in — same "fire once per session" pattern as push
+        // token registration above. Non-blocking: a slow or failed
+        // check-in should never hold up the rest of the app from
+        // becoming usable, it just won't have caught a device-trust
+        // issue until the next launch or the next gated transaction.
+        if (token && !deviceCheckedInRef.current) {
+          deviceCheckedInRef.current = true;
+          AsyncStorage.getItem("user_phone").then(async (phone) => {
+            if (!phone) return;
+            const result = await checkInDevice(phone);
+            if (result.success && result.requiresVerification) {
+              router.push("/verifydevice" as any);
+            }
+          });
+        }
+
         // Already in a public/signup screen — never redirect
         if (PUBLIC_SCREENS.has(leaf)) {
           setAuthChecked(true);
@@ -227,7 +244,7 @@ function RootLayoutContent() {
   // hiding early and leaving a blank frame in between.
   useEffect(() => {
     if (fontsLoaded && authChecked && lockCheckDone) {
-      SplashScreen.hideAsync().catch(() => {});
+      SplashScreen.hideAsync().catch(() => { });
     }
   }, [fontsLoaded, authChecked, lockCheckDone]);
 
@@ -235,106 +252,108 @@ function RootLayoutContent() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Stack
-      initialRouteName="onboarding"
-      screenOptions={{
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: COLORS.bg },
-        contentStyle: { backgroundColor: COLORS.bg },
-        headerTitleStyle: { fontWeight: "700" },
-        headerShown: false,
-        animation: "slide_from_right",
-      }}
-    >
-      {/* ── Onboarding & Auth ── */}
-      <Stack.Screen name="onboarding"        options={{ headerShown: false, animation: "none" }} />
-      <Stack.Screen name="getstarted"        options={{ headerShown: false }} />
-      <Stack.Screen name="login"             options={{ headerShown: false }} />
-      <Stack.Screen name="reset-password"    options={{ headerShown: false }} />
-      <Stack.Screen name="networkerrorstate" options={{ headerShown: false }} />
+      <Stack
+        initialRouteName="onboarding"
+        screenOptions={{
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: COLORS.bg },
+          contentStyle: { backgroundColor: COLORS.bg },
+          headerTitleStyle: { fontWeight: "600" },
+          headerShown: false,
+          animation: "slide_from_right",
+        }}
+      >
+        {/* ── Onboarding & Auth ── */}
+        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "none" }} />
+        <Stack.Screen name="getstarted" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+        <Stack.Screen name="networkerrorstate" options={{ headerShown: false }} />
 
-      {/* ── Signup flow ── */}
-      <Stack.Screen name="verifynumber"      options={{ headerShown: false }} />
-      <Stack.Screen name="pin"               options={{ headerShown: false }} />
-      <Stack.Screen name="verifypin"         options={{ headerShown: false }} />
-      <Stack.Screen name="basicinfo"         options={{ headerShown: false }} />
-      <Stack.Screen name="homeaddress"       options={{ headerShown: false }} />
-      <Stack.Screen name="checkemail"        options={{ headerShown: false }} />
-      <Stack.Screen name="protectpassword"   options={{ headerShown: false }} />
+        {/* ── Signup flow ── */}
+        <Stack.Screen name="verifynumber" options={{ headerShown: false }} />
+        <Stack.Screen name="pin" options={{ headerShown: false }} />
+        <Stack.Screen name="verifypin" options={{ headerShown: false }} />
+        <Stack.Screen name="basicinfo" options={{ headerShown: false }} />
+        <Stack.Screen name="homeaddress" options={{ headerShown: false }} />
+        <Stack.Screen name="checkemail" options={{ headerShown: false }} />
+        <Stack.Screen name="protectpassword" options={{ headerShown: false }} />
 
-      {/* ── Main app ── */}
-      <Stack.Screen name="(tabs)"            options={{ headerShown: false, animation: "none" }} />
+        {/* ── Main app ── */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
 
-      {/* ── Authenticated screens ── */}
-      <Stack.Screen name="profile"           options={{ headerShown: false }} />
-      <Stack.Screen name="setusername"       options={{ headerShown: false }} />
-      <Stack.Screen name="accountInfo"       options={{ headerShown: false }} />
-      <Stack.Screen name="userdetails"       options={{ headerShown: false }} />
-      <Stack.Screen name="accountlimit"      options={{ headerShown: false }} />
-      <Stack.Screen name="securityprivacy"   options={{ headerShown: false }} />
-      <Stack.Screen name="changepin"         options={{ headerShown: false }} />
-      <Stack.Screen name="forgotpin"         options={{ headerShown: false }} />
-      <Stack.Screen name="privacysettings"   options={{ headerShown: false }} />
-      <Stack.Screen name="support"           options={{ headerShown: false }} />
-      <Stack.Screen name="chatsupport"       options={{ headerShown: false }} />
-      <Stack.Screen name="notificationpref"  options={{ headerShown: false }} />
-      <Stack.Screen name="globalaccount"     options={{ headerShown: false }} />
-      <Stack.Screen name="sumsub-verification" options={{ headerShown: false }} />
-      <Stack.Screen name="requestmoney"       options={{ headerShown: false }} />
-      <Stack.Screen name="moneyrequests"      options={{ headerShown: false }} />
-      <Stack.Screen name="cryptotrade"        options={{ headerShown: false }} />
-      <Stack.Screen name="optionstrade"       options={{ headerShown: false }} />
-      <Stack.Screen name="orderdetail"        options={{ headerShown: false }} />
-      <Stack.Screen name="referralleaderboard" options={{ headerShown: false }} />
-      <Stack.Screen name="addaccount"        options={{ headerShown: false }} />
-      <Stack.Screen name="bank-details"      options={{ headerShown: false }} />
-      <Stack.Screen name="wallet"            options={{ headerShown: false }} />
-      <Stack.Screen name="ngnwallet"         options={{ headerShown: false }} />
-      <Stack.Screen name="sendmoney"         options={{ headerShown: false }} />
-      <Stack.Screen name="sendmoneyngn"      options={{ headerShown: false }} />
-      <Stack.Screen name="recipients"        options={{ headerShown: false }} />
-      <Stack.Screen name="recipientselect"   options={{ headerShown: false }} />
-      <Stack.Screen name="recipientnew"      options={{ headerShown: false }} />
-      <Stack.Screen name="recipientdetails"  options={{ headerShown: false }} />
-      <Stack.Screen name="recipientconfirm"  options={{ headerShown: false }} />
-      <Stack.Screen name="recipientactivity" options={{ headerShown: false }} />
-      <Stack.Screen name="offerdetail"       options={{ headerShown: false }} />
-      <Stack.Screen name="tradeticket"       options={{ headerShown: false }} />
-      <Stack.Screen name="pendingorders"     options={{ headerShown: false }} />
-      <Stack.Screen name="reviewdetails"     options={{ headerShown: false }} />
-      <Stack.Screen name="fraudaware"        options={{ headerShown: false }} />
-      <Stack.Screen name="transferconfirm"   options={{ headerShown: false }} />
-      <Stack.Screen name="result"            options={{ headerShown: false }} />
-      <Stack.Screen name="add-money/local" options={{ headerShown: false }} />
-      <Stack.Screen name="addmoneymethods"   options={{ headerShown: false }} />
-      <Stack.Screen name="addmoneycard"      options={{ headerShown: false }} />
-      <Stack.Screen name="addmoneyeft"       options={{ headerShown: false }} />
-      <Stack.Screen name="addmoneyinterac"   options={{ headerShown: false }} />
-      <Stack.Screen name="convert"           options={{ headerShown: false }} />
-      <Stack.Screen name="withdraw"          options={{ headerShown: false }} />
-      <Stack.Screen name="withdrawmoney"     options={{ headerShown: false }} />
-      <Stack.Screen name="exchangerates"     options={{ headerShown: false }} />
-      <Stack.Screen name="scantopay"         options={{ headerShown: false }} />
-      <Stack.Screen name="investpaywall"     options={{ headerShown: false }} />
-      <Stack.Screen name="investconnectbroker" options={{ headerShown: false }} />
-      <Stack.Screen name="investoverview"    options={{ headerShown: false }} />
-      <Stack.Screen name="investholdings"    options={{ headerShown: false }} />
-      <Stack.Screen name="investtransactions" options={{ headerShown: false }} />
-      <Stack.Screen name="investsettings"    options={{ headerShown: false }} />
-      <Stack.Screen name="investtaxreport"   options={{ headerShown: false }} />
-      <Stack.Screen name="recipientsmanagement" options={{ headerShown: false }} />
-      <Stack.Screen name="exxsendmembers" options={{ headerShown: false }} />
-      <Stack.Screen name="ratealerts"        options={{ headerShown: false }} />
-      <Stack.Screen name="transactiondetail/[reference]" options={{ headerShown: false }} />
-      <Stack.Screen name="regiondropdown"    options={{ headerShown: false }} />
-      <Stack.Screen name="help"              options={{ headerShown: false }} />
-    </Stack>
-    {isOffline && <GlobalOfflineOverlay />}
-    {locked && (
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
-        <AppLockScreen onUnlock={() => setLocked(false)} />
-      </View>
-    )}
+        {/* ── Authenticated screens ── */}
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="setusername" options={{ headerShown: false }} />
+        <Stack.Screen name="accountInfo" options={{ headerShown: false }} />
+        <Stack.Screen name="userdetails" options={{ headerShown: false }} />
+        <Stack.Screen name="accountlimit" options={{ headerShown: false }} />
+        <Stack.Screen name="securityprivacy" options={{ headerShown: false }} />
+        <Stack.Screen name="changepin" options={{ headerShown: false }} />
+        <Stack.Screen name="forgotpin" options={{ headerShown: false }} />
+        <Stack.Screen name="privacysettings" options={{ headerShown: false }} />
+        <Stack.Screen name="support" options={{ headerShown: false }} />
+        <Stack.Screen name="chatsupport" options={{ headerShown: false }} />
+        <Stack.Screen name="notificationpref" options={{ headerShown: false }} />
+        <Stack.Screen name="globalaccount" options={{ headerShown: false }} />
+        <Stack.Screen name="sumsub-verification" options={{ headerShown: false }} />
+        <Stack.Screen name="requestmoney" options={{ headerShown: false }} />
+        <Stack.Screen name="moneyrequests" options={{ headerShown: false }} />
+        <Stack.Screen name="cryptotrade" options={{ headerShown: false }} />
+        <Stack.Screen name="optionstrade" options={{ headerShown: false }} />
+        <Stack.Screen name="orderdetail" options={{ headerShown: false }} />
+        <Stack.Screen name="referralleaderboard" options={{ headerShown: false }} />
+        <Stack.Screen name="verifydevice" options={{ headerShown: false }} />
+        <Stack.Screen name="managedevices" options={{ headerShown: false }} />
+        <Stack.Screen name="addaccount" options={{ headerShown: false }} />
+        <Stack.Screen name="bank-details" options={{ headerShown: false }} />
+        <Stack.Screen name="wallet" options={{ headerShown: false }} />
+        <Stack.Screen name="ngnwallet" options={{ headerShown: false }} />
+        <Stack.Screen name="sendmoney" options={{ headerShown: false }} />
+        <Stack.Screen name="sendmoneyngn" options={{ headerShown: false }} />
+        <Stack.Screen name="recipients" options={{ headerShown: false }} />
+        <Stack.Screen name="recipientselect" options={{ headerShown: false }} />
+        <Stack.Screen name="recipientnew" options={{ headerShown: false }} />
+        <Stack.Screen name="recipientdetails" options={{ headerShown: false }} />
+        <Stack.Screen name="recipientconfirm" options={{ headerShown: false }} />
+        <Stack.Screen name="recipientactivity" options={{ headerShown: false }} />
+        <Stack.Screen name="offerdetail" options={{ headerShown: false }} />
+        <Stack.Screen name="tradeticket" options={{ headerShown: false }} />
+        <Stack.Screen name="pendingorders" options={{ headerShown: false }} />
+        <Stack.Screen name="reviewdetails" options={{ headerShown: false }} />
+        <Stack.Screen name="fraudaware" options={{ headerShown: false }} />
+        <Stack.Screen name="transferconfirm" options={{ headerShown: false }} />
+        <Stack.Screen name="result" options={{ headerShown: false }} />
+        <Stack.Screen name="add-money/local" options={{ headerShown: false }} />
+        <Stack.Screen name="addmoneymethods" options={{ headerShown: false }} />
+        <Stack.Screen name="addmoneycard" options={{ headerShown: false }} />
+        <Stack.Screen name="addmoneyeft" options={{ headerShown: false }} />
+        <Stack.Screen name="addmoneyinterac" options={{ headerShown: false }} />
+        <Stack.Screen name="convert" options={{ headerShown: false }} />
+        <Stack.Screen name="withdraw" options={{ headerShown: false }} />
+        <Stack.Screen name="withdrawmoney" options={{ headerShown: false }} />
+        <Stack.Screen name="exchangerates" options={{ headerShown: false }} />
+        <Stack.Screen name="scantopay" options={{ headerShown: false }} />
+        <Stack.Screen name="investpaywall" options={{ headerShown: false }} />
+        <Stack.Screen name="investconnectbroker" options={{ headerShown: false }} />
+        <Stack.Screen name="investoverview" options={{ headerShown: false }} />
+        <Stack.Screen name="investholdings" options={{ headerShown: false }} />
+        <Stack.Screen name="investtransactions" options={{ headerShown: false }} />
+        <Stack.Screen name="investsettings" options={{ headerShown: false }} />
+        <Stack.Screen name="investtaxreport" options={{ headerShown: false }} />
+        <Stack.Screen name="recipientsmanagement" options={{ headerShown: false }} />
+        <Stack.Screen name="exxsendmembers" options={{ headerShown: false }} />
+        <Stack.Screen name="ratealerts" options={{ headerShown: false }} />
+        <Stack.Screen name="transactiondetail/[reference]" options={{ headerShown: false }} />
+        <Stack.Screen name="regiondropdown" options={{ headerShown: false }} />
+        <Stack.Screen name="help" options={{ headerShown: false }} />
+      </Stack>
+      {isOffline && <GlobalOfflineOverlay />}
+      {locked && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+          <AppLockScreen onUnlock={() => setLocked(false)} />
+        </View>
+      )}
     </View>
   );
 }

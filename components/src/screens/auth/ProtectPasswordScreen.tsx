@@ -1,16 +1,15 @@
-import React, { useMemo, useState } from "react";
-import { View, Pressable, Alert, StyleSheet, StatusBar, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import AppTextInput from "../../../AppTextInput";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { COLORS } from "../../../../theme/colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { setPassword } from "../../../../api/config";
+import { COLORS } from "../../../../theme/colors";
 import { clearLegacyCaches } from "../../../../utils/cacheUtils";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
+import BackButton from "../../../BackButton";
 
 function Rule({ met, text }: { met: boolean; text: string }) {
   return (
@@ -91,74 +90,74 @@ export default function ProtectPasswordScreen() {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
-        <View style={s.iconRing}>
-          <Ionicons name="lock-closed-outline" size={30} color={COLORS.primary} />
-        </View>
-
-        <AppText style={s.title}>Create your password</AppText>
-        <AppText style={s.subtitle}>Choose a strong password to protect your account. You'll use this to log in.</AppText>
-
-        <AppText style={s.fieldLabel}>New password</AppText>
-        <View style={s.inputBox}>
-          <AppTextInput
-            value={p1}
-            onChangeText={setP1}
-            secureTextEntry={!show1}
-            editable={!loading}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="newPassword"
-            placeholder="Create a password"
-            placeholderTextColor={COLORS.muted}
-            style={s.input}
-          />
-          <Pressable onPress={() => setShow1(v => !v)} style={s.eyeBtn}>
-            <Ionicons name={show1 ? "eye-outline" : "eye-off-outline"} size={18} color={COLORS.muted} />
-          </Pressable>
-        </View>
-
-        <AppText style={[s.fieldLabel, { marginTop: 14 }]}>Confirm password</AppText>
-        <View style={[s.inputBox, p2.length > 0 && (ruleMatch ? s.inputValid : s.inputError)]}>
-          <AppTextInput
-            value={p2}
-            onChangeText={setP2}
-            secureTextEntry={!show2}
-            editable={!loading}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="password"
-            placeholder="Repeat your password"
-            placeholderTextColor={COLORS.muted}
-            style={s.input}
-          />
-          <Pressable onPress={() => setShow2(v => !v)} style={s.eyeBtn}>
-            <Ionicons name={show2 ? "eye-outline" : "eye-off-outline"} size={18} color={COLORS.muted} />
-          </Pressable>
-        </View>
-
-        {/* Password rules */}
-        <View style={s.rulesBox}>
-          <Rule met={ruleLen} text="8 to 20 characters" />
-          <Rule met={ruleNum} text="At least one number" />
-          <Rule met={ruleSymbol} text="At least one special character (e.g. !@#$%)" />
-          <Rule met={ruleMatch} text="Passwords match" />
-        </View>
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
-
-      <View style={s.footer}>
-        <Pressable
-          onPress={handleCreate}
-          disabled={!canCreate || loading}
-          style={({ pressed }) => [s.ctaBtn, (!canCreate || loading) && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
-        >
-          <View style={s.ctaInner}>
-            {loading ? <ActivityIndicator color={COLORS.actionText} /> : <AppText style={s.ctaText}>Create Account</AppText>}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+          <View style={s.iconRing}>
+            <Ionicons name="lock-closed-outline" size={30} color={COLORS.primary} />
           </View>
-        </Pressable>
-      </View>
+
+          <AppText style={s.title}>Create your password</AppText>
+          <AppText style={s.subtitle}>Choose a strong password to protect your account. You'll use this to log in.</AppText>
+
+          <AppText style={s.fieldLabel}>New password</AppText>
+          <View style={s.inputBox}>
+            <AppTextInput
+              value={p1}
+              onChangeText={setP1}
+              secureTextEntry={!show1}
+              editable={!loading}
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              placeholder="Create a password"
+              placeholderTextColor={COLORS.muted}
+              style={s.input}
+            />
+            <Pressable onPress={() => setShow1(v => !v)} style={s.eyeBtn}>
+              <Ionicons name={show1 ? "eye-outline" : "eye-off-outline"} size={18} color={COLORS.muted} />
+            </Pressable>
+          </View>
+
+          <AppText style={[s.fieldLabel, { marginTop: 14 }]}>Confirm password</AppText>
+          <View style={[s.inputBox, p2.length > 0 && (ruleMatch ? s.inputValid : s.inputError)]}>
+            <AppTextInput
+              value={p2}
+              onChangeText={setP2}
+              secureTextEntry={!show2}
+              editable={!loading}
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="password"
+              placeholder="Repeat your password"
+              placeholderTextColor={COLORS.muted}
+              style={s.input}
+            />
+            <Pressable onPress={() => setShow2(v => !v)} style={s.eyeBtn}>
+              <Ionicons name={show2 ? "eye-outline" : "eye-off-outline"} size={18} color={COLORS.muted} />
+            </Pressable>
+          </View>
+
+          {/* Password rules */}
+          <View style={s.rulesBox}>
+            <Rule met={ruleLen} text="8 to 20 characters" />
+            <Rule met={ruleNum} text="At least one number" />
+            <Rule met={ruleSymbol} text="At least one special character (e.g. !@#$%)" />
+            <Rule met={ruleMatch} text="Passwords match" />
+          </View>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+
+        <View style={s.footer}>
+          <Pressable
+            onPress={handleCreate}
+            disabled={!canCreate || loading}
+            style={({ pressed }) => [s.ctaBtn, (!canCreate || loading) && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
+          >
+            <View style={s.ctaInner}>
+              {loading ? <ActivityIndicator color={COLORS.actionText} /> : <AppText style={s.ctaText}>Create Account</AppText>}
+            </View>
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -168,14 +167,14 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  headerTitle: { fontSize: 17, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   progressTrack: { height: 4, backgroundColor: COLORS.borderLight, borderRadius: 99, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: COLORS.primary, borderRadius: 99 },
   body: { paddingHorizontal: 20, paddingTop: 8 },
   iconRing: { width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginBottom: 18 },
-  title: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+  title: { fontSize: 18, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
   subtitle: { fontSize: 14, color: COLORS.muted, fontWeight: "500", lineHeight: 22, marginBottom: 24 },
-  fieldLabel: { fontSize: 13, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, paddingHorizontal: 14, height: 52 },
   inputValid: { borderColor: COLORS.green },
   inputError: { borderColor: COLORS.red },
@@ -190,5 +189,5 @@ const s = StyleSheet.create({
   footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8 },
   ctaBtn: { borderRadius: 16, overflow: "hidden", backgroundColor: COLORS.actionBg },
   ctaInner: { paddingVertical: 17, alignItems: "center", justifyContent: "center" },
-  ctaText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  ctaText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
 });

@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { View, Pressable, Modal, FlatList, StyleSheet } from "react-native";
-import AppText from "./AppText";
-import AppTextInput from "./AppTextInput";
+import { FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
+import AppText from "./AppText";
+import AppTextInput from "./AppTextInput";
 
 export type Region = { code: string; name: string };
 
@@ -57,7 +57,7 @@ export default function RegionDropdown({ label, value, onChange, regions }: Prop
         onRequestClose={handleClose}
       >
         <Pressable style={rd.overlay} onPress={handleClose}>
-          <Pressable style={rd.sheet} onPress={() => {}}>
+          <Pressable style={rd.sheet} onPress={() => { }}>
             <View style={rd.header}>
               <Pressable onPress={handleClose} style={rd.closeBtn} hitSlop={10}>
                 <AppText style={rd.closeText}>✕</AppText>
@@ -116,7 +116,7 @@ const rd = StyleSheet.create({
   },
   closeBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
   closeText: { fontSize: 18, color: "#6B7280" },
-  title: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+  title: { fontSize: 18, fontWeight: "600", color: "#1F2937" },
   searchInput: {
     marginHorizontal: 16, marginVertical: 12,
     backgroundColor: "#F3F4F6", borderRadius: 12,
@@ -132,6 +132,6 @@ const rd = StyleSheet.create({
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: "600", color: "#1F2937" },
   itemDialCode: { fontSize: 14, color: "#6B7280", marginTop: 2 },
-  checkmark: { fontSize: 18, color: "#059669", fontWeight: "700" },
+  checkmark: { fontSize: 18, color: "#059669", fontWeight: "600" },
   emptyText: { textAlign: "center", color: "#9CA3AF", marginTop: 40, fontSize: 16 },
 });

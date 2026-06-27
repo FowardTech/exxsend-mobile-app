@@ -1,8 +1,8 @@
+import { useAppTheme } from "@/theme/ThemeProvider";
 import React from "react";
 import { Pressable, View } from "react-native";
-import AppText from "./AppText";
 import { useStyles } from "../theme/styles";
-import { useAppTheme } from "@/theme/ThemeProvider";
+import AppText from "./AppText";
 
 interface Props {
   icon: React.ReactNode;
@@ -16,9 +16,9 @@ export default function WalletAction({ icon, label, onPress }: Props) {
   return (
     <Pressable style={{ alignItems: "center", width: 72 }} onPress={onPress}>
       <View style={styles.walletActionCircle}>
-        <AppText style={{ color: colors.text, fontWeight: "700", fontSize: 16 }}>{icon}</AppText>
+        <AppText style={{ color: colors.text, fontWeight: "600", fontSize: 16 }}>{icon}</AppText>
       </View>
-      <AppText style={{ marginTop: 8, fontWeight: "700", color: colors.text }}>{label}</AppText>
+      <AppText style={{ marginTop: 8, fontWeight: "600", color: colors.text }}>{label}</AppText>
     </Pressable>
   );
 }

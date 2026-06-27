@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, Switch, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as LocalAuthentication from "expo-local-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { clearCachedPin } from "../../../../utils/pinCache";
+import * as LocalAuthentication from "expo-local-authentication";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PinVerificationModal from "../../../../components/PinVerificationModal";
 import { COLORS } from "../../../../theme/colors";
-import { SPACE, RADIUS, CARD_SHADOW, GLASS_BORDER } from "../../../../theme/designSystem";
+import { CARD_SHADOW, GLASS_BORDER, RADIUS, SPACE } from "../../../../theme/designSystem";
+import { clearCachedPin } from "../../../../utils/pinCache";
+import AppText from "../../../AppText";
+import BackButton from "../../../BackButton";
 
 interface RowProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -174,6 +174,15 @@ export default function SecurityPrivacyScreen() {
 
         <View style={styles.divider} />
 
+        <Row
+          icon="phone-portrait-outline"
+          label="Manage Devices"
+          onPress={() => router.push("/managedevices" as any)}
+          right={<Ionicons name="chevron-forward" size={18} color="#9CA3AF" />}
+        />
+
+        <View style={styles.divider} />
+
         {bioType && (
           <>
             <Row
@@ -248,7 +257,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.text,
   },
   card: {

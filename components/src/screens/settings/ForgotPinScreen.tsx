@@ -1,15 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, Keyboard, Alert, ActivityIndicator, StyleSheet, StatusBar, TextInput as RNTextInput } from "react-native";
-import AppText from "../../../AppText";
-import BackButton from "../../../BackButton";
-import AppTextInput from "../../../AppTextInput";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { cachePinIfBiometricEnabled } from "../../../../utils/pinCache";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Keyboard, Pressable, TextInput as RNTextInput, StatusBar, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { createPin, getUserProfile, resendEmailOtp, sendEmailOtp, verifyEmailOtp } from "../../../../api/config";
 import { COLORS } from "../../../../theme/colors";
-import { getUserProfile, sendEmailOtp, verifyEmailOtp, resendEmailOtp, createPin } from "../../../../api/config";
+import { cachePinIfBiometricEnabled } from "../../../../utils/pinCache";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
+import BackButton from "../../../BackButton";
 
 type Step = "email" | "otp" | "newpin" | "confirm";
 const CODE_LEN = 6;
@@ -428,19 +428,19 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+  headerTitle: { fontSize: 17, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
   progressTrack: { height: 4, backgroundColor: COLORS.borderLight, borderRadius: 99, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: COLORS.primary, borderRadius: 99 },
   body: { flex: 1, alignItems: "center", paddingTop: 32, paddingHorizontal: 24 },
   iconRing: { width: 68, height: 68, borderRadius: 22, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center", marginBottom: 20 },
-  title: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 8, textAlign: "center" },
+  title: { fontSize: 18, fontWeight: "600", color: COLORS.text, marginBottom: 8, textAlign: "center" },
   subtitle: { fontSize: 14, color: COLORS.muted, fontWeight: "500", textAlign: "center", lineHeight: 22, marginBottom: 24 },
   emailPill: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.primaryLight, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999, marginBottom: 28 },
-  emailPillText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  emailPillText: { fontSize: 14, fontWeight: "600", color: COLORS.primary },
   otpRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
-  otpBox: { width: 44, height: 54, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: "#FFFFFF", textAlign: "center", fontSize: 20, fontWeight: "700", color: COLORS.text },
+  otpBox: { width: 44, height: 54, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: "#FFFFFF", textAlign: "center", fontSize: 20, fontWeight: "600", color: COLORS.text },
   otpBoxError: { borderColor: COLORS.red },
-  resendText: { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+  resendText: { fontSize: 14, fontWeight: "600", color: COLORS.primary },
   resendTextDisabled: { color: COLORS.muted },
   dotsRow: { flexDirection: "row", gap: 16 },
   dot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.border, backgroundColor: "transparent" },
@@ -449,7 +449,7 @@ const s = StyleSheet.create({
   error: { marginTop: 14, marginBottom: 4, color: COLORS.red, fontWeight: "600", fontSize: 13, textAlign: "center" },
   primaryBtn: { backgroundColor: COLORS.actionBg, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 40, alignItems: "center", justifyContent: "center", marginTop: 16, minWidth: 200 },
   primaryBtnDisabled: { opacity: 0.5 },
-  primaryBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  primaryBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
   pad: { paddingHorizontal: 32, paddingBottom: 32 },
   keyRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
   key: { width: KEY_SIZE, height: KEY_SIZE, borderRadius: KEY_SIZE / 2, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },

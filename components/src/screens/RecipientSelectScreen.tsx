@@ -1,19 +1,19 @@
+import { getSavedRecipients, RecentRecipientFromDB } from "@/api/sync";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
+import { getCorridorOrFallback } from "../../../api/corridors";
+import { COUNTRY_NAMES, CURRENCY_TO_COUNTRY, isFlutterwaveCurrency } from "../../../api/flutterwave";
+import RecipientAvatar from "../../../components/RecipientAvatar";
+import ScreenShell from "../../../components/ScreenShell";
+import { useOtherStyles } from "../../../theme/otherstyles";
+import { useStyles } from "../../../theme/styles";
+import { useAppTheme } from "../../../theme/ThemeProvider";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import BackButton from "../../BackButton";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useLocalSearchParams } from "expo-router";
-import ScreenShell from "../../../components/ScreenShell";
-import { useStyles } from "../../../theme/styles";
-import { useOtherStyles } from "../../../theme/otherstyles";
-import { useAppTheme } from "../../../theme/ThemeProvider";
-import { isFlutterwaveCurrency, COUNTRY_NAMES, CURRENCY_TO_COUNTRY } from "../../../api/flutterwave";
-import RecipientAvatar from "../../../components/RecipientAvatar";
-import { getCorridorOrFallback } from "../../../api/corridors";
-import { getSavedRecipients, RecentRecipientFromDB } from "@/api/sync";
 
 export interface SavedRecipient {
   id: string;
@@ -219,13 +219,13 @@ export default function RecipientSelectScreen() {
     return (
       <ScreenShell>
         <View style={otherstyles.centerState}>
-          <AppText style={[otherstyles.centerStateText, { fontWeight: "700" }]}>Unsupported currency</AppText>
+          <AppText style={[otherstyles.centerStateText, { fontWeight: "600" }]}>Unsupported currency</AppText>
           <AppText style={[otherstyles.centerStateText, { marginTop: 6 }]}>
             Sending to {destCurrency} is not currently supported.
           </AppText>
 
           <Pressable onPress={() => router.back()} style={{ marginTop: 14 }}>
-            <AppText style={{ color: colors.primary, fontWeight: "700" }}>Go back</AppText>
+            <AppText style={{ color: colors.primary, fontWeight: "600" }}>Go back</AppText>
           </Pressable>
         </View>
       </ScreenShell>
@@ -341,136 +341,136 @@ export default function RecipientSelectScreen() {
               {filtered.map((r: any, idx: number) => {
                 const exxsendFlag = isExxsendRecipient(r);
                 return (
-                <View key={`${r?.id || ""}-${r?.bankCode || ""}-${r?.accountNumber || ""}-${idx}`}>
-                  <Pressable
-                    onPress={() => {
-                      if (exxsendFlag) {
-                        router.push({
-                          pathname: "/exxsendmembers" as any,
-                          params: { prefillUsername: getExxsendUsername(r) } as any,
-                        });
-                        return;
-                      }
-
-                      const rCurrency = getRecipientCurrency(r) || destCurrency;
-
-                      // ✅ For CAD, always force CA
-                      const cc = (rCurrency === "CAD"
-                        ? "CA"
-                        : (CURRENCY_TO_COUNTRY[rCurrency] || countryCode || "NG")
-                      ).toUpperCase();
-
-                      const interacFlag = isInteracRecipient(r) || rCurrency === "CAD";
-
-                      // Resolve this recipient's own corridor (not necessarily
-                      // the one this screen was opened for) to know which
-                      // granular field its saved generic bankCode actually
-                      // belongs in, and whether its accountNumber is really
-                      // an IBAN. Without this, the confirm screen only ever
-                      // saw a generic accountName/accountNumber/bankCode —
-                      // never iban, routingNumber/sortCode/bsbCode, bicSwift,
-                      // or payoutType — so the actual transfer execution had
-                      // nothing to send for any of those, and "USD
-                      // withdrawals require a 9-digit ABA routing number"
-                      // came back from the backend instead of being caught
-                      // here first.
-                      const rCorridor = !interacFlag ? getCorridorOrFallback(rCurrency, cc) : undefined;
-                      const rMethod = rCorridor?.methods?.find((m) =>
-                        r?.networkCode ? m.method === "momo" : m.method !== "momo"
-                      ) || rCorridor?.methods?.[0];
-                      const isIbanCorridor = rMethod?.routingFieldType === "iban_only";
-                      const routingValue = r?.bankCode || "";
-
-                      // Block here — the same way the manual-entry form
-                      // itself would — if this corridor requires a routing
-                      // code and the saved record doesn't actually have a
-                      // validly-formatted one.
-                      if (!isIbanCorridor && rMethod?.routingFieldType) {
-                        const routingFieldDef = rMethod.fields?.find(
-                          (f) => f.key === "routingNumber" || f.key === "sortCode" || f.key === "bsbCode"
-                        );
-                        const routingErr = routingFieldDef?.validate(routingValue);
-                        if (routingErr) {
-                          Alert.alert(
-                            "Missing bank details",
-                            `${r?.accountName || "This recipient"} is missing their ${routingFieldDef?.label || "routing code"}. Please re-add them with full bank details.`,
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              {
-                                text: "Add new recipient",
-                                onPress: () =>
-                                  router.push({
-                                    pathname: "/recipientnew" as any,
-                                    params: { destCurrency: rCurrency, countryCode: cc, countryName: COUNTRY_NAMES[cc] || cc } as any,
-                                  }),
-                              },
-                            ]
-                          );
+                  <View key={`${r?.id || ""}-${r?.bankCode || ""}-${r?.accountNumber || ""}-${idx}`}>
+                    <Pressable
+                      onPress={() => {
+                        if (exxsendFlag) {
+                          router.push({
+                            pathname: "/exxsendmembers" as any,
+                            params: { prefillUsername: getExxsendUsername(r) } as any,
+                          });
                           return;
                         }
-                      }
 
-                      router.push({
-                        pathname: "/recipientconfirm" as any,
-                        params: {
-                          ...navParams,
-                          recipient: JSON.stringify({
-                            accountName: r?.accountName || "",
-                            accountNumber: isIbanCorridor ? "" : (r?.accountNumber || ""),
-                            bankCode: r?.bankCode || (interacFlag ? "INTERAC" : ""),
-                            bankName: r?.bankName || (interacFlag ? "Interac e-Transfer" : ""),
-                            currency: rCurrency,
-                            countryCode: cc,
-                            isInterac: interacFlag,
-                            payoutMethod: r?.payoutMethod || (interacFlag ? "interac" : rMethod?.method),
-                            payoutType: r?.payoutType,
-                            networkCode: r?.networkCode || "",
-                            networkName: r?.networkName || "",
-                            nameVerified: !!r?.nameVerified,
-                            beneficiaryId: r?.id,
-                            bankCountry: cc,
-                            iban: isIbanCorridor ? (r?.accountNumber || "") : "",
-                            bicSwift: isIbanCorridor ? routingValue : "",
-                            routingFieldType: rMethod?.routingFieldType ?? null,
-                            routingNumber: rMethod?.routingFieldType === "aba" ? routingValue : "",
-                            sortCode: rMethod?.routingFieldType === "sort_code" ? routingValue : "",
-                            bsbCode: rMethod?.routingFieldType === "bsb_code" ? routingValue : "",
-                          }),
-                          mode: "saved",
-                        } as any,
-                      });
-                    }}
-                    style={otherstyles.recipientSelectRow}
-                  >
-                    <RecipientAvatar
-                      name={r?.accountName || ""}
-                      currencyCode={getRecipientCurrency(r)}
-                      countryCode={r?.countryCode}
-                      isExxsend={exxsendFlag}
-                      photoUrl={r?.avatarUrl}
-                      size={44}
-                      style={{ marginRight: 12 }}
-                    />
+                        const rCurrency = getRecipientCurrency(r) || destCurrency;
 
-                    <View style={otherstyles.recipientSelectRowInfo}>
-                      <AppText style={otherstyles.recipientSelectRowName} numberOfLines={1}>
-                        {r?.accountName || "Unknown"}
-                      </AppText>
+                        // ✅ For CAD, always force CA
+                        const cc = (rCurrency === "CAD"
+                          ? "CA"
+                          : (CURRENCY_TO_COUNTRY[rCurrency] || countryCode || "NG")
+                        ).toUpperCase();
 
-                      <AppText style={otherstyles.recipientSelectRowSub} numberOfLines={1}>
-                        {exxsendFlag
-                          ? `Exxsend • @${getExxsendUsername(r)}`
-                          : isInterac
-                            ? `Interac • ${String(r?.accountNumber || "—")}`
-                            : `${r?.bankName || "—"} • ${String(r?.accountNumber || "—")}`}
-                      </AppText>
-                    </View>
+                        const interacFlag = isInteracRecipient(r) || rCurrency === "CAD";
 
-                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-                  </Pressable>
+                        // Resolve this recipient's own corridor (not necessarily
+                        // the one this screen was opened for) to know which
+                        // granular field its saved generic bankCode actually
+                        // belongs in, and whether its accountNumber is really
+                        // an IBAN. Without this, the confirm screen only ever
+                        // saw a generic accountName/accountNumber/bankCode —
+                        // never iban, routingNumber/sortCode/bsbCode, bicSwift,
+                        // or payoutType — so the actual transfer execution had
+                        // nothing to send for any of those, and "USD
+                        // withdrawals require a 9-digit ABA routing number"
+                        // came back from the backend instead of being caught
+                        // here first.
+                        const rCorridor = !interacFlag ? getCorridorOrFallback(rCurrency, cc) : undefined;
+                        const rMethod = rCorridor?.methods?.find((m) =>
+                          r?.networkCode ? m.method === "momo" : m.method !== "momo"
+                        ) || rCorridor?.methods?.[0];
+                        const isIbanCorridor = rMethod?.routingFieldType === "iban_only";
+                        const routingValue = r?.bankCode || "";
 
-                  {idx !== filtered.length - 1 && <View style={otherstyles.recipientSelectDivider} />}
-                </View>
+                        // Block here — the same way the manual-entry form
+                        // itself would — if this corridor requires a routing
+                        // code and the saved record doesn't actually have a
+                        // validly-formatted one.
+                        if (!isIbanCorridor && rMethod?.routingFieldType) {
+                          const routingFieldDef = rMethod.fields?.find(
+                            (f) => f.key === "routingNumber" || f.key === "sortCode" || f.key === "bsbCode"
+                          );
+                          const routingErr = routingFieldDef?.validate(routingValue);
+                          if (routingErr) {
+                            Alert.alert(
+                              "Missing bank details",
+                              `${r?.accountName || "This recipient"} is missing their ${routingFieldDef?.label || "routing code"}. Please re-add them with full bank details.`,
+                              [
+                                { text: "Cancel", style: "cancel" },
+                                {
+                                  text: "Add new recipient",
+                                  onPress: () =>
+                                    router.push({
+                                      pathname: "/recipientnew" as any,
+                                      params: { destCurrency: rCurrency, countryCode: cc, countryName: COUNTRY_NAMES[cc] || cc } as any,
+                                    }),
+                                },
+                              ]
+                            );
+                            return;
+                          }
+                        }
+
+                        router.push({
+                          pathname: "/recipientconfirm" as any,
+                          params: {
+                            ...navParams,
+                            recipient: JSON.stringify({
+                              accountName: r?.accountName || "",
+                              accountNumber: isIbanCorridor ? "" : (r?.accountNumber || ""),
+                              bankCode: r?.bankCode || (interacFlag ? "INTERAC" : ""),
+                              bankName: r?.bankName || (interacFlag ? "Interac e-Transfer" : ""),
+                              currency: rCurrency,
+                              countryCode: cc,
+                              isInterac: interacFlag,
+                              payoutMethod: r?.payoutMethod || (interacFlag ? "interac" : rMethod?.method),
+                              payoutType: r?.payoutType,
+                              networkCode: r?.networkCode || "",
+                              networkName: r?.networkName || "",
+                              nameVerified: !!r?.nameVerified,
+                              beneficiaryId: r?.id,
+                              bankCountry: cc,
+                              iban: isIbanCorridor ? (r?.accountNumber || "") : "",
+                              bicSwift: isIbanCorridor ? routingValue : "",
+                              routingFieldType: rMethod?.routingFieldType ?? null,
+                              routingNumber: rMethod?.routingFieldType === "aba" ? routingValue : "",
+                              sortCode: rMethod?.routingFieldType === "sort_code" ? routingValue : "",
+                              bsbCode: rMethod?.routingFieldType === "bsb_code" ? routingValue : "",
+                            }),
+                            mode: "saved",
+                          } as any,
+                        });
+                      }}
+                      style={otherstyles.recipientSelectRow}
+                    >
+                      <RecipientAvatar
+                        name={r?.accountName || ""}
+                        currencyCode={getRecipientCurrency(r)}
+                        countryCode={r?.countryCode}
+                        isExxsend={exxsendFlag}
+                        photoUrl={r?.avatarUrl}
+                        size={44}
+                        style={{ marginRight: 12 }}
+                      />
+
+                      <View style={otherstyles.recipientSelectRowInfo}>
+                        <AppText style={otherstyles.recipientSelectRowName} numberOfLines={1}>
+                          {r?.accountName || "Unknown"}
+                        </AppText>
+
+                        <AppText style={otherstyles.recipientSelectRowSub} numberOfLines={1}>
+                          {exxsendFlag
+                            ? `Exxsend • @${getExxsendUsername(r)}`
+                            : isInterac
+                              ? `Interac • ${String(r?.accountNumber || "—")}`
+                              : `${r?.bankName || "—"} • ${String(r?.accountNumber || "—")}`}
+                        </AppText>
+                      </View>
+
+                      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                    </Pressable>
+
+                    {idx !== filtered.length - 1 && <View style={otherstyles.recipientSelectDivider} />}
+                  </View>
                 );
               })}
             </View>

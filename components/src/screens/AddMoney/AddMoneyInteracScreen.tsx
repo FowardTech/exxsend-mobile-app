@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { View, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform, Linking, StatusBar } from "react-native";
-import AppText from "../../../AppText";
-import AppTextInput from "../../../AppTextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { COLORS } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { submitInteracDeposit } from "../../../../api/paysafe";
 import ScreenHeader from "../../../../components/ScreenHeader";
-import { COLORS } from "@/theme/colors";
+import AppText from "../../../AppText";
+import AppTextInput from "../../../AppTextInput";
 
 function StepRow({ num, title, desc }: { num: string; title: string; desc: string }) {
   return (
@@ -24,11 +24,11 @@ function StepRow({ num, title, desc }: { num: string; title: string; desc: strin
 }
 
 export default function AddMoneyInteracScreen() {
-  const [amount, setAmount]     = useState("");
+  const [amount, setAmount] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName]   = useState("");
+  const [userName, setUserName] = useState("");
   const [userPhone, setUserPhone] = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +43,7 @@ export default function AddMoneyInteracScreen() {
           if (u.email) setUserEmail(u.email);
           const name = [u.firstName || u.first_name, u.lastName || u.last_name].filter(Boolean).join(" ").trim();
           if (name) setUserName(name);
-        } catch {}
+        } catch { }
       }
     })();
   }, []);
@@ -68,7 +68,7 @@ export default function AddMoneyInteracScreen() {
           Alert.alert(
             "Complete Transfer",
             "You'll be taken to your banking app to authorize the Interac transfer.",
-            [{ text: "Continue", onPress: () => { Linking.openURL(result.redirectUrl!).catch(() => {}); router.back(); } }]
+            [{ text: "Continue", onPress: () => { Linking.openURL(result.redirectUrl!).catch(() => { }); router.back(); } }]
           );
         } else {
           Alert.alert("Deposit Initiated", result.message || `Your $${amount} CAD Interac deposit is initiated.`, [{ text: "Done", onPress: () => router.back() }]);
@@ -174,26 +174,26 @@ const s = StyleSheet.create({
   body: { padding: 16, paddingBottom: 40 },
   hero: { borderRadius: 18, padding: 18, flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 16, overflow: "hidden" },
   heroIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", justifyContent: "center", alignItems: "center" },
-  heroTitle: { fontSize: 14, fontWeight: "700", color: "#FFF", marginBottom: 3 },
+  heroTitle: { fontSize: 14, fontWeight: "600", color: "#FFF", marginBottom: 3 },
   heroSub: { fontSize: 12, color: "rgba(255,255,255,0.80)", fontWeight: "500", lineHeight: 18 },
   card: { backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderLight },
-  cardLabel: { fontSize: 11, fontWeight: "700", color: COLORS.muted, letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 14 },
+  cardLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 14 },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   stepNum: { width: 26, height: 26, borderRadius: 999, backgroundColor: COLORS.accent, justifyContent: "center", alignItems: "center", flexShrink: 0 },
-  stepNumText: { color: "#FFF", fontWeight: "700", fontSize: 12 },
-  stepTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+  stepNumText: { color: "#FFF", fontWeight: "600", fontSize: 12 },
+  stepTitle: { fontSize: 14, fontWeight: "600", color: COLORS.text },
   stepDesc: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 2, lineHeight: 17 },
   divider: { height: 1, backgroundColor: COLORS.borderLight, marginVertical: 12 },
   amtRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  ccy: { fontSize: 28, fontWeight: "700", color: COLORS.muted },
-  amtInput: { flex: 1, fontSize: 36, fontWeight: "700", color: COLORS.text, padding: 0 },
-  ccyCode: { fontSize: 14, fontWeight: "700", color: COLORS.muted },
+  ccy: { fontSize: 28, fontWeight: "600", color: COLORS.muted },
+  amtInput: { flex: 1, fontSize: 36, fontWeight: "600", color: COLORS.text, padding: 0 },
+  ccyCode: { fontSize: 14, fontWeight: "600", color: COLORS.muted },
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.bg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 48 },
   input: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
   hint: { fontSize: 12, color: COLORS.muted, fontWeight: "500", marginTop: 8 },
   cta: { borderRadius: 16, overflow: "hidden", marginTop: 4, backgroundColor: COLORS.actionBg },
   ctaInner: { paddingVertical: 17, flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  ctaText: { color: COLORS.actionText, fontSize: 15, fontWeight: "700" },
+  ctaText: { color: COLORS.actionText, fontSize: 15, fontWeight: "600" },
   secureRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 14 },
   secureText: { fontSize: 12, color: COLORS.muted, fontWeight: "600" },
 });

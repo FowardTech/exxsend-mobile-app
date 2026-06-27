@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { View, Pressable, Modal, FlatList, StyleSheet } from "react-native";
-import AppText from "./AppText";
-import AppTextInput from "./AppTextInput";
+import React, { useEffect, useMemo, useState } from "react";
+import { FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
 import { getCountries } from "../api/config";
 import { COLORS } from "../theme/colors";
+import AppText from "./AppText";
+import AppTextInput from "./AppTextInput";
 import CountryFlag from "./CountryFlag";
 
 export interface Country {
@@ -87,7 +87,7 @@ export default function CountryDropdown({ value, onChange }: Props) {
         onRequestClose={handleClose}
       >
         <Pressable style={dd.overlay} onPress={handleClose}>
-          <Pressable style={dd.sheet} onPress={() => {}}>
+          <Pressable style={dd.sheet} onPress={() => { }}>
             <View style={dd.header}>
               <Pressable onPress={handleClose} style={dd.closeBtn} hitSlop={10}>
                 <AppText style={dd.closeText}>✕</AppText>
@@ -157,7 +157,7 @@ const dd = StyleSheet.create({
   },
   closeBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
   closeText: { fontSize: 18, color: "#6B7280" },
-  title: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+  title: { fontSize: 18, fontWeight: "600", color: "#1F2937" },
   searchInput: {
     marginHorizontal: 16, marginVertical: 12,
     backgroundColor: "#F3F4F6", borderRadius: 12,
@@ -173,6 +173,6 @@ const dd = StyleSheet.create({
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: "600", color: "#1F2937" },
   itemDialCode: { fontSize: 14, color: "#6B7280", marginTop: 2 },
-  checkmark: { fontSize: 18, color: "#059669", fontWeight: "700" },
+  checkmark: { fontSize: 18, color: "#059669", fontWeight: "600" },
   emptyText: { textAlign: "center", color: "#9CA3AF", marginTop: 40, fontSize: 16 },
 });

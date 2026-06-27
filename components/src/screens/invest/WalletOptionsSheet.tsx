@@ -76,9 +76,9 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.borderLight,
   },
   rowDisabled: { opacity: 0.5 },
-  currency: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+  currency: { fontSize: 15, fontWeight: "600", color: COLORS.text },
   balance: { fontSize: 12, color: COLORS.muted, fontWeight: "600", marginTop: 2 },
-  required: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-  insufficientLabel: { fontSize: 11, color: COLORS.red, fontWeight: "700", marginTop: 2 },
+  required: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+  insufficientLabel: { fontSize: 11, color: COLORS.red, fontWeight: "600", marginTop: 2 },
   mutedText: { color: COLORS.muted },
 });

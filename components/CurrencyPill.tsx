@@ -3,7 +3,7 @@
  * Shows flag and currency code with dropdown indicator
  */
 import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import AppText from "./AppText";
 import CountryFlag from "./CountryFlag";
 
@@ -17,11 +17,11 @@ interface CurrencyPillProps {
 export default function CurrencyPill({ flag, code, countryCode, onPress }: CurrencyPillProps) {
   return (
     <Pressable style={styles.pill} onPress={onPress}>
-      <CountryFlag 
-        countryCode={countryCode} 
-        currencyCode={code} 
-        fallbackEmoji={flag} 
-        size="sm" 
+      <CountryFlag
+        countryCode={countryCode}
+        currencyCode={code}
+        fallbackEmoji={flag}
+        size="sm"
       />
       <AppText style={styles.code}>{code}</AppText>
       <AppText style={styles.arrow}>▼</AppText>
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   },
   code: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1F2937",
   },
   arrow: {

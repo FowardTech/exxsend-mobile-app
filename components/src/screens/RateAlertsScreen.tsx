@@ -1,25 +1,25 @@
-import { Ionicons } from "@expo/vector-icons";
 import {
-    RateAlert,
-    deleteRateAlert,
-    getExchangeRates,
-    getPublicCurrencies,
-    getRateAlerts,
-    updateRateAlert,
+  RateAlert,
+  deleteRateAlert,
+  getExchangeRates,
+  getPublicCurrencies,
+  getRateAlerts,
+  updateRateAlert,
 } from "@/api/config";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Animated, Pressable, RefreshControl, ScrollView, View } from "react-native";
-import AppText from "../../AppText";
-import BackButton from "../../BackButton";
-import AppTextInput from "../../AppTextInput";
-import CountryFlag from "../../CountryFlag";
-import BottomSheet from "../../BottomSheet";
 import { Swipeable } from "react-native-gesture-handler";
 import ScreenShell from "../../../components/ScreenShell";
 import { COLORS } from "../../../theme/colors";
 import { styles } from "../../../theme/styles";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
+import BackButton from "../../BackButton";
+import BottomSheet from "../../BottomSheet";
+import CountryFlag from "../../CountryFlag";
 import CreateRateAlertSheet from "../../CreateRateAlertSheet";
 
 // Fallback flags for common currencies (used only if backend doesn't provide)
@@ -72,7 +72,7 @@ export default function RateAlertsScreen() {
     const t = setTimeout(() => setHighlightedId(null), 4000);
     return () => clearTimeout(t);
   }, [highlightedId]);
-  
+
   // Dynamic currencies from backend
   const [currencies, setCurrencies] = useState<PublicCurrency[]>([]);
   const [currencyFlags, setCurrencyFlags] = useState<Record<string, string>>({});
@@ -111,7 +111,7 @@ export default function RateAlertsScreen() {
     try {
       const data = await getPublicCurrencies(false); // Only enabled currencies
       setCurrencies(data);
-      
+
       // Build flags map
       const flagsMap: Record<string, string> = {};
       for (const c of data || []) {
@@ -140,8 +140,8 @@ export default function RateAlertsScreen() {
             typeof rawTarget === "number"
               ? rawTarget
               : typeof rawTarget === "string" && rawTarget.trim() !== "" && !isNaN(Number(rawTarget))
-              ? Number(rawTarget)
-              : undefined;
+                ? Number(rawTarget)
+                : undefined;
 
           // is_active sometimes comes back as a string ("true"/"false"/
           // "1"/"0") instead of a real boolean, which a plain truthy check
@@ -153,10 +153,10 @@ export default function RateAlertsScreen() {
             typeof rawActive === "boolean"
               ? rawActive
               : typeof rawActive === "number"
-              ? rawActive !== 0
-              : typeof rawActive === "string"
-              ? !["false", "0", "", "null", "undefined"].includes(rawActive.trim().toLowerCase())
-              : !!rawActive;
+                ? rawActive !== 0
+                : typeof rawActive === "string"
+                  ? !["false", "0", "", "null", "undefined"].includes(rawActive.trim().toLowerCase())
+                  : !!rawActive;
 
           return {
             ...a,
@@ -227,14 +227,14 @@ export default function RateAlertsScreen() {
   // Generate popular pairs from enabled currencies dynamically
   const popularPairs: CurrencyPair[] = useMemo(() => {
     if (currencies.length < 2) return [];
-    
+
     const enabledCodes = currencies.map((c) => c.code.toUpperCase());
     const pairs: CurrencyPair[] = [];
-    
+
     // Create pairs prioritizing common base currencies (USD, GBP, EUR)
     const priorityBases = ["USD", "GBP", "EUR", "CAD"];
     const targets = enabledCodes.filter((c) => !priorityBases.includes(c));
-    
+
     // First: Priority base -> Other enabled currencies
     for (const base of priorityBases) {
       if (!enabledCodes.includes(base)) continue;
@@ -249,7 +249,7 @@ export default function RateAlertsScreen() {
       }
       if (pairs.length >= 8) break;
     }
-    
+
     // Then: Pairs between priority bases
     for (let i = 0; i < priorityBases.length && pairs.length < 10; i++) {
       for (let j = i + 1; j < priorityBases.length && pairs.length < 10; j++) {
@@ -265,7 +265,7 @@ export default function RateAlertsScreen() {
         }
       }
     }
-    
+
     return pairs.slice(0, 10); // Limit to 10 pairs
   }, [currencies, getFlagForCurrency]);
 
@@ -385,38 +385,38 @@ export default function RateAlertsScreen() {
   };
 
   // Filter and sort alerts
-    const activeAlerts = useMemo(
-      () => alerts.filter((a) => a.is_active),
-      [alerts]
+  const activeAlerts = useMemo(
+    () => alerts.filter((a) => a.is_active),
+    [alerts]
+  );
+
+  const historyAlerts = useMemo(
+    () =>
+      alerts
+        .filter((a) => !a.is_active || (a.trigger_count ?? 0) > 0)
+        .sort((a, b) => {
+          const dateA = a.triggered_at ? new Date(a.triggered_at).getTime() : 0;
+          const dateB = b.triggered_at ? new Date(b.triggered_at).getTime() : 0;
+          return dateB - dateA;
+        }),
+    [alerts]
+  );
+
+  const filteredAlerts = useMemo(() => {
+    const list = activeTab === "active" ? activeAlerts : historyAlerts;
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase();
+    return list.filter(
+      (a) =>
+        (a.from_currency ?? "").toLowerCase().includes(q) ||
+        (a.to_currency ?? "").toLowerCase().includes(q)
     );
-  
-    const historyAlerts = useMemo(
-      () =>
-        alerts
-          .filter((a) => !a.is_active || (a.trigger_count ?? 0) > 0)
-          .sort((a, b) => {
-            const dateA = a.triggered_at ? new Date(a.triggered_at).getTime() : 0;
-            const dateB = b.triggered_at ? new Date(b.triggered_at).getTime() : 0;
-            return dateB - dateA;
-          }),
-      [alerts]
-    );
-  
-    const filteredAlerts = useMemo(() => {
-      const list = activeTab === "active" ? activeAlerts : historyAlerts;
-      if (!searchQuery.trim()) return list;
-      const q = searchQuery.toLowerCase();
-      return list.filter(
-        (a) =>
-          (a.from_currency ?? "").toLowerCase().includes(q) ||
-          (a.to_currency ?? "").toLowerCase().includes(q)
-      );
-    }, [activeTab, activeAlerts, historyAlerts, searchQuery]);
-  
-    const getLiveRateForAlert = (alert: RateAlert) => {
-      const key = `${alert.from_currency}-${alert.to_currency}`;
-      return liveRates.get(key);
-    };
+  }, [activeTab, activeAlerts, historyAlerts, searchQuery]);
+
+  const getLiveRateForAlert = (alert: RateAlert) => {
+    const key = `${alert.from_currency}-${alert.to_currency}`;
+    return liveRates.get(key);
+  };
 
   return (
     <ScreenShell padded={false} scrollable={false}>
@@ -425,73 +425,73 @@ export default function RateAlertsScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <BackButton onPress={() => router.back()} />
-            <View style={{ flex: 1 }}>
-              <AppText style={styles.headerTitle}>Rate Alerts</AppText>
-              {/* <AppText style={styles.subtitle}>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <BackButton onPress={() => router.back()} />
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.headerTitle}>Rate Alerts</AppText>
+            {/* <AppText style={styles.subtitle}>
                 {alerts.length} alert{alerts.length !== 1 ? "s" : ""} • {activeAlerts.length} active
               </AppText> */}
-            </View>
           </View>
+        </View>
 
-          {/* Quick Create Section */}
-          <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <AppText style={localStyles.sectionLabel}>Quick Create Alert</AppText>
-              <Pressable
-                onPress={openCustomPicker}
-                style={{ flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primaryLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}
-              >
-                <Ionicons name="add" size={20} color={COLORS.primary} style={{ marginRight: 4 }} />
-                <AppText style={{ fontSize: 16, fontWeight: "700", color: COLORS.primary }}>Custom pair</AppText>
-              </Pressable>
+        {/* Quick Create Section */}
+        <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <AppText style={localStyles.sectionLabel}>Quick Create Alert</AppText>
+            <Pressable
+              onPress={openCustomPicker}
+              style={{ flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primaryLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}
+            >
+              <Ionicons name="add" size={20} color={COLORS.primary} style={{ marginRight: 4 }} />
+              <AppText style={{ fontSize: 16, fontWeight: "600", color: COLORS.primary }}>Custom pair</AppText>
+            </Pressable>
+          </View>
+          {popularPairs.length === 0 ? (
+            <View style={{ paddingVertical: 16, alignItems: "center" }}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <AppText style={{ color: COLORS.muted, marginTop: 8, fontSize: 12 }}>
+                Loading currencies...
+              </AppText>
             </View>
-            {popularPairs.length === 0 ? (
-              <View style={{ paddingVertical: 16, alignItems: "center" }}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <AppText style={{ color: COLORS.muted, marginTop: 8, fontSize: 12 }}>
-                  Loading currencies...
-                </AppText>
-              </View>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingVertical: 8 }}
-              >
-                {popularPairs.map((pair, idx) => {
-                  const key = `${pair.from}-${pair.to}`;
-                  const liveRate = liveRates.get(key);
-                  const isPositive = (liveRate?.change || "").startsWith("+");
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingVertical: 8 }}
+            >
+              {popularPairs.map((pair, idx) => {
+                const key = `${pair.from}-${pair.to}`;
+                const liveRate = liveRates.get(key);
+                const isPositive = (liveRate?.change || "").startsWith("+");
 
-                  return (
-                    <Pressable
-                      key={idx}
-                      onPress={() => openCreateSheet(pair)}
-                      disabled={fetchingRate}
-                      style={[localStyles.quickPairCard, fetchingRate && { opacity: 0.6 }]}
-                    >
-                      <View style={localStyles.quickPairFlags}>
-                        <CountryFlag currencyCode={pair.from} fallbackEmoji={pair.fromFlag} size="sm" />
-                        <AppText style={{ fontSize: 12, marginHorizontal: 4, color: COLORS.muted }}>→</AppText>
-                        <CountryFlag currencyCode={pair.to} fallbackEmoji={pair.toFlag} size="sm" />
-                      </View>
-                      <AppText style={localStyles.quickPairCode}>
-                        {pair.from}/{pair.to}
+                return (
+                  <Pressable
+                    key={idx}
+                    onPress={() => openCreateSheet(pair)}
+                    disabled={fetchingRate}
+                    style={[localStyles.quickPairCard, fetchingRate && { opacity: 0.6 }]}
+                  >
+                    <View style={localStyles.quickPairFlags}>
+                      <CountryFlag currencyCode={pair.from} fallbackEmoji={pair.fromFlag} size="sm" />
+                      <AppText style={{ fontSize: 12, marginHorizontal: 4, color: COLORS.muted }}>→</AppText>
+                      <CountryFlag currencyCode={pair.to} fallbackEmoji={pair.toFlag} size="sm" />
+                    </View>
+                    <AppText style={localStyles.quickPairCode}>
+                      {pair.from}/{pair.to}
+                    </AppText>
+                    {liveRate ? (
+                      <AppText style={localStyles.quickPairRate}>
+                        {liveRate.rate.toFixed(4)}
                       </AppText>
-                      {liveRate ? (
-                        <AppText style={localStyles.quickPairRate}>
-                          {liveRate.rate.toFixed(4)}
-                        </AppText>
-                      ) : liveRatesFetchAttempted ? (
-                        <AppText style={[localStyles.quickPairRate, { color: COLORS.muted, fontSize: 11 }]}>
-                          Unavailable
-                        </AppText>
-                      ) : (
-                        <ActivityIndicator size="small" color={COLORS.primary} />
-                      )}
+                    ) : liveRatesFetchAttempted ? (
+                      <AppText style={[localStyles.quickPairRate, { color: COLORS.muted, fontSize: 11 }]}>
+                        Unavailable
+                      </AppText>
+                    ) : (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    )}
                     {liveRate?.change && (
                       <View
                         style={[
@@ -510,117 +510,117 @@ export default function RateAlertsScreen() {
                       </View>
                     )}
                     <View style={localStyles.addBadge}>
-                      <AppText style={{ color: COLORS.primary, fontWeight: "700", fontSize: 16 }}>+</AppText>
+                      <AppText style={{ color: COLORS.primary, fontWeight: "600", fontSize: 16 }}>+</AppText>
                     </View>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Search & Tabs */}
+        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+          <View style={localStyles.searchContainer}>
+            <Ionicons name="search-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
+            <AppTextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search by currency..."
+              placeholderTextColor={COLORS.muted}
+              style={localStyles.searchInput}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")}>
+                <AppText style={{ fontSize: 16, color: COLORS.muted }}>✕</AppText>
+              </Pressable>
             )}
           </View>
 
-          {/* Search & Tabs */}
-          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            <View style={localStyles.searchContainer}>
-              <Ionicons name="search-outline" size={16} color={COLORS.muted} style={{ marginRight: 8 }} />
-              <AppTextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search by currency..."
-                placeholderTextColor={COLORS.muted}
-                style={localStyles.searchInput}
-              />
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery("")}>
-                  <AppText style={{ fontSize: 16, color: COLORS.muted }}>✕</AppText>
-                </Pressable>
-              )}
-            </View>
-
-            {/* Tab Selector */}
-            <View style={localStyles.tabContainer}>
-              <Pressable
-                onPress={() => setActiveTab("active")}
+          {/* Tab Selector */}
+          <View style={localStyles.tabContainer}>
+            <Pressable
+              onPress={() => setActiveTab("active")}
+              style={[
+                localStyles.tab,
+                activeTab === "active" && localStyles.tabActive,
+              ]}
+            >
+              <AppText
                 style={[
-                  localStyles.tab,
-                  activeTab === "active" && localStyles.tabActive,
+                  localStyles.tabText,
+                  activeTab === "active" && localStyles.tabTextActive,
                 ]}
               >
-                <AppText
-                  style={[
-                    localStyles.tabText,
-                    activeTab === "active" && localStyles.tabTextActive,
-                  ]}
-                >
-                  Active ({activeAlerts.length})
-                </AppText>
-              </Pressable>
-              <Pressable
-                onPress={() => setActiveTab("history")}
+                Active ({activeAlerts.length})
+              </AppText>
+            </Pressable>
+            <Pressable
+              onPress={() => setActiveTab("history")}
+              style={[
+                localStyles.tab,
+                activeTab === "history" && localStyles.tabActive,
+              ]}
+            >
+              <AppText
                 style={[
-                  localStyles.tab,
-                  activeTab === "history" && localStyles.tabActive,
+                  localStyles.tabText,
+                  activeTab === "history" && localStyles.tabTextActive,
                 ]}
               >
-                <AppText
-                  style={[
-                    localStyles.tabText,
-                    activeTab === "history" && localStyles.tabTextActive,
-                  ]}
-                >
-                  History ({historyAlerts.length})
-                </AppText>
-              </Pressable>
-            </View>
+                History ({historyAlerts.length})
+              </AppText>
+            </Pressable>
           </View>
+        </View>
 
-          {/* Content */}
-          {loading ? (
-            <View style={{ padding: 40, alignItems: "center" }}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
+        {/* Content */}
+        {loading ? (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        ) : filteredAlerts.length === 0 ? (
+          <View style={localStyles.emptyState}>
+            <View style={localStyles.emptyIcon}>
+              <Ionicons name={activeTab === "active" ? "notifications-outline" : "stats-chart-outline"} size={36} color={COLORS.primary} />
             </View>
-          ) : filteredAlerts.length === 0 ? (
-            <View style={localStyles.emptyState}>
-              <View style={localStyles.emptyIcon}>
-                <Ionicons name={activeTab === "active" ? "notifications-outline" : "stats-chart-outline"} size={36} color={COLORS.primary} />
-              </View>
-              <AppText style={localStyles.emptyTitle}>
-                {activeTab === "active" ? "No active alerts" : "No alert history"}
-              </AppText>
-              <AppText style={localStyles.emptySubtitle}>
-                {activeTab === "active"
-                  ? "Tap a currency pair above to create your first alert"
-                  : "Triggered alerts will appear here"}
-              </AppText>
-              {activeTab === "active" && (
-                <Pressable
-                  onPress={() => router.push("/exchangerates")}
-                  style={localStyles.emptyButton}
-                >
-                  <AppText style={{ color: COLORS.actionText, fontWeight: "700" }}>Browse All Rates</AppText>
-                </Pressable>
-              )}
-            </View>
-          ) : (
-            <View style={{ marginTop: 16 }}>
-              {filteredAlerts.map((alert) => (
-                <AlertCard
-                  key={alert.id}
-                  alert={alert}
-                  liveRate={getLiveRateForAlert(alert)}
-                  onToggle={() => handleToggleAlert(alert)}
-                  onDelete={() => handleDeleteAlert(alert)}
-                  showHistory={activeTab === "history"}
-                  fromFlag={getFlagForCurrency(alert.from_currency || "")}
-                  toFlag={getFlagForCurrency(alert.to_currency || "")}
-                  isHighlighted={highlightedId === String(alert.id)}
-                />
-              ))}
-            </View>
-          )}
+            <AppText style={localStyles.emptyTitle}>
+              {activeTab === "active" ? "No active alerts" : "No alert history"}
+            </AppText>
+            <AppText style={localStyles.emptySubtitle}>
+              {activeTab === "active"
+                ? "Tap a currency pair above to create your first alert"
+                : "Triggered alerts will appear here"}
+            </AppText>
+            {activeTab === "active" && (
+              <Pressable
+                onPress={() => router.push("/exchangerates")}
+                style={localStyles.emptyButton}
+              >
+                <AppText style={{ color: COLORS.actionText, fontWeight: "600" }}>Browse All Rates</AppText>
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <View style={{ marginTop: 16 }}>
+            {filteredAlerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                liveRate={getLiveRateForAlert(alert)}
+                onToggle={() => handleToggleAlert(alert)}
+                onDelete={() => handleDeleteAlert(alert)}
+                showHistory={activeTab === "history"}
+                fromFlag={getFlagForCurrency(alert.from_currency || "")}
+                toFlag={getFlagForCurrency(alert.to_currency || "")}
+                isHighlighted={highlightedId === String(alert.id)}
+              />
+            ))}
+          </View>
+        )}
 
-          {/* Stats Summary */}
-          {/* {alerts.length > 0 && (
+        {/* Stats Summary */}
+        {/* {alerts.length > 0 && (
             <View style={localStyles.statsContainer}>
               <View style={localStyles.statBox}>
                 <AppText style={localStyles.statValue}>{alerts.length}</AppText>
@@ -640,82 +640,82 @@ export default function RateAlertsScreen() {
               </View>
             </View>
           )} */}
-        </ScrollView>
+      </ScrollView>
 
-        {/* Floating Create Button */}
-        <Pressable
-          onPress={() => router.push("/exchangerates")}
-          style={localStyles.fab}
+      {/* Floating Create Button */}
+      <Pressable
+        onPress={() => router.push("/exchangerates")}
+        style={localStyles.fab}
+      >
+        <AppText style={{ color: COLORS.actionText, fontSize: 24, fontWeight: "600" }}>+</AppText>
+      </Pressable>
+
+      {/* Create Alert Sheet */}
+      {selectedPair && (
+        <CreateRateAlertSheet
+          open={sheetOpen}
+          onClose={() => {
+            setSheetOpen(false);
+            setSelectedPair(null);
+          }}
+          fromCurrency={selectedPair.from}
+          toCurrency={selectedPair.to}
+          currentRate={selectedPair.rate}
+          fromFlag={selectedPair.fromFlag}
+          toFlag={selectedPair.toFlag}
+          onSuccess={handleAlertCreated}
+        />
+      )}
+
+      <BottomSheet
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title={pickerStep === "from" ? "Alert when this currency…" : `…compared to ${customFrom}`}
+      >
+        {currencies
+          .filter((c) => pickerStep === "to" ? c.code.toUpperCase() !== customFrom : true)
+          .map((c) => {
+            const code = c.code.toUpperCase();
+            return (
+              <Pressable
+                key={code}
+                onPress={() => handlePickCurrency(code)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 14,
+                  // borderBottomWidth: 1,
+                  // borderBottomColor: COLORS.borderLight,
+                }}
+              >
+                <View style={{ marginRight: 12 }}>
+                  <CountryFlag currencyCode={code} fallbackEmoji={getFlagForCurrency(code)} size="ms" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText style={{ fontWeight: "600", color: COLORS.text }}>{code}</AppText>
+                  {!!c.name && <AppText style={{ fontSize: 12, color: COLORS.muted }}>{c.name}</AppText>}
+                </View>
+              </Pressable>
+            );
+          })}
+      </BottomSheet>
+
+      {fetchingRate && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.15)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
-          <AppText style={{ color: COLORS.actionText, fontSize: 24, fontWeight: "700" }}>+</AppText>
-        </Pressable>
-
-        {/* Create Alert Sheet */}
-        {selectedPair && (
-          <CreateRateAlertSheet
-            open={sheetOpen}
-            onClose={() => {
-              setSheetOpen(false);
-              setSelectedPair(null);
-            }}
-            fromCurrency={selectedPair.from}
-            toCurrency={selectedPair.to}
-            currentRate={selectedPair.rate}
-            fromFlag={selectedPair.fromFlag}
-            toFlag={selectedPair.toFlag}
-            onSuccess={handleAlertCreated}
-          />
-        )}
-
-        <BottomSheet
-          visible={pickerOpen}
-          onClose={() => setPickerOpen(false)}
-          title={pickerStep === "from" ? "Alert when this currency…" : `…compared to ${customFrom}`}
-        >
-          {currencies
-            .filter((c) => pickerStep === "to" ? c.code.toUpperCase() !== customFrom : true)
-            .map((c) => {
-              const code = c.code.toUpperCase();
-              return (
-                <Pressable
-                  key={code}
-                  onPress={() => handlePickCurrency(code)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 14,
-                    // borderBottomWidth: 1,
-                    // borderBottomColor: COLORS.borderLight,
-                  }}
-                >
-                  <View style={{ marginRight: 12 }}>
-                    <CountryFlag currencyCode={code} fallbackEmoji={getFlagForCurrency(code)} size="ms" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <AppText style={{ fontWeight: "700", color: COLORS.text }}>{code}</AppText>
-                    {!!c.name && <AppText style={{ fontSize: 12, color: COLORS.muted }}>{c.name}</AppText>}
-                  </View>
-                </Pressable>
-              );
-            })}
-        </BottomSheet>
-
-        {fetchingRate && (
-          <View
-            style={{
-              position: "absolute",
-              top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.15)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, paddingVertical: 18, paddingHorizontal: 24, alignItems: "center" }}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-              <AppText style={{ marginTop: 8, fontSize: 13, color: COLORS.muted, fontWeight: "600" }}>Fetching live rate…</AppText>
-            </View>
+          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, paddingVertical: 18, paddingHorizontal: 24, alignItems: "center" }}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <AppText style={{ marginTop: 8, fontSize: 13, color: COLORS.muted, fontWeight: "600" }}>Fetching live rate…</AppText>
           </View>
-        )}
+        </View>
+      )}
     </ScreenShell>
   );
 }
@@ -743,7 +743,7 @@ function AlertCard({
   const directionIcon = alert.direction === "above" ? "trending-up" : "trending-down";
   const directionText = alert.direction === "above" ? "Above" : "Below";
   const currentRate = liveRate?.rate;
-  
+
   // Calculate distance to target (guard against undefined target_rate)
   const distancePercent =
     currentRate && typeof alert.target_rate === "number"
@@ -787,128 +787,128 @@ function AlertCard({
       friction={2}
       rightThreshold={40}
     >
-    <View style={[ localStyles.alertCard,
+      <View style={[localStyles.alertCard,
       !alert.is_active && localStyles.alertCardInactive,
       isHighlighted && localStyles.alertCardHighlighted,
-    ]}>
-      {/* Header Row */}
-      <View style={localStyles.alertHeader}>
-        <View style={localStyles.alertPair}>
-          <View style={{ flexDirection: "row", marginRight: 8 }}>
-            <CountryFlag currencyCode={alert.from_currency} fallbackEmoji={fromFlag} size="sm" />
-            <CountryFlag currencyCode={alert.to_currency} fallbackEmoji={toFlag} size="sm" style={{ marginLeft: -6, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: 999 }} />
-          </View>
-          <View>
-            <AppText style={localStyles.alertPairText}>
-              {alert.from_currency}/{alert.to_currency}
-            </AppText>
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, flexWrap: "wrap", gap: 4 }}>
-              <View style={[
-                localStyles.directionBadge,
-                { backgroundColor: alert.direction === "above" ? COLORS.greenLight : COLORS.errorLight }
-              ]}>
-                <Ionicons
-                  name={directionIcon as any}
-                  size={13}
-                  color={alert.direction === "above" ? COLORS.text : COLORS.error}
-                  style={{ marginRight: 4 }}
-                />
-                <AppText style={[
-                  localStyles.directionText,
-                  { color: alert.direction === "above" ? COLORS.text : COLORS.error }
+      ]}>
+        {/* Header Row */}
+        <View style={localStyles.alertHeader}>
+          <View style={localStyles.alertPair}>
+            <View style={{ flexDirection: "row", marginRight: 8 }}>
+              <CountryFlag currencyCode={alert.from_currency} fallbackEmoji={fromFlag} size="sm" />
+              <CountryFlag currencyCode={alert.to_currency} fallbackEmoji={toFlag} size="sm" style={{ marginLeft: -6, borderWidth: 1.5, borderColor: "#FFFFFF", borderRadius: 999 }} />
+            </View>
+            <View>
+              <AppText style={localStyles.alertPairText}>
+                {alert.from_currency}/{alert.to_currency}
+              </AppText>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, flexWrap: "wrap", gap: 4 }}>
+                <View style={[
+                  localStyles.directionBadge,
+                  { backgroundColor: alert.direction === "above" ? COLORS.greenLight : COLORS.errorLight }
                 ]}>
-                  {directionText}
-                </AppText>
+                  <Ionicons
+                    name={directionIcon as any}
+                    size={13}
+                    color={alert.direction === "above" ? COLORS.text : COLORS.error}
+                    style={{ marginRight: 4 }}
+                  />
+                  <AppText style={[
+                    localStyles.directionText,
+                    { color: alert.direction === "above" ? COLORS.text : COLORS.error }
+                  ]}>
+                    {directionText}
+                  </AppText>
+                </View>
+                {alert.is_recurring && (
+                  <View style={localStyles.recurringBadge}>
+                    <Ionicons name="repeat" size={12} color={COLORS.primary} style={{ marginRight: 3 }} />
+                    <AppText style={localStyles.recurringText}>RECURRING</AppText>
+                  </View>
+                )}
+                {isClose && alert.is_active && (
+                  <View style={localStyles.closeBadge}>
+                    <Ionicons name="flash" size={11} color={COLORS.error} style={{ marginRight: 3 }} />
+                    <AppText style={localStyles.closeText}>CLOSE</AppText>
+                  </View>
+                )}
               </View>
-              {alert.is_recurring && (
-                <View style={localStyles.recurringBadge}>
-                  <Ionicons name="repeat" size={12} color={COLORS.primary} style={{ marginRight: 3 }} />
-                  <AppText style={localStyles.recurringText}>RECURRING</AppText>
-                </View>
-              )}
-              {isClose && alert.is_active && (
-                <View style={localStyles.closeBadge}>
-                  <Ionicons name="flash" size={11} color={COLORS.error} style={{ marginRight: 3 }} />
-                  <AppText style={localStyles.closeText}>CLOSE</AppText>
-                </View>
-              )}
             </View>
           </View>
-        </View>
 
-        {/* Toggle Switch */}
-        <Pressable onPress={onToggle} style={localStyles.toggleContainer}>
-          <View
-            style={[
-              localStyles.toggle,
-              { backgroundColor: alert.is_active ? COLORS.primary : COLORS.border },
-            ]}
-          >
+          {/* Toggle Switch */}
+          <Pressable onPress={onToggle} style={localStyles.toggleContainer}>
             <View
               style={[
-                localStyles.toggleThumb,
-                { alignSelf: alert.is_active ? "flex-end" : "flex-start" },
-              ]}
-            />
-          </View>
-        </Pressable>
-      </View>
-
-      {/* Rate Info */}
-      <View style={localStyles.rateInfoContainer}>
-        <View style={localStyles.rateInfoBox}>
-          <AppText style={localStyles.rateLabel}>Target Rate</AppText>
-          <AppText style={localStyles.rateValue}>
-            {directionText} {typeof alert.target_rate === "number" ? alert.target_rate.toFixed(4) : "—"}
-          </AppText>
-        </View>
-        {currentRate && (
-          <View style={localStyles.rateInfoBox}>
-            <AppText style={localStyles.rateLabel}>Current Rate</AppText>
-            <AppText style={localStyles.rateValue}>{currentRate.toFixed(4)}</AppText>
-          </View>
-        )}
-        {distancePercent && (
-          <View style={localStyles.rateInfoBox}>
-            <AppText style={localStyles.rateLabel}>Distance</AppText>
-            <AppText
-              style={[
-                localStyles.rateValue,
-                {
-                  color: parseFloat(distancePercent) > 0 ? COLORS.primary : COLORS.error,
-                },
+                localStyles.toggle,
+                { backgroundColor: alert.is_active ? COLORS.primary : COLORS.border },
               ]}
             >
-              {parseFloat(distancePercent) > 0 ? "+" : ""}
-              {distancePercent}%
-            </AppText>
-          </View>
-        )}
-      </View>
+              <View
+                style={[
+                  localStyles.toggleThumb,
+                  { alignSelf: alert.is_active ? "flex-end" : "flex-start" },
+                ]}
+              />
+            </View>
+          </Pressable>
+        </View>
 
-      {/* History Info */}
-      {showHistory && (alert.trigger_count ?? 0) > 0 && (
-        <View style={localStyles.historyInfo}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Ionicons name="notifications" size={13} color={COLORS.textSecondary} style={{ marginRight: 5 }} />
-            <AppText style={localStyles.historyText}>
-              Triggered {alert.trigger_count} time{(alert.trigger_count ?? 0) !== 1 ? "s" : ""}
+        {/* Rate Info */}
+        <View style={localStyles.rateInfoContainer}>
+          <View style={localStyles.rateInfoBox}>
+            <AppText style={localStyles.rateLabel}>Target Rate</AppText>
+            <AppText style={localStyles.rateValue}>
+              {directionText} {typeof alert.target_rate === "number" ? alert.target_rate.toFixed(4) : "—"}
             </AppText>
           </View>
-          {alert.triggered_at && (
-            <AppText style={localStyles.historyDate}>
-              Last: {new Date(alert.triggered_at).toLocaleDateString()}
-            </AppText>
+          {currentRate && (
+            <View style={localStyles.rateInfoBox}>
+              <AppText style={localStyles.rateLabel}>Current Rate</AppText>
+              <AppText style={localStyles.rateValue}>{currentRate.toFixed(4)}</AppText>
+            </View>
+          )}
+          {distancePercent && (
+            <View style={localStyles.rateInfoBox}>
+              <AppText style={localStyles.rateLabel}>Distance</AppText>
+              <AppText
+                style={[
+                  localStyles.rateValue,
+                  {
+                    color: parseFloat(distancePercent) > 0 ? COLORS.primary : COLORS.error,
+                  },
+                ]}
+              >
+                {parseFloat(distancePercent) > 0 ? "+" : ""}
+                {distancePercent}%
+              </AppText>
+            </View>
           )}
         </View>
-      )}
 
-      {/* Swipe hint */}
-      <View style={localStyles.alertActions}>
-        <Ionicons name="chevron-back-outline" size={12} color={COLORS.muted} />
-        <AppText style={localStyles.swipeHintText}>Swipe left to delete</AppText>
+        {/* History Info */}
+        {showHistory && (alert.trigger_count ?? 0) > 0 && (
+          <View style={localStyles.historyInfo}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons name="notifications" size={13} color={COLORS.textSecondary} style={{ marginRight: 5 }} />
+              <AppText style={localStyles.historyText}>
+                Triggered {alert.trigger_count} time{(alert.trigger_count ?? 0) !== 1 ? "s" : ""}
+              </AppText>
+            </View>
+            {alert.triggered_at && (
+              <AppText style={localStyles.historyDate}>
+                Last: {new Date(alert.triggered_at).toLocaleDateString()}
+              </AppText>
+            )}
+          </View>
+        )}
+
+        {/* Swipe hint */}
+        <View style={localStyles.alertActions}>
+          <Ionicons name="chevron-back-outline" size={12} color={COLORS.muted} />
+          <AppText style={localStyles.swipeHintText}>Swipe left to delete</AppText>
+        </View>
       </View>
-    </View>
     </Swipeable>
   );
 }
@@ -916,7 +916,7 @@ function AlertCard({
 const localStyles = {
   sectionLabel: {
     fontSize: 14,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.textSecondary,
     marginBottom: 4,
     textTransform: "uppercase" as const,
@@ -940,7 +940,7 @@ const localStyles = {
   },
   quickPairCode: {
     fontSize: 14,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.text,
     marginBottom: 4,
   },
@@ -957,7 +957,7 @@ const localStyles = {
   },
   changeText: {
     fontSize: 11,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
   },
   addBadge: {
     position: "absolute" as const,
@@ -1013,7 +1013,7 @@ const localStyles = {
   },
   tabTextActive: {
     color: COLORS.text,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
   },
   emptyState: {
     padding: 40,
@@ -1030,7 +1030,7 @@ const localStyles = {
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.text,
     marginBottom: 8,
   },
@@ -1076,7 +1076,7 @@ const localStyles = {
   },
   alertPairText: {
     fontSize: 18,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.text,
   },
   directionBadge: {
@@ -1088,7 +1088,7 @@ const localStyles = {
   },
   directionText: {
     fontSize: 10,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
   },
   recurringBadge: {
     flexDirection: "row" as const,
@@ -1100,7 +1100,7 @@ const localStyles = {
   },
   recurringText: {
     fontSize: 10,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.primary,
   },
   closeBadge: {
@@ -1113,7 +1113,7 @@ const localStyles = {
   },
   closeText: {
     fontSize: 10,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.error,
   },
   toggleContainer: {
@@ -1151,7 +1151,7 @@ const localStyles = {
   },
   rateValue: {
     fontSize: 14,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.text,
   },
   historyInfo: {
@@ -1196,7 +1196,7 @@ const localStyles = {
   },
   swipeDeleteText: {
     fontSize: 12,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: "#FFFFFF",
   },
   statsContainer: {
@@ -1213,7 +1213,7 @@ const localStyles = {
   },
   statValue: {
     fontSize: 24,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     color: COLORS.text,
   },
   statLabel: {

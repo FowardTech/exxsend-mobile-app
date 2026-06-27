@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, Alert, ActivityIndicator, Modal, ScrollView, Platform, StyleSheet, Linking } from "react-native";
-import AppText from "../../AppText";
-import AppTextInput from "../../AppTextInput";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Checkbox from "expo-checkbox";
 import { router } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import CountryDropdown from "../../../components/CountryDropdown";
 import { api, checkPhoneExists, validateReferralCode } from "../../../api/config";
+import CountryDropdown from "../../../components/CountryDropdown";
 import { COLORS } from "../../../theme/colors";
+import AppText from "../../AppText";
+import AppTextInput from "../../AppTextInput";
 
 const API_BASE_URL = Platform.OS === "android"
   ? process.env.EXPO_PUBLIC_API_BASE_URL_ANDROID
@@ -52,7 +52,7 @@ export default function GetStartedScreen() {
       if (qp) return qp;
       const pathMatch = parsed.pathname.match(/\/(?:ref|referral)\/([A-Za-z0-9_-]+)/i);
       if (pathMatch) return pathMatch[1];
-    } catch {}
+    } catch { }
     return null;
   };
 
@@ -66,7 +66,7 @@ export default function GetStartedScreen() {
 
   useEffect(() => {
     // Cold start — app was opened directly via the link.
-    Linking.getInitialURL().then(applyExtractedCode).catch(() => {});
+    Linking.getInitialURL().then(applyExtractedCode).catch(() => { });
     // Warm start — app was already running/backgrounded when the link
     // was opened.
     const sub = Linking.addEventListener("url", (e) => applyExtractedCode(e.url));
@@ -106,10 +106,10 @@ export default function GetStartedScreen() {
 
   const replacePlaceholders = (text: string, meta: any) =>
     text.replace(/\{\{COMPANY\}\}/g, meta.companyName || "")
-        .replace(/\{\{EMAIL\}\}/g, meta.supportEmail || "")
-        .replace(/\{\{WEBSITE\}\}/g, meta.website || "")
-        .replace(/\{\{DATE\}\}/g, meta.effectiveDate || "")
-        .replace(/\{\{JURISDICTION\}\}/g, meta.jurisdiction || "");
+      .replace(/\{\{EMAIL\}\}/g, meta.supportEmail || "")
+      .replace(/\{\{WEBSITE\}\}/g, meta.website || "")
+      .replace(/\{\{DATE\}\}/g, meta.effectiveDate || "")
+      .replace(/\{\{JURISDICTION\}\}/g, meta.jurisdiction || "");
 
   const showLegalDocument = useCallback(async (docType: "terms" | "privacy") => {
     setLegalTitle(docType === "terms" ? "Terms & Conditions" : "Privacy Policy");
@@ -160,7 +160,7 @@ export default function GetStartedScreen() {
               {legalMeta.effectiveDate && <AppText style={{ fontSize: 12, color: COLORS.muted, marginBottom: 16 }}>Effective: {legalMeta.effectiveDate}</AppText>}
               {legalSections.map((sec) => (
                 <View key={sec.id} style={{ marginBottom: 20 }}>
-                  <AppText style={{ fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 6 }}>{sec.title}</AppText>
+                  <AppText style={{ fontSize: 15, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>{sec.title}</AppText>
                   <AppText style={{ fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 }}>{replacePlaceholders(sec.content, legalMeta)}</AppText>
                 </View>
               ))}
@@ -253,7 +253,7 @@ export default function GetStartedScreen() {
           <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 20 }}>
             <AppText style={{ fontSize: 14, color: COLORS.muted, fontWeight: "600" }}>Already have an account? </AppText>
             <Pressable onPress={() => router.push("/login")}>
-              <AppText style={{ fontSize: 14, color: COLORS.primary, fontWeight: "700" }}>Sign in</AppText>
+              <AppText style={{ fontSize: 14, color: COLORS.primary, fontWeight: "600" }}>Sign in</AppText>
             </Pressable>
           </View>
 
@@ -275,15 +275,15 @@ export default function GetStartedScreen() {
 const s = StyleSheet.create({
   plainSignupHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 16 },
   plainLogoWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primaryLight, justifyContent: "center", alignItems: "center" },
-  plainSignInLink: { color: COLORS.primary, fontWeight: "700", fontSize: 14 },
-  plainHeroTitle: { fontSize: 24, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
-  plainHeroSub:   { fontSize: 14, color: COLORS.muted, fontWeight: "500" },
+  plainSignInLink: { color: COLORS.primary, fontWeight: "600", fontSize: 14 },
+  plainHeroTitle: { fontSize: 24, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
+  plainHeroSub: { fontSize: 14, color: COLORS.muted, fontWeight: "500" },
   form: { padding: 24, paddingTop: 28 },
-  formHeading: { fontSize: 22, fontWeight: "700", color: COLORS.text },
+  formHeading: { fontSize: 22, fontWeight: "600", color: COLORS.text },
   brandBar: { paddingTop: 14, paddingBottom: 18, alignItems: "center", marginTop: 15 },
   brandBarText: { color: COLORS.text, fontSize: 20, fontWeight: "600" },
   formSub: { fontSize: 14, color: COLORS.muted, fontWeight: "500", marginTop: 4 },
-  referralLabel: { fontSize: 12, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 22, marginBottom: 8 },
+  referralLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 22, marginBottom: 8 },
   referralBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
   referralBoxValid: { borderColor: "#059669" },
   referralBoxInvalid: { borderColor: COLORS.red },
@@ -292,18 +292,18 @@ const s = StyleSheet.create({
   referralHintInvalid: { fontSize: 12, color: COLORS.red, fontWeight: "600", marginTop: 6 },
   phoneRow: { flexDirection: "row", gap: 10 },
   phoneBox: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, height: 54 },
-  dialCode: { fontWeight: "700", color: COLORS.text, marginRight: 8 },
+  dialCode: { fontWeight: "600", color: COLORS.text, marginRight: 8 },
   phoneInput: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
   termsRow: { flexDirection: "row", alignItems: "flex-start", marginTop: 18, gap: 12 },
   termsText: { flex: 1, fontSize: 13, color: COLORS.textSecondary, fontWeight: "500", lineHeight: 20 },
-  termsLink: { color: COLORS.primary, fontWeight: "700" },
+  termsLink: { color: COLORS.primary, fontWeight: "600" },
   ctaBtn: { marginTop: 22, borderRadius: 16, overflow: "hidden", backgroundColor: COLORS.actionBg },
   ctaBtnInner: { paddingVertical: 17, alignItems: "center", justifyContent: "center" },
-  ctaBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "700" },
+  ctaBtnText: { color: COLORS.actionText, fontSize: 16, fontWeight: "600" },
   trustRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: COLORS.borderLight },
   trustBadge: { alignItems: "center", gap: 6, flex: 1 },
   trustLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, textAlign: "center" },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
   modalClose: { width: 36, height: 36, borderRadius: 12, backgroundColor: COLORS.primaryLight, alignItems: "center", justifyContent: "center" },
-  modalTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: COLORS.text },
+  modalTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "600", color: COLORS.text },
 });

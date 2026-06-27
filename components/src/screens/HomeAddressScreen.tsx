@@ -1,18 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { View, Pressable, ActivityIndicator, Alert, ScrollView, Keyboard, TouchableWithoutFeedback, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Keyboard, Pressable, ScrollView, TouchableWithoutFeedback, View } from "react-native";
 import AppText from "../../AppText";
 import AppTextInput from "../../AppTextInput";
 import BackButton from "../../BackButton";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import * as Location from "expo-location";
 
+import { getRegionsByCountryName, Region, saveUserAddress } from "../../../api/config";
 import ScreenShell from "../../../components/ScreenShell";
 import { useStyles } from "../../../theme/styles";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import RegionDropdown from "../../RegionDropdownScreen";
-import { getRegionsByCountryName, Region, saveUserAddress } from "../../../api/config";
 
 type StoredCountry = { code: string; name: string; flag?: string };
 
@@ -409,7 +409,7 @@ export default function HomeAddressScreen() {
             ) : (
               <>
                 <Ionicons name="location" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-                <AppText style={{ fontWeight: "700" }}>Use current location</AppText>
+                <AppText style={{ fontWeight: "600" }}>Use current location</AppText>
               </>
             )}
           </Pressable>
@@ -470,7 +470,7 @@ export default function HomeAddressScreen() {
                         borderBottomColor: colors.borderLight,
                       }}
                     >
-                      <AppText style={{ fontWeight: "700", color: colors.text }}>
+                      <AppText style={{ fontWeight: "600", color: colors.text }}>
                         {p.structured_formatting?.main_text || p.description}
                       </AppText>
                       {!!p.structured_formatting?.secondary_text && (
@@ -549,7 +549,7 @@ export default function HomeAddressScreen() {
                   style={
                     canSave
                       ? styles.primaryBtnText
-                      : { color: colors.muted, fontWeight: "700", fontSize: 18 }
+                      : { color: colors.muted, fontWeight: "600", fontSize: 18 }
                   }
                 >
                   Save address

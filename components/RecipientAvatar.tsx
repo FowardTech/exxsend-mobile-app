@@ -1,8 +1,8 @@
 import React from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
+import { COLORS } from "../theme/colors";
 import AppText from "./AppText";
 import CountryFlag from "./CountryFlag";
-import { COLORS } from "../theme/colors";
 
 interface Props {
   name: string;
@@ -82,7 +82,7 @@ export default function RecipientAvatar({
 
 const s = StyleSheet.create({
   circle: { alignItems: "center", justifyContent: "center" },
-  text: { fontWeight: "700" },
+  text: { fontWeight: "600" },
   flagBadge: {
     position: "absolute",
     bottom: -2,
